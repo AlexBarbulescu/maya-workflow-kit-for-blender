@@ -66,7 +66,9 @@ class Spec:
                  manip=(), in_view=True, object_check=None, pre_uv=False, hidden=(), with_object=False,
                  view_fields=None, component=None, full_manip=False,
                  choices=None, enabled=None, atomic=False, preview=None, prepare=None, cleanup=None,
-                 object_note=None):
+                 object_note=None, preserve_ids=False, allow_empty=False):
+        self.preserve_ids = preserve_ids       # shading/deletion keep the surviving component identities
+        self.allow_empty = allow_empty         # deleting the whole mesh is a successful operation
         self.view_fields = tuple(view_fields if view_fields is not None else fields)   # In-View Editor rows
         self.component = component             # 'FACE' / 'EDGE' / 'VERTEX': where its manipulator points
         self.full_manip = full_manip           # every Local Translate / Local Scale handle (else only its arrow)
@@ -915,7 +917,7 @@ def _rebuild(ob, rec, bm, params, unit):
                 tracked = rec.spec.build(bm, values, unit, **({"ob": ob} if rec.spec.with_object else {}))
                 from . import history_references
                 history_references.tag_generic(bm, rec.spec, params, rec.history_id, tracked)
-                if rec.spec.atomic and not tracked:
+                if rec.spec.atomic and not tracked and not rec.spec.allow_empty:
                     raise ValueError('The attributes do not produce a valid '+rec.spec.node_type)
             except Exception:
                 if rollback is not None:
@@ -931,7 +933,7 @@ def _rebuild(ob, rec, bm, params, unit):
         finally:
             if rollback is not None:
                 bpy.data.meshes.remove(rollback)
-        return bool(tracked)
+        return bool(tracked) or rec.spec.allow_empty
     restore_pre(bm, rec)
     faces = [f for f in bm.faces if f.select]
     caps, moved = extrude(bm, faces, unit=unit, history_id=rec.history_id, **params, **mesh_axes(ob))
@@ -1293,7 +1295,7 @@ def record_object(context, ob, spec, params, unit):
 def _record_bm(context, ob, bm, spec, params, unit):
     old = RECORDS.get(ob.name)
     name = None
-    if (old is not None and old.spec is spec and old.pre is not None and old.mesh_uid == ob.data.session_uid
+    if (not spec.preserve_ids and old is not None and old.spec is spec and old.pre is not None and old.mesh_uid == ob.data.session_uid
             and _pre_signature(old.pre) == _pre_signature(bm)
             and (not spec.pre_uv or _uv_signature(old.pre) == _uv_signature(bm))):
         name = old.name
@@ -1314,7 +1316,7 @@ def _record_bm(context, ob, bm, spec, params, unit):
             if snapshot is not None:
                 bpy.data.meshes.remove(snapshot)
         raise
-    if not tracked:
+    if not tracked and not spec.allow_empty:
         restore_mesh(bm, pre)
         pre.free()
         if snapshot is not None:

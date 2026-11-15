@@ -205,7 +205,7 @@ def _build(bm, spec, params, unit, ob, node_id=None):
     values = {key: params[key] for key in spec.fields+spec.hidden if key in params}
     values['_history_id'] = node_id
     tracked = spec.build(bm, values, unit, **({'ob': ob} if spec.with_object else {}))
-    if not tracked:
+    if not tracked and not spec.allow_empty:
         raise ValueError(spec.node_type+' did not produce valid geometry')
     references.tag_generic(bm, spec, params, node_id, tracked)
     return tracked, None
@@ -518,6 +518,11 @@ def edit(ob, node_id, params):
 
 def apply_recipe(ob, data, origin_id):
     from . import extrude
+    saved = read(ob)
+    actual = (extrude.coords_hash(bmesh.from_edit_mesh(ob.data)) if ob.mode == 'EDIT'
+              else extrude.mesh_coords_hash(ob.data))
+    if saved is None or actual != saved.get('result_hash'):
+        raise ValueError('The mesh has unrecorded edits; undo them or delete history before editing earlier inputs')
     json.dumps((data.get('creation'), [node['params'] for node in data['nodes']]), allow_nan=False)
     _busy.add(ob.data.session_uid)
     try:

@@ -271,13 +271,22 @@ class ALLSET_OT_delete_components(bpy.types.Operator):
         return context.mode == 'EDIT_MESH'
 
     def execute(self, context):
+        from . import extrude, shape_history, units
         mode = select_mode_kind(context.tool_settings)
         deleted = skipped = 0
         for ob in context.objects_in_mode_unique_data:
             if ob.type != 'MESH':
                 continue
             bm = bmesh.from_edit_mesh(ob.data)
-            d, s = delete_components(bm, mode)
+            if shape_history.recording(context):
+                selected = [el for el in {'FACE': bm.faces, 'EDGE': bm.edges, 'VERT': bm.verts}[mode] if el.select]
+                s = sum(len(edge.link_faces) != 2 for edge in selected) if mode == 'EDGE' else 0
+                d = len(selected) - s
+                if d:
+                    extrude.record_new(context, ob, bm, shape_history.DELETE[mode],
+                                       {'enabled': True}, units.maya_unit(context.scene))
+            else:
+                d, s = delete_components(bm, mode)
             for seq in (bm.verts, bm.edges, bm.faces):
                 for el in seq:
                     el.select = False

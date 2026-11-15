@@ -231,6 +231,9 @@ classes += attr_clipboard.classes
 from . import lod  # noqa: E402  Edit > LOD (Level of Detail)
 classes += lod.classes
 
+from . import shape_history  # noqa: E402  persistent polySoftEdge / component deletion inputs
+classes += shape_history.classes
+
 _register_classes, _unregister_classes = bpy.utils.register_classes_factory(classes)
 
 

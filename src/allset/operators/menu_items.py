@@ -260,21 +260,28 @@ class ALLSET_OT_soften_harden(bpy.types.Operator):
                 return {'FINISHED'}
         else:
             for ob in obs:
+                if ob.mode != 'EDIT':
+                    for md in smooth_by_angle_mods(ob):
+                        ob.modifiers.remove(md)
+            for ob in {ob.data: ob for ob in obs}.values():
                 if ob.mode == 'EDIT':
                     bm = bmesh.from_edit_mesh(ob.data)
-                    soften_harden(bm, self.angle, _picked(bm, self.whole))
+                    self._soften(context, ob, bm, self.whole)
                     if self.whole:
                         _deselect(bm)
                     bmesh.update_edit_mesh(ob.data)
                 else:
-                    # every edge gets its new state: nothing older decides the shading any more (Blender's Shade
-                    # Smooth / Shade Flat remove Smooth by Angle too)
-                    for md in smooth_by_angle_mods(ob):
-                        ob.modifiers.remove(md)
-                    self._mesh_edit(ob, lambda bm: soften_harden(bm, self.angle))
+                    self._mesh_edit(ob, lambda bm: self._soften(context, ob, bm, True))
         if undo_steps.depth() == 0:      # a Maya menu command pushes its step itself when it finished
             undo_steps.push(self.label())
         return {'FINISHED'}
+
+    def _soften(self, context, ob, bm, whole):
+        from . import shape_history
+        if shape_history.recording(context):
+            shape_history.soften(context, ob, bm, self.angle, whole)
+        else:
+            soften_harden(bm, self.angle, _picked(bm, whole))
 
     def _gives_way(self, ob):
         bm = bmesh.from_edit_mesh(ob.data)
@@ -283,10 +290,12 @@ class ALLSET_OT_soften_harden(bpy.types.Operator):
     @staticmethod
     def _mesh_edit(ob, fn):
         bm = bmesh.new()
-        bm.from_mesh(ob.data)
-        fn(bm)
-        bm.to_mesh(ob.data)
-        bm.free()
+        try:
+            bm.from_mesh(ob.data)
+            fn(bm)
+            bm.to_mesh(ob.data)
+        finally:
+            bm.free()
         ob.data.update()
 
     def _through_object_mode(self, context, objects):
@@ -313,11 +322,18 @@ class ALLSET_OT_soften_harden(bpy.types.Operator):
             if context.mode != 'OBJECT':
                 bpy.ops.object.mode_set(mode='OBJECT')
 
+        def bake(ob, bm):
+            for md in giving_way(ob, bm, self.angle, _picked(bm, self.whole)):
+                smooth_by_angle(bm, *smooth_by_angle_inputs(md))
+                ob.modifiers.remove(md)
+        for ob in objects:
+            self._mesh_edit(ob, lambda bm, ob=ob: bake(ob, bm))
+
         def change(ob, bm):
-            soften_harden_edit(ob, bm, self.angle, _picked(bm, self.whole))
+            self._soften(context, ob, bm, self.whole)
             if self.whole:
                 _deselect(bm)
-        for ob in objects:
+        for ob in {ob.data: ob for ob in objects}.values():
             self._mesh_edit(ob, lambda bm, ob=ob: change(ob, bm))
         result = undo_pairs.fingerprint(names)
         if pushed:

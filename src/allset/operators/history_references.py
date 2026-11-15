@@ -97,7 +97,7 @@ def fraction(value):
 
 
 def tag_generic(bm, spec, params, node_id, vertices):
-    if not node_id or spec.kind in {'FACE', 'BRIDGE'}:
+    if not node_id or spec.preserve_ids or spec.kind in {'FACE', 'BRIDGE'}:
         return
     handles = layers(bm)
     topology = [(name, params[name]) for name in sorted(params)

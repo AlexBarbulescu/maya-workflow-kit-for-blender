@@ -55,6 +55,7 @@ from ..operators import bevel_maya, extrude, prim_history, prim_shapes, units   
 from ..operators import uv_tools  # noqa: F401  registers the polyAutoProj spec
 from ..operators import move_component  # noqa: F401  registers the polyMoveFace / Edge / Vertex specs
 from ..operators import extrude_curve  # noqa: F401  registers the extrusion along a curve
+from ..operators import shape_history  # noqa: F401  registers shading/deletion before building text proxies
 
 ROW_H = 16          # px at UI scale 1 (Maya In-View rows)
 WIDTH = 180

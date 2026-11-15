@@ -608,7 +608,7 @@ class ALLSET_AddonPreferences(bpy.types.AddonPreferences):
     # Off by default: it keeps extra data in the user's files (operators/model_history.py).
     model_history_files: bpy.props.BoolProperty(
         name="Persistent Modeling History",
-        description="Every kit modeling node of a mesh (Extrude, Bevel, Bridge, Add Divisions ...) stays editable in "
+        description="Recorded kit modeling nodes (Extrude, Bevel, Bridge, Soften/Harden, Delete Components ...) stay editable in "
                     "the Channel Box and the Attribute Editor, also after saving and reopening the file: changing "
                     "an earlier node replays the later ones. Keeps a hidden copy of the mesh before its first node "
                     "in the file (off: only the newest node can be changed, until the file is closed)",
