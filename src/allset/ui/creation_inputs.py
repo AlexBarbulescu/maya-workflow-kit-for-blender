@@ -56,7 +56,7 @@ def apply_text(context, name, text):
     """Typed ``text`` on attribute ``name`` of the lead's creation node: every selected object with a node of the
     same type is rebuilt. Returns the number of objects changed."""
     from . import channel_box
-    if prim_history.node_of(_lead(context))[1] is None:
+    if prim_history.display_node(_lead(context))[1] is None:
         return 0
     return channel_box.apply_entry(channel_box.HISTORY_PREFIX+name, text, context)
 
@@ -64,7 +64,7 @@ def apply_text(context, name, text):
 def _text_get(name):
     def get(_self):
         context = bpy.context
-        owner, node = prim_history.node_of(_lead(context))
+        owner, node = prim_history.display_node(_lead(context))
         if node is None or name not in prim_history.attrs(owner):
             return ""
         return format_attr(node, name, prim_history.attrs(owner)[name], context.scene)
@@ -102,13 +102,13 @@ class ALLSET_PG_creation(bpy.types.PropertyGroup):
 
 
 def has_node(ob):
-    return prim_history.node_of(ob)[1] is not None
+    return prim_history.display_node(ob)[1] is not None
 
 
 def draw_cb(layout, context, ob):
     """The node in Channel Box INPUTS: its name (click = expand / collapse, collapsed at first like Maya)
     and, expanded, one text row per attribute."""
-    _owner, node = prim_history.node_of(ob)
+    _owner, node = prim_history.display_node(ob)
     if node is None:
         return False
     from . import channel_box
@@ -149,7 +149,7 @@ def nice_type(node_type):
 
 def draw_ae(layout, context, ob):
     """The Attribute Editor tab of the node: Maya's "<Nice Type> History" section with the same fields."""
-    _owner, node = prim_history.node_of(ob)
+    _owner, node = prim_history.display_node(ob)
     if node is None:
         return
     from .maya_dock import section

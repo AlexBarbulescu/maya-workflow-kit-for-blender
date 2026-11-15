@@ -143,14 +143,14 @@ def tabs(ob):
     if ob.data is not None:
         out.append(("S", ob.data.name, node_type(ob)))
     rec = history_record(ob)
-    if rec is not None:
-        from ..operators import model_history
-        nodes = model_history.records(ob)
-        if nodes:
-            for index, node in enumerate(reversed(nodes)):
-                out.append(('H' if index == 0 else 'H:'+node.history_id, node.name, node.spec.node_type))
-        else:
-            out.append(('H', rec.name, rec.spec.node_type))
+    from ..operators import model_history
+    nodes = model_history.records(ob)
+    if nodes:
+        for index, node in enumerate(reversed(nodes)):
+            label = node.name+' (baked)' if getattr(node, 'baked', False) else node.name
+            out.append(('H' if index == 0 else 'H:'+node.history_id, label, node.spec.node_type))
+    elif rec is not None:
+        out.append(('H', rec.name, rec.spec.node_type))
     from ..operators import skin_tools_199
     for md in ob.modifiers:
         if display.is_preview(md):   # shape display attribute, drawn in "Smooth Mesh"
@@ -166,7 +166,7 @@ def tabs(ob):
         name, mtype = modifier_node(ob, md)
         out.append((f"M:{md.name}", name, mtype))
     from ..operators import prim_history
-    _owner, node = prim_history.node_of(ob)
+    _owner, node = prim_history.display_node(ob)
     if node is not None:             # the primitive's creation node, the oldest history
         out.append(("CH", node["name"], node["type"]))
     from ..operators import material as material_ops
@@ -217,12 +217,14 @@ def tab_target(ob, key):
     if kind == "H":
         from ..operators import model_history
         if ':' in key:
-            return model_history.find(ob, key.split(':', 1)[1])
+            identity = key.split(':', 1)[1]
+            return model_history.find(ob, identity) or next(
+                (record for record in model_history.records(ob) if record.history_id == identity), None)
         nodes = model_history.records(ob)
         return nodes[-1] if nodes else history_record(ob)
     if kind == "CH":
         from ..operators import prim_history
-        return prim_history.node_of(ob)[0]
+        return prim_history.display_node(ob)[0]
     return None
 
 
@@ -602,6 +604,12 @@ def draw_extrude_history(layout, context, rec):
         return
     hist = context.window_manager.allset_history
     col = section_body(body).column(align=True)
+    if getattr(rec, 'baked', False):
+        col.enabled = False
+        col.label(text='Baked into mesh by a later edit')
+        for field in rec.spec.fields:
+            col.label(text=rec.spec.labels[field]+': '+str(rec.params.get(field, '')))
+        return
     from . import node_attributes
     node = node_attributes.for_record(context, ae_node(context), rec)
     for field in rec.spec.fields:

@@ -42,6 +42,31 @@ def _delete_builder(mode):
     return build
 
 
+def _tweak(bm, params, unit):
+    from . import history_references as references
+    handles = references.layers(bm)
+    vertices = {}
+    for vertex in bm.verts:
+        key = references.identity(vertex, handles)
+        if key in vertices:
+            raise ValueError('Vertex adjustments have ambiguous component identities')
+        vertices[key] = vertex
+    for high, low, x, y, z in params['deltas']:
+        vertex = vertices.get((high, low))
+        if vertex is None:
+            raise ValueError('A vertex used by the recorded adjustments no longer exists')
+        if not all(math.isfinite(value) for value in (x, y, z)):
+            raise ValueError('Vertex adjustments must be finite')
+        vertex.co = tuple(float(value)+delta for value, delta in zip(vertex.co, (x, y, z)))
+    bm.normal_update()
+    return list(bm.verts)
+
+
+TWEAK = extrude.add_spec(extrude.Spec(
+    'TWEAK', 'polyTweak', (), {}, {}, {}, None, 'shape_history_edit', _tweak,
+    hidden=('deltas',), in_view=False, preserve_ids=True, allow_empty=True))
+
+
 DELETE = {mode: extrude.add_spec(extrude.Spec(
     'DELETE_'+mode, 'polyDelEdge' if mode == 'EDGE' else 'deleteComponent',
     ('enabled',), {'enabled': 'Enabled'}, {'enabled': True}, {'enabled': 'BOOL'},

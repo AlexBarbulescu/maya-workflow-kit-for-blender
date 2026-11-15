@@ -117,8 +117,8 @@ def for_record(context, ob, record):
     if hasattr(record, 'creation'):
         return CreationHistoryNode(ob, ob.data, record.creation)
     terminal = extrude.current(ob) if ob.mode == 'EDIT' else extrude.object_record(ob)
-    if (getattr(record, 'history_id', None) and terminal is not None
-            and record.history_id != getattr(terminal, 'history_id', None)):
+    if (getattr(record, 'history_id', None)
+            and (terminal is None or record.history_id != getattr(terminal, 'history_id', None))):
         return HistoryNode(ob, record)
     return ModelingNode(ob, terminal or record)
 
@@ -143,7 +143,7 @@ class PrimitiveNode:
 
     def valid(self):
         try:
-            _owner, node = prim_history.node_of(self.ob)
+            _owner, node = prim_history.display_node(self.ob)
             return node is not None and node['name'] == self.name
         except (ReferenceError, TypeError):
             return False
@@ -197,8 +197,11 @@ def target(context, ob=None):
     if record is not None:
         selected = model_history.selected(ob)
         return for_record(context, ob, selected or record)
+    selected = model_history.selected(ob)
+    if selected is not None:
+        return for_record(context, ob, selected)
     if ob.mode == 'OBJECT':
-        owner, node = prim_history.node_of(ob)
+        owner, node = prim_history.display_node(ob)
         if node is not None:
             return PrimitiveNode(ob, owner, node)
     return None

@@ -1477,6 +1477,12 @@ def cb_record(context, ob):
         selected = model_history.selected(ob)
         return (selected if selected is not None and not hasattr(selected, 'creation')
                 and selected.history_id != rec.history_id else rec)
+    from ..operators import model_history
+    data = model_history.read(ob)
+    if data is not None:
+        selected = model_history.selected(ob)
+        return (selected if selected is not None and not hasattr(selected, 'creation')
+                else model_history.find(ob, data['nodes'][-1]['id']))
     return None
 
 
@@ -1549,6 +1555,15 @@ def draw_cb_node(layout, context, rec):
     lines = channel_box.as_lines(layout)
     ob = channel_box.lead(context)
     from ..operators import model_history
+    if getattr(rec, 'baked', False):
+        _row, opened = channel_box.node_row(lines, ob, channel_box.history_node(rec.name), rec.name+' (baked)',
+                                           tip='Retained history baked into the mesh by a later topology or attribute edit')
+        if opened:
+            row = lines.row()
+            if row is not None:
+                row.enabled = False
+                row.label(text='Baked into mesh')
+        return
     tip = CHAIN_TIP if model_history.enabled() else HISTORY_TIP
     _row, opened = channel_box.node_row(lines, ob, channel_box.history_node(rec.name), rec.name, tip=tip)
     if not opened:

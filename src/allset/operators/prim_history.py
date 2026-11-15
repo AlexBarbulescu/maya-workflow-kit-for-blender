@@ -13,6 +13,7 @@ after creation would be thrown away by a rebuild, and Maya would keep them as tw
 
 import hashlib
 
+import bmesh
 import bpy
 
 from . import naming, prim_shapes, units
@@ -158,6 +159,19 @@ def node_of(ob):
     if not is_valid(owner):
         return None, None
     return owner, node_dict(owner)
+
+
+def display_node(ob):
+    """Stored creation input for UI reads; edits still go through validated recipe replay."""
+    from . import model_history
+    data = model_history.read(ob)
+    if data is not None and data.get('creation') is not None:
+        return ob.data, data['creation']
+    if model_history.enabled() and isinstance(ob, bpy.types.Object) and ob.type == 'MESH':
+        owner = owner_of(ob)
+        if owner is not None:
+            return owner, node_dict(owner)
+    return node_of(ob)
 
 
 def _next_name(node_type):
@@ -312,7 +326,7 @@ def _store(owner, node_type, name, values, k, extra=None):
 def rebuild(context, ob, changes):
     """Set node attributes (Maya units / degrees) on ``ob``'s creation node and rebuild its shape. Returns the
     applied values, or None when ``ob`` has no live node."""
-    owner, node = node_of(ob)
+    owner, node = display_node(ob)
     if owner is None:
         return None
     ntype = node["type"]
@@ -325,6 +339,14 @@ def rebuild(context, ob, changes):
     if data is not None and data.get('creation') is not None:
         model_history.edit(ob, data['creation']['id'], values)
         return values
+    if model_history.enabled() and ob.type == 'MESH':
+        seed = model_history.creation_recipe(ob)
+        from . import extrude
+        actual = (extrude.coords_hash(bmesh.from_edit_mesh(ob.data)) if ob.mode == 'EDIT'
+                  else extrude.mesh_coords_hash(ob.data))
+        if seed is not None and actual != seed['result_hash']:
+            model_history.edit(ob, seed['creation']['id'], values, data=seed)
+            return values
     k = node.get("unit", 1.0)
     shape = prim_shapes.build(ntype, values)
     extra = {key: node[key] for key in ("createUVs",) if key in node}

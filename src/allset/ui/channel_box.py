@@ -108,7 +108,8 @@ def model_node(ob, key):
     if node is not None and name:
         rec = model_history.find(ob, name)
         if rec is None and ob != lead():
-            rec = next((r for r in reversed(model_history.records(ob)) if r.spec.kind == kind), None)
+            rec = next((r for r in reversed(model_history.records(ob))
+                        if not getattr(r, 'baked', False) and r.spec.kind == kind), None)
         if rec is not None and field in rec.params:
             return node_attributes.for_record(bpy.context, ob, rec)
         return None
@@ -566,13 +567,13 @@ def history_node_of(ob, key):
     if not is_history_key(key) or not isinstance(ob, bpy.types.Object):
         return None, None
     from ..operators import prim_history
-    owner, node = prim_history.node_of(ob)
+    owner, node = prim_history.display_node(ob)
     name = key[len(HISTORY_PREFIX):]
     if node is None or name not in prim_history.attrs(owner):
         return None, None
     ld = lead()
     if ld is not None and ld is not ob and isinstance(ld, bpy.types.Object):
-        _o, lead_node = prim_history.node_of(ld)
+        _o, lead_node = prim_history.display_node(ld)
         if lead_node is not None and lead_node["type"] != node["type"]:
             return None, None
     return owner, node
@@ -1155,7 +1156,7 @@ def history_keys(ob):
     if not isinstance(ob, bpy.types.Object):
         return []
     from ..operators import prim_history
-    _owner, node = prim_history.node_of(ob)
+    _owner, node = prim_history.display_node(ob)
     if node is None or not is_open(ob, history_node(node["name"])):
         return []
     from . import creation_inputs
@@ -3866,7 +3867,7 @@ def draw_inputs(lines, context, ob):
     from . import in_view
     last = in_view.cb_record(context, ob)    # the last kit extrusion = Maya's newest history node
     from ..operators import model_history
-    modeled = model_history.records(ob) if last is not None else []
+    modeled = model_history.records(ob)
     from . import creation_inputs
     created = creation_inputs.has_node(ob)   # the primitive's creation node, oldest history
     key = blend_shape_key(ob)                # the mesh's blendShape node (#204)

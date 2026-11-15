@@ -147,4 +147,35 @@ def redo_modifier_bake():
               and len(mod('operators.model_history').records(ob())) == 1 and ob().mode == 'EDIT')
 
 
+@step
+def native_move_then_input_edit():
+    with viewport():
+        bpy.ops.transform.translate('EXEC_DEFAULT', True, value=(.2, 0, 0))
+        C['moved'] = digest()
+        check('native movement keeps INPUTS visible', mod('ui.in_view').cb_record(bpy.context, ob()) is not None)
+        node = mod('ui.node_attributes').target(bpy.context)
+        mod('ui.node_attributes').apply(bpy.context, node, dict(node.params, angle=0))
+        C['edited_move'] = digest()
+        check('editing old input captures native movement as a tweak',
+              [item['kind'] for item in mod('operators.model_history').read(ob())['nodes']] == ['SOFT_EDGE', 'TWEAK'])
+    undo()
+
+
+@step
+def undo_reconciled_move():
+    with viewport():
+        check('Undo input edit preserves the preceding native move', digest() == C['moved'])
+        check('Undo reconciliation removes its tweak but retains the old input',
+              len(mod('operators.model_history').read(ob())['nodes']) == 1
+              and mod('ui.in_view').cb_record(bpy.context, ob()) is not None)
+    redo()
+
+
+@step
+def redo_reconciled_move():
+    with viewport():
+        check('Redo restores the input edit and tweak geometry', digest() == C['edited_move'])
+        check('Redo restores both editable inputs', len(mod('operators.model_history').read(ob())['nodes']) == 2)
+
+
 run()

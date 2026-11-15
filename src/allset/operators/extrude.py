@@ -760,8 +760,10 @@ class Record:
         self.history_token = None
         self.input_snapshot = None
         self.input_hash = None
+        self.input_history = None
 
     def free(self):
+        self.input_history = None
         self.preview_data = None
         self.moved.clear()
         self.states.clear()
@@ -893,10 +895,12 @@ def restore_pre(bm, rec):
 def restore_mesh(bm, source):
     """Restore a BMesh snapshot, including its custom data, after an edit or failed build."""
     me = bpy.data.meshes.new(".allset_pre")
+    mode = set(bm.select_mode) or {'VERT'}
     try:
         source.to_mesh(me)
         bm.clear()
         bm.from_mesh(me)
+        bm.select_mode = mode
     finally:
         bpy.data.meshes.remove(me)
 
@@ -1070,7 +1074,7 @@ def coords_hash(bm):
         bpy.data.meshes.remove(mesh)
 
 
-def mesh_coords_hash(me):
+def mesh_coords_hash(me, coordinates=True, legacy=False):
     import numpy as np
     digest = hashlib.blake2b(digest_size=16)
     for collection, name, width, dtype in (
@@ -1078,6 +1082,8 @@ def mesh_coords_hash(me):
             (me.loops, 'vertex_index', 1, np.int32), (me.polygons, 'loop_start', 1, np.int32),
             (me.polygons, 'loop_total', 1, np.int32), (me.polygons, 'material_index', 1, np.int32),
             (me.polygons, 'use_smooth', 1, np.bool_), (me.edges, 'use_edge_sharp', 1, np.bool_)):
+        if name == 'co' and not coordinates:
+            continue
         values = np.empty(width*len(collection), dtype=dtype)
         collection.foreach_get(name, values)
         if name == 'vertices':
@@ -1094,6 +1100,32 @@ def mesh_coords_hash(me):
         values = np.empty(4*len(layer.data), dtype=np.float32)
         layer.data.foreach_get('color', values)
         digest.update(values)
+    if not legacy:
+        values = np.empty(len(me.edges), dtype=np.bool_)
+        me.edges.foreach_get('use_seam', values)
+        digest.update(values)
+        ignored = {'.select_vert', '.select_edge', '.select_poly', '.hide_vert', '.hide_edge', '.hide_poly',
+                   '.allset_history_id_hi', '.allset_history_id_lo', 'position',
+                   '.edge_verts', '.corner_vert', '.corner_edge'}
+        for attr in sorted(me.attributes, key=lambda item: item.name):
+            if attr.name in ignored or attr.name.startswith(('.vs.', '.es.', '.uv_select_')):
+                continue
+            digest.update(repr((attr.name, attr.data_type, attr.domain, len(attr.data))).encode())
+            if not attr.data:
+                continue
+            prop = next((attr.data[0].bl_rna.properties.get(name) for name in ('value', 'vector', 'color')
+                         if attr.data[0].bl_rna.properties.get(name) is not None), None)
+            if prop is None:
+                raise ValueError('Cannot preserve mesh attribute '+attr.name)
+            if prop.type == 'STRING':
+                digest.update(repr([getattr(item, prop.identifier) for item in attr.data]).encode())
+            else:
+                dtype = {'FLOAT': np.float32, 'INT': np.int32, 'BOOLEAN': np.bool_}[prop.type]
+                values = np.empty(len(attr.data)*max(1, getattr(prop, 'array_length', 0)), dtype=dtype)
+                attr.data.foreach_get(prop.identifier, values)
+                digest.update(values)
+        digest.update(repr([(vertex.index, [(group.group, group.weight) for group in vertex.groups])
+                            for vertex in me.vertices if vertex.groups]).encode())
     return digest.hexdigest()
 
 
@@ -1302,7 +1334,10 @@ def _record_bm(context, ob, bm, spec, params, unit):
     from . import history_references, model_history, prim_history
     recorded = prim_history.history_on(context) and model_history.enabled()
     node_id = (old.history_id if name and old.history_id else uuid4().hex) if recorded else None
-    snapshot, input_hash = model_history.prepare_input(ob, bm) if recorded else (None, None)
+    snapshot, input_hash, input_history = model_history.prepare_input(ob, bm) if recorded else (None, None, None)
+    if name and input_history is not None and (not input_history['nodes'] or input_history['nodes'][-1]['name'] != name
+                                               or input_history['nodes'][-1]['input_hash'] != input_hash):
+        name, node_id = None, uuid4().hex
     pre = bm.copy()
     try:
         values = dict(params, _history_id=node_id)
@@ -1326,6 +1361,7 @@ def _record_bm(context, ob, bm, spec, params, unit):
         old.free()
     rec = Record(name or next_name(context.scene, spec), pre, params, spec)
     rec.history_id, rec.input_snapshot, rec.input_hash = node_id, snapshot, input_hash
+    rec.input_history = input_history
     rec.mesh_uid = ob.data.session_uid
     _store_generic(rec, bm, tracked, params)
     keep(context, ob, rec)
@@ -1421,11 +1457,15 @@ class ALLSET_OT_extrude(_ExtrudeProps, bpy.types.Operator):
             from . import model_history, prim_history
             recorded = prim_history.history_on(context) and model_history.enabled()
             node_id = (old.history_id if name and old.history_id else uuid4().hex) if recorded else None
-            snapshot, input_hash = model_history.prepare_input(ob, bm) if recorded else (None, None)
+            snapshot, input_hash, input_history = model_history.prepare_input(ob, bm) if recorded else (None, None, None)
+            if name and input_history is not None and (not input_history['nodes'] or input_history['nodes'][-1]['name'] != name
+                                                       or input_history['nodes'][-1]['input_hash'] != input_hash):
+                name, node_id = None, uuid4().hex
             if old is not None:
                 old.free()
             rec = Record(name or next_name(context.scene), bm.copy(), params)
             rec.history_id, rec.input_snapshot, rec.input_hash = node_id, snapshot, input_hash
+            rec.input_history = input_history
             rec.mesh_uid = ob.data.session_uid
             try:
                 faces = [f for f in bm.faces if f.select]
