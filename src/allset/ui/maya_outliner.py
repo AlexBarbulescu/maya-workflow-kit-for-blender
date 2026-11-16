@@ -11,6 +11,7 @@ and default sets); Display > Shapes adds the shape rows, Show filters the object
 
 import bpy
 
+from .. import compat
 from . import chrome, own_draw
 
 HELP_URL = "https://docs.blender.org/manual/en/5.2/editors/outliner/index.html"
@@ -31,21 +32,31 @@ def is_maya_outliner(space):
 
 def mark(space):
     """The first time the kit claims a Maya Outliner: the exclude column (unused: no collection rows) goes off to
-    mark it as the kit's, and Blender's select / eye / render columns go on once; the Display menu keeps later
-    choices."""
+    mark it as the kit's. With the Outliner Column Icons preference on, Blender's select / eye / render columns go
+    on once too (``show_columns``); the Display menu keeps later choices."""
     if space.show_restrict_column_enable:
         space.show_restrict_column_enable = False
-        space.show_restrict_column_select = True
-        space.show_restrict_column_hide = True
-        space.show_restrict_column_render = True
+        from .. import preferences
+        if preferences.get().outliner_columns:
+            show_columns(space)
+
+
+def show_columns(space):
+    """Turn Blender's select / eye / render columns on in this Outliner."""
+    space.show_restrict_column_select = True
+    space.show_restrict_column_hide = True
+    space.show_restrict_column_render = True
 
 
 def setup(space):
-    """Maya Outliner filters (DAG only, from the world; no mode column) with Blender's select / eye / render columns."""
+    """Maya Outliner filters (DAG only, from the world; no eye / mode column: Maya hides with H). Blender's select /
+    eye / render columns only with the Outliner Column Icons preference (``mark``)."""
     space.display_mode = 'VIEW_LAYER'
     space.use_filter_object_content = False
     space.use_filter_collection = False
     space.use_filter_children = True
+    space.show_restrict_column_render = False
+    space.show_restrict_column_hide = False
     space.show_restrict_column_enable = True
     mark(space)
     space.show_mode_column = False      # Maya has no mode column (Blender shows it in edit mode)
@@ -61,17 +72,15 @@ class ALLSET_MT_outliner_display(bpy.types.Menu):
     def draw(self, context):
         sp, lay = context.space_data, self.layout
         lay.prop(sp, "use_filter_children", text="Children (DAG Hierarchy)")
-        if hasattr(sp, "sort_method"):     # Blender 5.3+: an enum; a submenu row, lay.prop splits the menu in two
-            lay.prop_menu_enum(sp, "sort_method")
-        else:
-            lay.prop(sp, "use_sort_alpha", text="Sort Alphabetically")
-        from .. import preferences   # the add-on's global switch for all three column icons
+        from .. import compat
+        compat.draw_outliner_sort(lay, sp)
+        lay.prop(sp, "show_restrict_column_hide", text="Visibility Column")
+        from .. import preferences   # the add-on's switch for Blender's column icons (off: the kit's eye column only)
         prefs = preferences.get()
         lay.prop(prefs, "outliner_columns", text="Column Icons")
         col = lay.column()
         col.active = prefs.outliner_columns
         col.prop(sp, "show_restrict_column_select", text="Selectable Column")
-        col.prop(sp, "show_restrict_column_hide", text="Visibility Column")
         col.prop(sp, "show_restrict_column_render", text="Render Column")
         lay.separator()
         # Maya Display > Shapes: a shape row (pCubeShape1) under each transform
@@ -106,7 +115,7 @@ class ALLSET_MT_outliner_help(bpy.types.Menu):
     bl_label = "Help"
 
     def draw(self, context):
-        self.layout.operator("wm.url_open", text="Help on Outliner").url = HELP_URL
+        self.layout.operator("wm.url_open", text="Help on Outliner").url = compat.docs_url(HELP_URL)
 
 
 def is_collection_view(space):

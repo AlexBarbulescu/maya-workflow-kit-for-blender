@@ -307,7 +307,9 @@ def s_wait_eye_click():
 
 @step
 def s_render_click():
-    # Blender's render camera, the column right of the eye
+    # the Outliner Column Icons preference (off by default): Blender's select / eye / render columns; the render
+    # camera is the column right of the eye
+    mod(".preferences").get().outliner_columns = True
     area, region = outliner()
     rs = rows()
     t = tree()
@@ -406,6 +408,7 @@ def s_eyed():
     check(f"the camera stops box1 rendering, select untouched ({ob.hide_render}, {ob.hide_select})",
           ob.hide_render and not ob.hide_select)
     ob.hide_render = False
+    mod(".preferences").get().outliner_columns = False
     area, region = outliner()
     area.spaces.active.show_restrict_column_hide = False
     ob.hide_viewport = False

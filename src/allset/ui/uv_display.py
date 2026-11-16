@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Maya UV Editor display keys and Move UV Shell.
 
-Maya 2022 UV Editor hotkeys (context polyTexturePlacementPanel) and View menu:
+Maya UV Editor hotkeys (context polyTexturePlacementPanel) and View menu:
 
 - 4 Wireframe / 5 Shaded (Display Mode radio) -> ``SpaceUVEditor.show_faces`` off / on (Shaded also sets
   ``uv_face_opacity`` 1). ``uv_face_opacity`` 0 alone still draws grey face fills (GUI shot): no wireframe.
@@ -18,7 +18,7 @@ Maya 2022 UV Editor hotkeys (context polyTexturePlacementPanel) and View menu:
   counter-clockwise (front-facing) faces blue, clockwise (flipped) faces red; Wireframe (4) turns it off
   (``WindowManager.allset_uv_face_colors``).
 
-Shell borders follow the island rule (operators/uv_tools.islands: faces join where their UVs match at both
+Shell borders follow the island rule (operators/uv_islands.islands: faces join where their UVs match at both
 ends of an edge): an edge is a border on a face's side when no other shown face shares the same UVs across it.
 A seam edge is a border too: Cut UVs marks one, and like Maya the cut edge shows as a border at once, also a
 single edge inside a shell that stays in one piece.
@@ -38,6 +38,7 @@ from bpy.props import BoolProperty, EnumProperty
 from gpu_extras.batch import batch_for_shader
 
 from .. import results
+from .. import update_summary
 from .. import compat
 from ..operators import uv_arrays, uv_tools
 from .. import i18n
@@ -250,7 +251,7 @@ def _draw():
 @bpy.app.handlers.persistent
 def _invalidate(_scene=None, depsgraph=None):
     if depsgraph is not None and not any(isinstance(u.id, (bpy.types.Mesh, bpy.types.Object))
-                                         for u in depsgraph.updates):
+                                         for u in update_summary.updates(depsgraph, _invalidate)):
         return
     _cache.clear()
     uv_arrays.invalidate()

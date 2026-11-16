@@ -2,7 +2,7 @@ schema_version = "1.0.0"
 
 # Template: <Blender 5.2>/5.2/scripts/templates_toml/blender_manifest.toml
 id = "allset"
-version = "0.16.0"
+version = "0.17.0"
 name = "Maya Workflow Kit"
 tagline = "The whole Maya workflow in Blender, in one install"
 maintainer = "5hyuns <555hyuns@gmail.com>"
@@ -14,8 +14,8 @@ tags = ["User Interface"]
 
 # 5.0 since 0.7.0: 0.6.2 is the last version for Blender 4.5.
 blender_version_min = "5.0.0"
-# Supported: Blender 5.2 LTS; other versions are not tested (5.0 / 5.1 still install). Exclusive maximum: a
-# Blender after 5.3 gets a clear "not compatible" until it is tested (5.3 checked: Outliner sort, IC keymap, Properties tabs).
+# Supported: Blender 5.2 LTS and 5.3; other versions are not tested (5.0 / 5.1 still install). Exclusive
+# maximum: a Blender after 5.3 gets a clear "not compatible" until it is tested.
 blender_version_max = "5.4.0"
 
 # Code GPL-3.0-or-later; the kit-made images and data files (welcome PNGs, the Maya layout startup.blend)

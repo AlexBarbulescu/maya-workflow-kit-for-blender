@@ -30,7 +30,7 @@ ROOT = os.path.dirname(HERE)
 PREF_STRUCTS = ("inputs", "view", "edit", "system", "filepaths", "keymap", "experimental", "apps")
 # Window dependent values (0 in background)
 VOLATILE = ("system.ui_scale", "system.pixel_size", "system.ui_line_width")
-# The active keyconfig is lane K's (the Maya keys move into the add-on keyconfig and the active keyconfig
+# The active keyconfig (the Maya keys move into the add-on keyconfig and the active keyconfig
 # is never changed). Until that lands, Maya mode still switches it; everything else must stay put even in Maya mode.
 LANE_K_PENDING = ("keymap.active_keyconfig",)
 
@@ -73,7 +73,7 @@ def _pref_diff(a, b, skip=()):
 
 
 def _kit_functions():
-    """Every function object the kit's modules hold at module level (also inside lists / tuples, e.g. switch._timers):
+    """Every function object the kit's modules hold at module level (also inside lists / tuples, e.g. switch_layout._timers):
     the callbacks it can register as timers."""
     out = []
     for name, mod in list(sys.modules.items()):

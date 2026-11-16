@@ -25,7 +25,8 @@ import bpy
 from bpy.props import BoolProperty
 from mathutils import Matrix, Quaternion, Vector
 
-from .. import results
+from .. import live_refs, results
+from .. import update_summary
 from . import freeze
 from .manip_scale import TRANSFORM_MODALS
 
@@ -257,7 +258,7 @@ def _op_key():
 
 def _transform_running():
     for window in bpy.context.window_manager.windows:
-        if any(op.bl_idname.startswith(TRANSFORM_MODALS) for op in window.modal_operators):
+        if any(op.bl_idname.startswith(TRANSFORM_MODALS) for op in live_refs.running_modals(window)):
             return True
     return False
 
@@ -341,9 +342,16 @@ def _tick():
     return None
 
 
+def watching():
+    """The watch runs. A file load drops its timer and the snapshots belong to the file before: then it has ended."""
+    if _watch["running"] and not bpy.app.timers.is_registered(_tick):
+        _watch.update(running=False, snaps={}, last_op=None)
+    return _watch["running"]
+
+
 def watch():
     """Start watching origin-only transforms (idempotent)."""
-    if _watch["running"]:
+    if watching():
         return
     _watch["running"] = True
     _watch["last_op"] = _op_key()
@@ -372,6 +380,7 @@ def maya_pivot_point(ts, mode):
     if want is None or ts.transform_pivot_point == want:
         return False
     if ts.transform_pivot_point in MAYA_PIVOT_POINT.values():
+        update_summary.wrote()
         ts.transform_pivot_point = want
         return True
     return False
@@ -391,6 +400,7 @@ def follow_lead(context, scene):
     _last_lead[0] = key
     if ob is None or not any(scene.transform_orientation_slots[index].type == ORIENT_NAME for index in PIVOT_SLOTS):
         return
+    update_summary.wrote()
     if PROP in ob:
         orient = _orientation(scene)
         if orient is not None:
@@ -441,7 +451,7 @@ class ALLSET_OT_reset_pivot(_PivotOp, bpy.types.Operator):
             reset_pivot(ob, self.position, self.orientation)
         if self.orientation:
             leave_custom_orientation(context.scene)
-        if _watch["running"]:
+        if watching():
             process(context)
         return {'FINISHED'}
 
@@ -460,7 +470,7 @@ class ALLSET_OT_bake_pivot(_PivotOp, bpy.types.Operator):
         leave_custom_orientation(context.scene, 'LOCAL')   # Maya: axis mode back to Object (P8)
         if not n:
             results.result(self, "No custom pivot orientation to bake")
-        if _watch["running"]:
+        if watching():
             process(context)
         return {'FINISHED'}
 
@@ -506,7 +516,7 @@ class ALLSET_OT_match_pivots(_PivotOp, bpy.types.Operator):
                 turned = match_pivot_orient(ob, turn) or turned
         if turned:
             leave_custom_orientation(context.scene, 'LOCAL')   # like Bake Pivot: the axes are the object's again
-        if _watch["running"]:
+        if watching():
             process(context)
         return {'FINISHED'}
 

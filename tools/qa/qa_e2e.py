@@ -47,7 +47,7 @@ switch = import_module(kit.MODULE + ".switch")
 TAG = qa.env_tag()
 WORK = qa.out_dir() / f"b_{TAG}"
 WORK.mkdir(parents=True, exist_ok=True)
-VERSION = f"Blender {bpy.app.version_string}, kit {qa.git_head()} (working tree, 0.16.0)"
+VERSION = f"Blender {bpy.app.version_string}, kit {qa.git_head()} (working tree, 0.17.0)"
 FRAMES = (1, 7, 10, 15, 20)
 NDEC = 4            # cm / radians rounding of fingerprints
 
@@ -454,7 +454,7 @@ def stage_rig():
     ob = O(arm_name)
     select_only(ob)
     bpy.ops.object.mode_set(mode='POSE')
-    joints.orient(ob, [names[0]], "Y+", True)                  # Orient Joint (factory) on the chain
+    joints.orient(ob, [names[0]], "Y+", True)                  # Orient Joint (default) on the chain
     obj_mode()
     push("orient joint")
     ob = O(arm_name)

@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Blender's own Outliner restriction icons (restrict_select / hide / restrict_render, on and off) as
 coverage masks, one per Outliner row height ``u`` in pixels, captured from Blender 5.2.4's native Outliner
-(white on black, no resampling): Blender draws these icons only in its own C code. Generated; not edited."""
+(white on black, no resampling): Blender draws these icons only in its own C code. Generated; not edited.
+The drawings are Blender's own icons (Blender, GPL-3.0-or-later, the kit's license too)."""
 
 CELLS = {
     (11, 'EYE', False): 'eNpjYKAYCLCASBYBICESy8zIyBQnBhKQznJ0zJKFKGFR12BB0wUAXvsC+g==',

@@ -368,7 +368,7 @@ def _on_depsgraph(scene, depsgraph=None):
         return
     try:
         if depsgraph is not None:
-            look = depsgraph_filter.Look(depsgraph)
+            look = depsgraph_filter.look(depsgraph, _on_depsgraph)
             if look.scene_only:
                 return
             obs, data, editing = _touched(look)
@@ -394,7 +394,7 @@ def _on_reload(*_args):
 
 
 def _handlers():
-    h = bpy.app.handlers     # playback start / end: layer_editor.on_playback_pre / _post call set_playing
+    h = bpy.app.handlers     # playback start / end: display_layers.on_playback_pre / _post call set_playing
     return ((h.undo_post, _on_reload), (h.redo_post, _on_reload), (h.load_post, _on_reload))
 
 

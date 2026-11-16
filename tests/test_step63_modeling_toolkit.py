@@ -49,7 +49,7 @@ def _world_verts(ob):
 
 def test_dock_and_status_line_toggle():
     ids = [i[0] for i in ae.DOCK_ITEMS]
-    assert ids == ['CHANNEL_BOX', 'ATTRIBUTE_EDITOR', 'MODELING_TOOLKIT', 'TOOL_SETTINGS'], ids
+    assert ids == ['CHANNEL_BOX', 'ATTRIBUTE_EDITOR', 'MODELING_TOOLKIT'], ids
     wm = bpy.context.window_manager
     wm.allset_dock = 'MODELING_TOOLKIT'
     assert ae.dock_mode(bpy.context) == 'MODELING_TOOLKIT'
@@ -70,7 +70,7 @@ def test_mtk_buttons_are_menu_actions():
 
 
 def test_combine_maya_name_and_centre_pivot():
-    """Maya 2022: pCube1 + pSphere1 -> pCube2, pivot at the bounding-box centre, translate 0."""
+    """Maya: pCube1 + pSphere1 -> pCube2, pivot at the bounding-box centre, translate 0."""
     _clear()
     cube = _create('CUBE', 0.0)
     sphere = _create('SPHERE', 3.0)

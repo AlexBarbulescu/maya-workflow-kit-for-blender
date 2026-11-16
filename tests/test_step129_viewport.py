@@ -112,7 +112,7 @@ def test_camera_buttons_need_a_camera_view():
 
 def test_gate_buttons_look_through_the_persp_camera():
     # Maya's persp panel is the persp camera: a gate button in Blender's persp view looks through it, placed where
-    # the view looked; Film Gate / Resolution Gate are exclusive and set Overscan 1.3 (Maya updateModelPanelBar)
+    # the view looked; Film Gate / Resolution Gate are exclusive and set Overscan 1.3, like Maya
     space = _space()
     area = next(a for s in bpy.data.screens for a in s.areas if space in a.spaces[:])
     rv3d = space.region_3d
@@ -183,8 +183,9 @@ def test_frame_in_camera_view_moves_the_camera():
     assert cam.matrix_world.to_quaternion().rotation_difference(rot0).angle < 1e-4   # orientation kept
     uv = [world_to_camera_view(scene, cam, p) for p in pts]
     xs, ys = [p.x for p in uv], [p.y for p in uv]
-    # Maya GUI viewFit: only the width (render wider than the 36 x 24 film) fills 0.95; the height may overflow
-    assert abs((max(xs) - min(xs)) - 0.95) < 0.02, xs
+    assert min(xs) > -0.01 and max(xs) < 1.01 and min(ys) > -0.01 and max(ys) < 1.01, (xs, ys)
+    fill = max(max(xs) - min(xs), max(ys) - min(ys))
+    assert abs(fill - 0.95) < 0.02, fill                          # Maya's fit factor on the tighter axis
     centre = ((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2)
     assert abs(centre[0] - 0.5) < 0.01 and abs(centre[1] - 0.5) < 0.01, centre
     # a Maya-locked camera doesn't move

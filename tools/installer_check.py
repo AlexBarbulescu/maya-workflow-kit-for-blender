@@ -1,6 +1,6 @@
 """Windows installer helper round trip: install -> Make Blender Maya -> uninstall restores all.
 
-    python tools/installer_check.py [--blender PATH] [--no-build]
+    python tools/installer_check.py [--blender PATH | VERSION] [--no-build]
 
 Runs tools/installer/allset_setup.ps1 (what the Inno Setup draft allset.iss calls) with Windows
 PowerShell 5.1 on a clean sandbox (tmp/release_env_installer; BLENDER_USER_* point there and are
@@ -27,9 +27,11 @@ KEYS = ("active_keyconfig", "inputs", "undo_steps", "view", "theme")
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--blender", default=os.environ.get("BLENDER", build.DEFAULT_BLENDER))
+    ap.add_argument("--blender", default=os.environ.get("BLENDER", build.DEFAULT_BLENDER),
+                    help="blender.exe, or a version / minor of a portable build (5.3 = the newest 5.3)")
     ap.add_argument("--no-build", action="store_true")
     args = ap.parse_args(argv)
+    args.blender = build.blender_exe(args.blender)
     zip_path = build.ext_zip()
     if not args.no_build or not zip_path.exists():
         zip_path = build.main(["--blender", args.blender, "--no-legacy"])
@@ -68,8 +70,10 @@ def main(argv=None):
                     "bl_ext.user_default.allset" in s["addons"]))
     results.append((f"active keymap unchanged (got {s and s['active_keyconfig']})",
                     s and s["active_keyconfig"] == before["active_keyconfig"]))
-    results.append(("Make Blender Maya applied (theme kept, splash off)", s and s["theme"] == before["theme"]
-                    and s["view"]["show_splash"] == "False"))
+    # Make Blender Maya turns Maya mode on and writes none of Blender's own preferences (the theme, the splash)
+    results.append(("Make Blender Maya applied (Maya mode on, the user's theme and splash setting kept)",
+                    s and s.get("maya_mode") is True and s["theme"] == before["theme"]
+                    and s["view"]["show_splash"] == before["view"]["show_splash"]))
     results.append(("the user's add-ons are kept", s and set(before["addons"]) < set(s["addons"])))
     recorded = record.read_text(encoding="utf-8-sig").splitlines() if record.exists() else []
     results.append((f"install records its Blender for the uninstaller ({len(recorded)} line)",

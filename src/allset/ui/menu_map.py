@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
+# Large table file: search it (grep) or read line ranges; reading it whole is rarely needed.
 """Maya menu item -> Blender action.
 
 Key = label path in ``menu_data.MENUS`` ("Create/Polygon Primitives/Cube"),
@@ -619,7 +620,7 @@ MAP = {
 
 # Items Maya adds at run time, inserted after a data path: {after path: [item]} with
 # items like menu_data's ((label,) or ("-", section label)). Modify's Pivot / Naming / Attributes
-# sections now come from tools/gen_menu_data.py RUNTIME_LABELS.
+# sections now come from the generated menu data (ui/menu_data.py).
 EXTRA = {
     # The kit's own switch back to plain Blender (switch.py): found by the menu search too.
     "Windows/Settings/Preferences": [("Switch to Blender",)],
@@ -751,7 +752,7 @@ MAP.update({
     "Display/Object Display/Bounding Box": ("allset.object_display", {"kind": 'BBOX'}),
     "Display/Object Display/No Bounding Box": ("allset.object_display", {"kind": 'NO_BBOX'}),
     # Display > Polygons is Maya's submenu, no longer a leaf. Its check items are the overlays of the 3D View
-    # the menu acts on ("view3d.", ui/status_line.view3d_space), drawn on meshes in edit mode; Maya's Standard /
+    # the menu acts on ("view3d.", ui/status_line_buttons.view3d_space), drawn on meshes in edit mode; Maya's Standard /
     # Soft/Hard Edges pair = Blender's Sharp edge overlay off / on; Custom Polygon Display = Blender's edit-mode
     # overlay popover (the item this menu used to be). The rest is greyed with a notice (ui/notices.py).
     "Display/Polygons/Backface Culling": ("prop", "view3d.shading.show_backface_culling", {}),
@@ -930,7 +931,7 @@ MAP.update({
     # Skeleton / Skin / Constrain
     "Skeleton/Insert Joints": "allset.insert_joint_tool",          # click a joint, drag
     "Skeleton/Connect Joint": "allset.connect_joint",              # connect / parent mode (option box)
-    # #106: Maya's three skinCluster.normalizeWeights modes (operators/skin_tools_199.py)
+    # #106: Maya's three skinCluster.normalizeWeights modes (operators/skin_normalize_weights.py)
     "Skin/Normalize Weights/Enable Weight Normalization": ("allset.skin_normalize_mode", {"mode": 'INTERACTIVE'}),
     "Skin/Normalize Weights/Disable Weight Normalization": ("allset.skin_normalize_mode", {"mode": 'NONE'}),
     "Skin/Normalize Weights/Enable Weight Post Normalization": ("allset.skin_normalize_mode", {"mode": 'POST'}),
@@ -939,7 +940,7 @@ MAP.update({
     "Skin/Import Weights Maps...": "allset.import_weight_maps",
     "Skin/Substitute Geometry": "allset.substitute_geometry",
     "Skin/Bake Deformation to Skin Weights...": "allset.bake_deformation",
-    # #106, operators/constrain_199.py
+    # #106, operators/constrain_199.py, constrain_modify.py
     "Constrain/Normal": "allset.normal_constraint",
     "Constrain/Tangent": "allset.tangent_constraint",
     "Constrain/Remove Target": "allset.remove_constraint_target",
@@ -1044,7 +1045,7 @@ OBJECT_MODE = {
     "Edit Mesh/Wedge": "No faces selected to wedge. Select faces and one or more edges from the selected faces "
                        "to wedge about.",
     "Edit Mesh/Connect": "Can't perform polyConnectComponents1 on selection",
-    "Edit Mesh/Symmetrize": "No components selected for Symmetrize.",     # Maya 2022
+    "Edit Mesh/Symmetrize": "No components selected for Symmetrize.",     # Maya's message
     "Edit Mesh/Flip Triangle Edge": "Select edges to flip.",
     "Edit Mesh/Spin Edge Backward": "Select edges to spin.",
     "Edit Mesh/Spin Edge Forward": "Select edges to spin.",
@@ -1060,7 +1061,7 @@ OBJECT_MODE = {
     "Display/Show/All Components": ('ALL', 'VERT'),     # Maya showAllComponents on the selected meshes
 }
 
-# Edit / Select / Modify items run in component (mesh edit) mode the way Maya 2022 runs them there (#39 /
+# Edit / Select / Modify items run in component (mesh edit) mode the way Maya runs them there (#39 /
 # #17 / #18; with pCube1.f[1] selected after F11):
 # ("run", action) = this action instead of the object one; ("object", action) = back to object mode, then the
 # action; ("owner", action) = the action on the objects whose components are selected, then back to component mode
@@ -1111,7 +1112,7 @@ MAP.update({
 })
 
 # modeling / rigging commands with Maya's results;
-# operators/poly_maya.py, operators/rig_maya.py, menu_items.nonlinear.
+# operators/poly_maya.py, operators/rig_maya.py / ik_spline_handle.py / skin_influences.py / cluster_soft_mod.py, menu_items.nonlinear.
 MAP.update({
     "Edit Mesh/Circularize": "allset.circularize",
     "Mesh Tools/Connect": "allset.connect_tool_enter",      # connects the selection, then the tool waits
@@ -1171,7 +1172,7 @@ MAP.update({
     "Deform/Cluster": "allset.cluster",
     "Deform/Nonlinear/Twist": ("allset.deformer", {"kind": 'TWIST'}),     # operators/deformers.py
     "Deform/Soft Modification Tool": "allset.soft_mod",
-    # operators/pins_205.py: Maya 2020+ matrix constraints, intermediate objects, wrap influences
+    # operators/pin_create.py, intermediate_objects.py, wrap_influence.py: Maya 2020+ matrix constraints, intermediate objects, wrap influences
     "Constrain/UV Pin": "allset.uv_pin",
     "Constrain/Proximity Pin": "allset.proximity_pin",
     "Deform/Display Intermediate Objects": ("allset.intermediate_objects", {"show": True}),
@@ -1231,12 +1232,12 @@ BLENDER_MENU = {
 
 # Graph Editor / Dope Sheet / UV Editor / UV Toolkit menu bars: their own module, same forms.
 from .editor_menu_map import MAP as _EDITOR_MAP  # noqa: E402
-from .editor_menu_map import GREY_ON_POLL  # noqa: E402,F401  (menu_sets.draw_item)
+from .editor_menu_map import GREY_ON_POLL  # noqa: E402,F401  (menu_item_draw.draw_item)
 
 MAP.update(_EDITOR_MAP)
 
 # the same Maya command greyed in one menu while it works in another
-# (tools/menu_consistency.py finds them: label + runTimeCommand / annotation) gets the working item's action.
+# (same label and runTimeCommand / annotation) gets the working item's action.
 # UV Editor Tools > Unfold / Cut / Sew / Pin are Maya's brush tools; the kit runs the command on the selection
 # (Blender's UV editor has no unfold / cut / sew brush).
 TWINS = {
@@ -1252,7 +1253,7 @@ TWINS = {
     "UV Editor/Tools/Cut": "UV Editor/Cut/Sew/Cut",
     "UV Editor/Tools/Sew": "UV Editor/Cut/Sew/Sew",
     "UV Editor/Tools/Pin": "UV Editor/Edit/Pin Selection",
-    # runTimeCommand aliases (tools/menu_consistency.py module doc) — the main UV > Delete UVs runs
+    # runTimeCommand aliases — the main UV > Delete UVs runs
     # DeleteUVsWithoutHotkey = the marking menu's DeleteUVs (polyMapDel on the selected faces, Maya UV marking menu);
     # nHair > Modify Curves runs the Curves menu's SmoothHairCurves / StraightenCurves (Maya 2026 nHair menu)
     "nHair/Modify Curves/Smooth": "Curves/Smooth",

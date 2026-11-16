@@ -1086,7 +1086,7 @@ def _m59_5_bake_check():
           abs(abs(a.rotation_euler.z) - math.radians(30)) < 1e-3 and same_points(C["verts"], world_verts(a)))
     C["verts"] = world_verts(a)
     with override():
-        bpy.ops.allset.reset_pivot()   # the Tool Settings "Reset" button (manipulator.draw_tool_settings)
+        bpy.ops.allset.reset_pivot()   # the Tool Settings "Reset" button (manipulator_tools.draw_tool_settings)
     bpy.context.view_layer.update()
     check(f"[M59-5] Tool Settings Reset: pivot = the object origin (delta {cm(a.delta_location)}), geometry stays",
           a.delta_location.length < 1e-7 and same_points(C["verts"], world_verts(a)))
@@ -2507,7 +2507,7 @@ def _m62_3_go():
           abs(x1 - 0.0) < 1e-4 and abs(x2 - 1.0) < 1e-4)
     fc = sdk().sdk_fcurve(cube, "ry")
     kps = list(fc.keyframe_points)
-    # the kit writes Maya 2026 auto tangents itself (ALIGNED handles, operators/driven_key.maya_auto)
+    # the kit writes Maya 2026 auto tangents itself (ALIGNED handles, operators/driven_key_drivers.maya_auto)
     check(f"[M62-3] the SDK curve is a smooth S, flat at the ends (Bezier, Maya auto, constant extrapolation: "
           f"{[(p.interpolation, p.handle_left_type) for p in kps]}, {fc.extrapolation})",
           all(p.interpolation == 'BEZIER' and p.handle_left_type in ('ALIGNED', 'AUTO_CLAMPED') for p in kps)
@@ -3419,6 +3419,9 @@ def _m64_5_ctrl_shift_check():
 
 @named("m64_5_shift_start")
 def _m64_5_shift_start():
+    # the Ctrl+Z above can take the scene back to before the Snap Step was set (5.3's Edit Mode undo restores scene
+    # settings that a script changed without an undo step)
+    mtools().settings(bpy.context).snap_step = 25
     ob = OB()
     a, b = C["edge"]
     C["n0"] = nverts(ob)

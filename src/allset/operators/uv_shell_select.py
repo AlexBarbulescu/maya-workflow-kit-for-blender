@@ -6,7 +6,7 @@ Maya 2026:
   Components > UV Shell and Alt+F12 (`SelectMeshUVShell`): component mode, selection cleared, in-view message. Here: the
   WindowManager flag ``allset_uv_shell_mask`` + face select mode + UV Sync Selection on (one selection for the 3D View
   and the UV Editor, like Maya's one selection list). Any other component mode clears the flag
-  (``uv_tools.leave_uv_mode`` / ``set_component``).
+  (``uv_components.leave_uv_mode`` / ``set_component``).
 - A click selects **faces**: every face of the UV shell of the face under the cursor (3D: the face the pick returns at
   that pixel, so on an edge between two shells one shell wins; UV Editor: the UV face containing the point).
   Plain = replace, Shift = toggle the shell (by the clicked face's state), Ctrl = remove, Ctrl+Shift = add; a
@@ -25,7 +25,7 @@ import numpy as np
 from bpy.props import BoolProperty
 
 from . import uv_arrays
-from .. import compat
+from .. import compat, live_refs
 
 FLAG = "allset_uv_shell_mask"
 BOX_OPS = ("VIEW3D_OT_select_box", "VIEW3D_OT_select_lasso", "UV_OT_select_box", "UV_OT_select_lasso",
@@ -249,7 +249,8 @@ def grow_box(context, before, shift, ctrl):
 
 def _box_running():
     try:
-        return any(op.bl_idname in BOX_OPS for w in bpy.context.window_manager.windows for op in w.modal_operators)
+        return any(op.bl_idname in BOX_OPS for w in bpy.context.window_manager.windows
+                   for op in live_refs.running_modals(w))
     except (AttributeError, ReferenceError):
         return False
 

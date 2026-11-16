@@ -10,7 +10,7 @@ drag 12 s and Cut UV Edges 36 s (Windows reports "Not responding" after 5 s). Th
   in edit mode (then it is the cage; same element order as the BMesh), else one BMesh pass;
 - selection / hidden flags: always from the BMesh (the evaluated mesh's selection may lag).
 
-``uv_points`` = uv_shells.uv_points (same vertex, coordinates within uv_tools.EPS, first-fit in loop-index order),
+``uv_points`` = uv_shells.uv_points (same vertex, coordinates within uv_islands.EPS, first-fit in loop-index order),
 ``maya_shells`` = uv_hud.maya_shells (faces sharing any UV), ``border_loops`` = uv_display.border_segments (an edge
 side is a border unless another shown face has the same UVs at both of its ends). tests/test_step254_uv_speed.py
 checks each against the Python version.
@@ -20,7 +20,7 @@ from itertools import chain
 
 import numpy as np
 
-from .. import compat
+from .. import compat, live_refs
 from .uv_tools import EPS
 
 
@@ -126,7 +126,7 @@ EDIT_MODALS = ("TRANSFORM_OT", "UV_OT", "SCULPT_OT", "MESH_OT")
 def editing_now(wm):
     """A transform / UV / mesh modal operator runs in some window (the edit mesh is being changed)."""
     try:
-        return any(op.bl_idname.startswith(EDIT_MODALS) for w in wm.windows for op in w.modal_operators)
+        return any(op.bl_idname.startswith(EDIT_MODALS) for w in wm.windows for op in live_refs.running_modals(w))
     except (AttributeError, ReferenceError):
         return True
 
@@ -275,7 +275,7 @@ def _same(p, q):
 
 
 def _joined(a, i, k):
-    """Loop i's edge side continues into loop k's face with the same UVs at both ends (uv_tools._uv_at rule)."""
+    """Loop i's edge side continues into loop k's face with the same UVs at both ends (uv_islands._uv_at rule)."""
     nx = a.corner_next
     flip = a.corner_vert[k] == a.corner_vert[nx[i]]
     ka = np.where(flip, nx[k], k)

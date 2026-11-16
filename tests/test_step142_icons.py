@@ -1,5 +1,5 @@
-"""#54: kit-drawn icons for the Maya menu items that have no shelf button (ui/menu_drawings*.py, linked by
-tools/gen_menu_icons.py into ui/menu_icon_data.py).
+"""#54: kit-drawn icons for the Maya menu items that have no shelf button (ui/menu_drawings*.py, linked in
+the generated table ui/menu_icon_data.py).
 
 Checks: every drawing is linked and every linked drawing exists; the priority menus (Deform, Mesh Display, Effects,
 Fields, Edit Mesh, Mesh Tools, Mesh) have an icon on every item Maya shows with one; drawings render at every
@@ -105,7 +105,7 @@ def test_drawings_and_table_agree():
     for path, name in md.PATHS.items():
         assert data.ICONS.get(path) == ("menu", name), (path, name, data.ICONS.get(path))
     unused = set(md.DRAWINGS) - {pic[1] for pic in pics.values()}
-    assert not unused, f"drawings no menu item uses (rerun tools/gen_menu_icons.py): {sorted(unused)}"
+    assert not unused, f"drawings no menu item uses: {sorted(unused)}"
     kit_paths = {p for p, _it in ms.iter_items()}
     stray = sorted(set(md.PATHS) - kit_paths)
     assert not stray, stray

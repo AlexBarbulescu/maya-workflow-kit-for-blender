@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Keep Maya panel display settings in the extension's user folder across sessions."""
+"""Keep Maya panel display settings in the extension's user folder across sessions (the Remember Panel Settings
+preference, off by default: ``follow_preference`` starts / stops the 0.5 s sampling timer)."""
 
 import json
 import os
@@ -86,8 +87,18 @@ def save():
         print("Maya Workflow Kit: could not save viewport settings:", ex)
 
 
+def enabled():
+    from .. import preferences
+    try:
+        return bool(preferences.get().remember_panel_settings)
+    except (KeyError, AttributeError):
+        return False
+
+
 def sample():
     global _dirty
+    if not _running[0]:
+        return
     saved = _data.setdefault("panels", {})
     alive = set()
     for window in bpy.context.window_manager.windows:
@@ -138,14 +149,32 @@ def _after_load(*_args):
     _seen.clear()
 
 
+_running = [False]
+
+
 def register():
+    follow_preference()
+
+
+def follow_preference():
+    """Start remembering (read the file, sample every TICK) or stop, as the preference says."""
+    if enabled():
+        start()
+    else:
+        stop()
+
+
+def start():
     global _dirty
+    if _running[0]:
+        return
     _data.clear()
     _seen.clear()
     _dirty = False
     target = path()
     if target is None:
         return
+    _running[0] = True
     data = settings_io._read(target)
     if isinstance(data, dict) and isinstance(data.get("panels"), dict):
         _data.update(data)
@@ -160,12 +189,17 @@ def register():
     bpy.app.timers.register(_tick, first_interval=TICK, persistent=True)
 
 
-def unregister():
+def stop():
     if bpy.app.timers.is_registered(_tick):
         _tick()
         bpy.app.timers.unregister(_tick)
     for handlers, fn in ((bpy.app.handlers.load_pre, _before_load), (bpy.app.handlers.load_post, _after_load)):
         if fn in handlers:
             handlers.remove(fn)
+    _running[0] = False
     _seen.clear()
     _data.clear()
+
+
+def unregister():
+    stop()

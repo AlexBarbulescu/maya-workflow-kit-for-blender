@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Maya's Preferences window (Windows > Settings/Preferences > Preferences; Issue #121).
 
-Maya 2022: an 817 x 531 window — menu bar Edit (Revert to Saved, Restore Default
+Maya: an 817 x 531 window — menu bar Edit (Revert to Saved, Restore Default
 Settings) / Help, a "Categories" list on the left (38 rows, children indented), the page "<Category>: <description>"
 on the right in sections, Save / Cancel at the bottom; closing the window by its OS button saves.
 
@@ -13,7 +13,7 @@ show Blender's value read-only with the Recommended setup note and a button that
 Save / Cancel: the window takes a snapshot of every row's value when it opens; Save keeps the changes and
 closes (the add-on preferences are kept by Blender's Auto-Save Preferences or File > Save Preferences, like every
 add-on), Cancel and Edit > Revert to Saved write the snapshot back; Edit > Restore Default Settings = the add-on
-preferences' defaults and the default scene values (like Maya) (``maya_prefs_data.MAYA_FACTORY``). Closing by the OS button keeps
+preferences' defaults and the default scene values (like Maya) (``maya_prefs_data.MAYA_START_VALUES``). Closing by the OS button keeps
 the changes (Maya saves).
 """
 
@@ -102,13 +102,13 @@ def restore_defaults(context):
             continue
         if row[0] == "pref":
             owner.property_unset(attr)
-        elif row[1] in data.MAYA_FACTORY:
-            _write(owner, attr, data.MAYA_FACTORY[row[1]])
+        elif row[1] in data.MAYA_START_VALUES:
+            _write(owner, attr, data.MAYA_START_VALUES[row[1]])
     scene = context.scene
     if scene is not None:
         # the playback (preview) range is kept inside the animation range: write it after the animation range
         for path in ("frame_preview_start", "frame_preview_end"):
-            _write(scene, path, data.MAYA_FACTORY[path])
+            _write(scene, path, data.MAYA_START_VALUES[path])
         scene.use_preview_range = True      # Maya: playback range 1-120 inside the animation range 1-200
 
 
@@ -212,8 +212,10 @@ class ALLSET_MT_prefs_help(bpy.types.Menu):
     bl_label = "Help"
 
     def draw(self, _context):
+        from .. import compat
         from .editor_menu_map import _MANUAL
-        self.layout.operator("wm.url_open", text="Help on Preferences...").url = _MANUAL + "editors/preferences/index.html"
+        self.layout.operator("wm.url_open", text="Help on Preferences...").url = \
+            compat.docs_url(_MANUAL + "editors/preferences/index.html")
 
 
 class ALLSET_PT_maya_prefs(bpy.types.Panel):

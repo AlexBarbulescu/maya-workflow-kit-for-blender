@@ -44,6 +44,29 @@ def test_support_edges_preserve_the_surface_and_corners():
                         bm.free()
 
 
+def _counts(segments, count):
+    bm = bmesh.new()
+    try:
+        bmesh.ops.create_cube(bm, size=2.0)
+        tip = max(bm.verts, key=lambda v: sum(v.co))
+        edges = list(bm.edges) if count == 12 else list(tip.link_edges)[:count]
+        assert bev.bevel_edges(bm, edges, fraction=0.5, segments=segments, chamfer=False)
+        return len(bm.verts), len(bm.edges), len(bm.faces)
+    finally:
+        bm.free()
+
+
+def test_chamfer_off_step_count_is_even():
+    """Like Maya, Chamfer off rounds the step count up to an even number so the old corner is a profile point:
+    2 segments give the 1-segment mesh, 4 the 3-segment one."""
+    assert _counts(1, 1) == _counts(2, 1) == (12, 18, 8)          # one cube edge: one support edge on each face
+    assert _counts(3, 1) == _counts(4, 1) == (16, 24, 10)
+    for count in (2, 3, 12):
+        assert _counts(1, count) == _counts(2, count), count
+        assert _counts(3, count) == _counts(4, count), count
+        assert _counts(1, count) != _counts(3, count), count
+
+
 def test_history_chamfer_toggle_rebuilds_support_edges():
     extrude = import_module(kit.MODULE + ".operators.extrude")
     bpy.ops.wm.read_homefile(use_empty=True)

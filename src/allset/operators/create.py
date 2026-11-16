@@ -18,7 +18,7 @@ import math
 import bpy
 from bpy.props import EnumProperty
 
-from .. import results
+from .. import compat, results
 from . import film_fit, lights, naming, prim_history, units
 from .. import i18n
 
@@ -146,9 +146,7 @@ def create(context, kind, maya_naming=True, overrides=None):
     kw = {key: v * k if key in LENGTHS else v for key, v in props.items()}
     kw.update(location=(0.0, 0.0, 0.0), rotation=rot or (0.0, 0.0, 0.0), align='WORLD')
     add = getattr(getattr(bpy.ops, mod), name)
-    if "radius" in kw and "radius" not in add.get_rna_type().properties:
-        kw["size"] = kw.pop("radius")       # Blender 5.3 renamed text_add's radius to size
-    add(**kw)
+    add(**compat.primitive_add_args(add, kw))
     ob = context.view_layer.objects.active
     _scale_data(ob, k)
     if maya_naming:

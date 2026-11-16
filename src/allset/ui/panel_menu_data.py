@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Rows of the Maya viewport panel menus (``ui/panel_menus.py``), the panel toolbar (``ui/panel_toolbar.py``) and the
 greyed Status Line widgets (``ui/status_line.py``) as plain data — no ``bpy`` — so ``tools/menu_count.py``,
-``tools/menu_consistency.py`` and the notice rules can walk them like the main menus (until then
+the menu consistency checks and the notice rules can walk them like the main menus (until then
 these 36 + 9 greyed items were outside every count).
 
 Item paths (``allset.menu_unavailable`` ``item``, ``notices.PANEL_MENU`` keys): ``Panel menu/<menu>/<sub>/<label>``,
@@ -59,7 +59,7 @@ VIEW = [
     ("prop", "preferences", "show_view_cube_buttons", "Camera / Projection Buttons"),
 ]
 
-# Maya viewSet -vx = seen from +X (Maya 2022 panel View menu); axis names as Blender's
+# Maya viewSet -vx = seen from +X (Maya panel View menu); axis names as Blender's
 # (X = X, Y = Y, Z = Z).
 VIEW_AXIS = [_view("X", 'RIGHT'), _view("Y", 'BACK'), _view("Z", 'TOP'),
              _view("-X", 'LEFT'), _view("-Y", 'FRONT'), _view("-Z", 'BOTTOM')]
@@ -119,7 +119,7 @@ LIGHTING = [
 ]
 
 # Maya object type -> SpaceView3D.show_object_viewport_<type> (None = no Blender filter, "@" = an overlay flag,
-# "!" = a kit ``set`` key: ui/panel_menus.state / apply).
+# "!" = a kit ``set`` key: ui/panel_state.state / apply).
 SHOW_TYPES = (
     ("Controllers", None), ("NURBS Curves", "!SHOW_NURBS_CURVES"), ("NURBS Surfaces", "surf"),
     ("NURBS CVs", None), ("NURBS Hulls", None), ("Polygons", "mesh"), ("Subdiv Surfaces", None),
@@ -170,10 +170,12 @@ RENDERER = [
     _grey("Legacy Default Viewport"),
     _grey("Legacy High Quality Viewport"),
     _sep(),
-    # Maya lists render overrides here (Arnold); these set the scene engine + Rendered shading
+    ("set", "RENDER_ENGINE", "{engine}"),   # Maya lists render overrides here (Arnold)
+    # Renderer Engine Items preference (off by default): these set the scene engine + Rendered shading instead
     ("set", "RENDER_EEVEE", "Eevee"),
     ("set", "RENDER_CYCLES", "Cycles"),
 ]
+ENGINE_ROWS = {"RENDER_EEVEE", "RENDER_CYCLES"}
 
 PANELS = [
     ("menu", "Perspective", "ALLSET_MT_panel_perspective"),
@@ -202,7 +204,7 @@ LAYOUTS = [
     ("set", "LAYOUT_FOUR", "Four View"),
 ]
 
-# The menu bar, in Maya 2022's order.
+# The menu bar, in Maya's order.
 BAR = (("View", "ALLSET_MT_panel_view"), ("Shading", "ALLSET_MT_panel_shading"),
        ("Lighting", "ALLSET_MT_panel_lighting"), ("Show", "ALLSET_MT_panel_show"),
        ("Renderer", "ALLSET_MT_panel_renderer"), ("Panels", "ALLSET_MT_panel_panels"))
@@ -213,7 +215,7 @@ BAR = (("View", "ALLSET_MT_panel_view"), ("Shading", "ALLSET_MT_panel_shading"),
 #
 # #10: every Maya toggle (a check button on Maya's panel toolbar) is a
 # toggle here too — "set" keys are drawn with ``toggle=True`` so Wireframe / Smooth Shade All / Use All Lights turn
-# off to Maya's off state (panel_menus.TOGGLE_OFF); camera buttons act on the camera the view looks through and are
+# off to Maya's off state (panel_state.TOGGLE_OFF); camera buttons act on the camera the view looks through and are
 # disabled in Blender's persp / ortho views (Maya disables Lock Camera there too).
 TOOLBAR = (
     (("cam_select", "set", "SELECT_CAMERA", "Select Camera"),
@@ -272,7 +274,7 @@ STATUS_LINE = ("Status Line/Select by hierarchy", "Status Line/Select by handle 
 
 
 # Maya runTimeCommand of panel rows whose command is one (Maya panel menus):
-# tools/menu_consistency.py compares these with the main / editor / marking menus.
+# checked against the main / editor / marking menus, so a command that works there is not greyed here.
 COMMANDS = {"Tumble Tool": "TumbleTool", "Track Tool": "TrackTool", "Dolly Tool": "DollyTool",
             "Center View of Selection": "CenterViewOfSelection", "Default View": "GoToDefaultView"}
 

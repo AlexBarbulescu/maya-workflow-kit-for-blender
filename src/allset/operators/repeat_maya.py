@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Maya G / Edit > Repeat / Recent Commands for every Maya command, not only key operators.
 
-Maya 2022: a menu item run from the UI goes into ``repeatLast``
+Maya: a menu item run from the UI goes into ``repeatLast``
 (Create > Polygon Primitives > Cube → "CreatePolygonCube", G makes the next cube); an option window's Apply records the
 command with its options (label "PolyPrimitive"); commands run by a script are not
 recorded; Edit > Repeat reads ``Repeat "<label>"``; Recent Commands lists the history.
@@ -124,7 +124,8 @@ def record(label, action, path=None, context=None):
     namespace, name = target.split(".", 1)
     idname = namespace.upper() + "_OT_" + name
     if window is not None:
-        entry["mark"] += tuple(op.as_pointer() for op in window.modal_operators if op.bl_idname == idname)
+        from .. import live_refs
+        entry["mark"] += tuple(op.as_pointer() for op in live_refs.running_modals(window) if op.bl_idname == idname)
     if HISTORY and HISTORY[-1]["action"] == action and HISTORY[-1]["path"] == path:
         live = {op.as_pointer() for op in (context or bpy.context).window_manager.operators if op.bl_idname == idname}
         entry["mark"] += tuple(ptr for ptr in HISTORY[-1]["mark"][2:]

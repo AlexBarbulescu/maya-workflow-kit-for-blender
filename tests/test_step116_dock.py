@@ -94,7 +94,7 @@ def test_stack_tabs_skip_floating_panels():
     maya_dock.set_role(areas[1], 'ATTRIBUTE_EDITOR')      # = a torn-off Attribute Editor
     try:
         assert maya_dock.floating_kinds(wm) == {'ATTRIBUTE_EDITOR'}
-        assert maya_dock.stack_tabs(wm) == ['CHANNEL_BOX', 'MODELING_TOOLKIT', 'TOOL_SETTINGS']
+        assert maya_dock.stack_tabs(wm) == ['CHANNEL_BOX', 'MODELING_TOOLKIT']
         wm.allset_dock = 'ATTRIBUTE_EDITOR'
         assert maya_dock.current_tab(wm) == 'CHANNEL_BOX', "the stack shows another tab"
         assert maya_dock.kind_visible(wm, 'ATTRIBUTE_EDITOR'), "the floating one is shown"
@@ -119,10 +119,43 @@ def test_stack_panel_draws_handle_tabs_and_content():
         assert ops[0] == (maya_dock.HANDLE, "allset.dock_handle"), ops[:3]
         # #78: the tabs are Maya's vertical strip drawn on the right edge, not a button row
         assert not [t for t, idname in ops if idname == "allset.dock_tab"], ops[:6]
-        assert maya_dock.stack_tabs(wm) == ['CHANNEL_BOX', 'ATTRIBUTE_EDITOR', 'MODELING_TOOLKIT', 'TOOL_SETTINGS']
+        assert maya_dock.stack_tabs(wm) == ['CHANNEL_BOX', 'ATTRIBUTE_EDITOR', 'MODELING_TOOLKIT']
         if marker:
             assert any(t == marker for k, t, _a, _p in rec.log if k in ("menu", "label")), (kind, rec.log[:12])
     wm.allset_dock = 'CHANNEL_BOX'
+
+
+def test_tool_settings_tab_only_with_its_preference():
+    """Off (default): the stack has no Tool Settings tab (Tool Settings dock left of the viewport). The Tool Settings
+    Tab preference adds it as the last tab; it draws the kit's Tool Settings, its sections as rows that keep clear of
+    the tab strip."""
+    wm = bpy.context.window_manager
+    prefs = preferences.get()
+    areas = _properties_areas(1)
+    maya_dock.set_role(areas[0], 'STACK')
+    region = next(r for r in areas[0].regions if r.type == 'WINDOW')
+    assert prefs.tool_settings_tab is False
+    assert maya_dock.stack_tabs(wm) == ['CHANNEL_BOX', 'ATTRIBUTE_EDITOR', 'MODELING_TOOLKIT']
+    try:
+        prefs.tool_settings_tab = True
+        assert maya_dock.stack_tabs(wm) == ['CHANNEL_BOX', 'ATTRIBUTE_EDITOR', 'MODELING_TOOLKIT', 'TOOL_SETTINGS']
+        wm.allset_dock = 'TOOL_SETTINGS'
+        assert maya_dock.current_tab(wm) == 'TOOL_SETTINGS'
+        view = next(a for a in bpy.context.window.screen.areas if a.type == 'VIEW_3D')
+        with bpy.context.temp_override(area=view, region=next(r for r in view.regions if r.type == 'WINDOW')):
+            bpy.ops.wm.tool_set_by_id(name="builtin.move")
+        rec = Recorder()
+        with bpy.context.temp_override(area=areas[0], region=region):
+            assert maya_dock.shown_kind(bpy.context) == 'TOOL_SETTINGS'
+            bpy.types.ALLSET_PT_maya_dock.draw(SimpleNamespace(layout=rec), bpy.context)
+        ops = [(t, a[0] if a else "") for k, t, a, _p in rec.log if k == "operator"]
+        assert ops[0] == (maya_dock.HANDLE, "allset.dock_handle"), ops[:3]
+        assert any(idname == "allset.dock_section" for _t, idname in ops), ops      # Move Tool sections
+        prefs.tool_settings_tab = False
+        assert maya_dock.current_tab(wm) == 'CHANNEL_BOX', "off again: back to the first tab"
+    finally:
+        prefs.tool_settings_tab = False
+        wm.allset_dock = 'CHANNEL_BOX'
 
 
 def test_menus_start_with_the_tear_off_line():

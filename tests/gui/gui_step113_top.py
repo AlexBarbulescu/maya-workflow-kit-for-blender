@@ -1,4 +1,4 @@
-"""In a real UI: the top area reads like Maya 2022.
+"""In a real UI: the top area reads like Maya.
 
 The user's path: Maya mode switched off and on again in a factory session (Blender's theme) — the switch appends the
 Maya layout and keeps the user's theme. Then: menu bar without the menu set dropdown and with every Maya menu on
@@ -156,7 +156,7 @@ def s_shot():
     row = shelf_row()
     top = win().height - (row.y + row.height)        # the shelf row's top edge, from the window top
     p_tab = pixel(path, w - 20, top + int(8 * scale))
-    # the tab strip = the theme's Image Editor header dimmed by the ratio #444444 -> #373737 (ui/shelf.TAB_DIM)
+    # the tab strip = the theme's Image Editor header dimmed by the ratio #444444 -> #373737 (ui/shelf_paint.TAB_DIM)
     tab_bg = tuple(round(c * 255 * (1 - mod("ui.shelf").TAB_DIM)) for c in th.image_editor.space.header[:3])
     check(f"shelf tab strip = theme header x Maya's dim {tab_bg} (pixel {p_tab})", near(p_tab, tab_bg))
     mod("switch").set_mode(False)

@@ -1,4 +1,4 @@
-"""Lane TOOLBOX (#23) in a real UI: the Maya Workflow Kit layout's Tool Box column shows the kit-drawn Maya
+"""#23 in a real UI: the Maya Workflow Kit layout's Tool Box column shows the kit-drawn Maya
 tool and quick-layout icons (unscaled, at the toolbar's icon size), the Layer Editor toolbar and the Outliner's
 default rows show kit glyphs in Maya-style colours, and a Tool Box click still sets the tool. Screenshots of the
 column / Outliner / Layer Editor go to ALLSET_GUI_SHOTS (run once with --ui-scale 0.8 = effective 1.0 on a 125 %
@@ -138,7 +138,7 @@ def s_check():
     stack = dock_area()
     sreg = next(rg for rg in stack.regions if rg.type == 'WINDOW')
     crop = px[sreg.y:sreg.y + sreg.height, sreg.x:sreg.x + sreg.width]
-    # the dock's additive lift to the dock grey (maya_dock.draw_tint) also lifts the icons drawn under it
+    # the dock's additive lift to the dock grey (maya_dock_tint.draw_tint) also lifts the icons drawn under it
     lift = import_module(MODULE + ".ui.maya_dock").dock_lift(bpy.context)
     t = near(crop, np.clip(TEAL + lift, 0.0, 1.0))
     check(f"Layer Editor toolbar icons in the Maya-style teal ({int(t.sum())} px)", t.sum() > 12)

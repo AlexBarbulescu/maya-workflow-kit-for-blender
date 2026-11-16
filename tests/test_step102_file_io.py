@@ -74,7 +74,7 @@ def test_presets_cm_y_up():
     op, a = file_io.export_args('FBX', k, True)
     assert a["use_selection"] and a["axis_up"] == 'Y' and a["apply_unit_scale"]
     op, a = file_io.export_args('USD', k, False)
-    # Y up / Maya units are written by file_io.usd_maya_axes after Blender's writer (no root prim)
+    # Y up / Maya units are written by file_io_export.usd_maya_axes after Blender's writer (no root prim)
     assert a["root_prim_path"] == "" and not a.get("convert_orientation")
     assert abs(file_io.import_args('USD', k)[1]["scale"] - 1.0) < 1e-12
     # Maya Units option (1 BU = 1 cm): OBJ / ABC numbers pass straight
@@ -101,6 +101,25 @@ def test_format_by_extension_and_files_of_type():
     labels = [f[1] for f in file_io.FORMATS]
     assert labels[0].startswith("Maya Scenes") and any("Alembic" in l for l in labels)
     assert file_io.IMPORT_TYPES[0][0] == 'AUTO'
+
+
+def test_folder_typed_in_the_file_name_opens_it():
+    """A folder pasted into the dialog's file name field (with a separator) becomes the browser's folder."""
+    import tempfile
+    from types import SimpleNamespace
+    with tempfile.TemporaryDirectory() as d:
+        os.makedirs(os.path.join(d, "sub"))
+        params = SimpleNamespace(filename="sub/", directory=os.fsencode(d))
+        ctx = SimpleNamespace(space_data=SimpleNamespace(type='FILE_BROWSER', params=params))
+        op = SimpleNamespace(filepath="", mode='IMPORT', export_type='FBX')
+        assert file_io._FileDialog.check(op, ctx) is True
+        assert op.filepath == os.path.join(os.path.abspath(os.path.join(d, "sub")), "")
+        params.filename, op.filepath = '"' + os.path.join(d, "sub") + '"', ""      # a pasted absolute path, quoted
+        assert file_io._FileDialog.check(op, ctx) is True and op.filepath.startswith(os.path.join(d, "sub"))
+        params.filename, op.filepath = "scene.fbx", ""         # a plain file name: the folder stays
+        assert file_io._FileDialog.check(op, ctx) is False and op.filepath == ""
+        params.filename = "no_such_folder/"
+        assert file_io._FileDialog.check(op, ctx) is False
 
 
 def test_file_menu_runs_the_dialog_and_option_boxes_are_live():

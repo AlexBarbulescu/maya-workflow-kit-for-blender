@@ -1,4 +1,4 @@
-"""A selected group still highlights its contents with Show > Locators (Empties) off."""
+"""A selected group still highlights its contents with Show > Locators off."""
 from importlib import import_module
 
 import bpy

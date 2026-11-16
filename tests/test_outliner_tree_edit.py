@@ -234,6 +234,42 @@ def test_column_shift_takes_everything_below():
     assert all(sk.data.bones[n].hide_select for n in names), "Shift: the joints below too"
 
 
+def test_blender_columns_only_with_their_preference():
+    """Off (default): a Maya Outliner has the kit's Visibility Column only (Display > Visibility Column). The Outliner
+    Column Icons preference turns Blender's select / eye / render columns on in every Maya Outliner, left to right."""
+    from types import SimpleNamespace
+    prefs = import_module(kit.MODULE + ".preferences").get()
+    maya_outliner = import_module(kit.MODULE + ".ui.maya_outliner")
+    area = next(a for a in bpy.data.screens["Layout"].areas if a.type == 'OUTLINER')
+    sp = area.spaces.active
+    saved = (sp.display_mode, sp.use_filter_collection, sp.use_filter_object_content, sp.show_mode_column,
+             sp.show_restrict_column_select, sp.show_restrict_column_hide, sp.show_restrict_column_render,
+             sp.show_restrict_column_enable, sp.use_filter_object, sp.use_filter_children)
+    region = SimpleNamespace(width=300, height=400)
+    try:
+        assert prefs.outliner_columns is False
+        maya_outliner.setup(sp)
+        assert not sp.show_restrict_column_hide and not sp.show_restrict_column_render
+        assert tree.column_xs(sp, region, 20, 1, 0) == {}
+        sp.show_restrict_column_hide = True                       # Display > Visibility Column
+        sp.show_restrict_column_select = sp.show_restrict_column_render = True
+        assert list(tree.column_xs(sp, region, 20, 1, 0)) == ['EYE'], "the kit's eye only"
+        sp.show_restrict_column_hide = sp.show_restrict_column_select = sp.show_restrict_column_render = False
+        assert tree.is_tree(sp)
+        prefs.outliner_columns = True
+        assert sp.show_restrict_column_select and sp.show_restrict_column_hide and sp.show_restrict_column_render
+        xs = tree.column_xs(sp, region, 20, 1, 0)
+        assert list(xs) == ['SELECT', 'EYE', 'RENDER'] and xs['SELECT'] < xs['EYE'] < xs['RENDER'], xs
+        prefs.outliner_render_column = False
+        assert list(tree.column_xs(sp, region, 20, 1, 0)) == ['SELECT', 'EYE']
+    finally:
+        prefs.outliner_columns = False
+        prefs.outliner_render_column = True
+        (sp.display_mode, sp.use_filter_collection, sp.use_filter_object_content, sp.show_mode_column,
+         sp.show_restrict_column_select, sp.show_restrict_column_hide, sp.show_restrict_column_render,
+         sp.show_restrict_column_enable, sp.use_filter_object, sp.use_filter_children) = saved
+
+
 def test_delete_objects_and_joints():
     cube, sk, names = _rig()
     child = _mesh("pSphere1", cube)

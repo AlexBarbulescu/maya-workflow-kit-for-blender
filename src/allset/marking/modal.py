@@ -3,7 +3,7 @@
 
 ``allset.mm_engine``: one marking menu (``marking/menus.py``) drawn with the
 GPU, driven by ``engine.Session``. ``allset.hotbox``: Space hold (menu rows,
-centre and N/S/E/W zones); a quick tap toggles the pane (Maya 2022 hotbox).
+centre and N/S/E/W zones); a quick tap toggles the pane (Maya hotbox).
 Plus the small operators the hotbox zone menus run.
 """
 
@@ -89,6 +89,7 @@ def run_action(context, action, option=False, path=None):
     menu item runs with its option values); ``path`` = the Maya menu path, for windows tied to a path. A finished
     command is one undo step named after the item (``undo_steps.command``)."""
     from .. import undo_steps
+    action = for_this_blender(action)
     outer = undo_steps.depth() == 0
     label = _label(action, path)
     res = undo_steps.command(label, lambda: _run_action(context, action, option, path))
@@ -99,6 +100,20 @@ def run_action(context, action, option=False, path=None):
         from ..operators import repeat_maya       # Maya G / Recent Commands
         repeat_maya.record(label, action, path, context)
     return res
+
+
+def for_this_blender(action):
+    """``action`` as it runs here: a link to Blender's manual / API / release notes opens the running Blender's pages
+    (``compat.docs_url``: the tables name the main target's). Every menu, marking menu, hotbox, option box, shelf and
+    repeat run comes through ``run_action``."""
+    try:
+        kind, target, props = menu_map.normalize(action)
+    except (TypeError, ValueError, IndexError, KeyError):
+        return action
+    if kind == "op" and target == "wm.url_open" and "url" in props:
+        from .. import compat
+        return (target, dict(props, url=compat.docs_url(props["url"])))
+    return action
 
 
 def _label(action, path):
@@ -337,7 +352,7 @@ def open_menu(menu_name, button, origin=None):
 # --- hotbox ---------------------------------------------------------------------------
 
 def hotbox_rows(context, area_type=None):
-    """(rows above, cursor row sides, rows below) like Maya 2022's hotbox:
+    """(rows above, cursor row sides, rows below) like Maya's hotbox:
     common menus (+ Cache, Help), the 3D View's panel menus, then the menu set rows (every set when
     Hotbox Controls > Show All Menu Sets is on, the default like Maya; else the current one)."""
     prefs = _prefs(context)
@@ -373,7 +388,7 @@ def pane_tap(context):
         view_message.show(context, "Space: this pane can't be maximized here")
 
 
-_LAST_HOLD_END = [None]   # monotonic time the last hotbox hold ended (engine.restart_too_soon)
+_LAST_HOLD_END = [None]   # monotonic time the last hotbox hold ended (hotbox_engine.restart_too_soon)
 
 
 class ALLSET_OT_hotbox(bpy.types.Operator):
@@ -496,7 +511,7 @@ class ALLSET_OT_hotbox(bpy.types.Operator):
 
 
 class ALLSET_MT_hotbox_controls(bpy.types.Menu):
-    """Hotbox Controls (Maya 2022 hotbox): menu sets, rows, style"""
+    """Hotbox Controls (Maya hotbox): menu sets, rows, style"""
     bl_idname = "ALLSET_MT_hotbox_controls"
     bl_label = "Hotbox Controls"
 
@@ -527,7 +542,7 @@ _persp_views = {}  # area pointer -> (rotation, location, distance) of the last 
 
 
 class ALLSET_OT_hb_view(bpy.types.Operator):
-    """Switch the pane to a Maya camera view (Maya 2022 hotbox centre zone)"""
+    """Switch the pane to a Maya camera view (Maya hotbox centre zone)"""
     bl_idname = "allset.hb_view"
     bl_label = "Switch View"
     bl_options = {'INTERNAL'}
@@ -555,7 +570,7 @@ class ALLSET_OT_hb_view(bpy.types.Operator):
 
 
 class ALLSET_OT_hb_pane(bpy.types.Operator):
-    """Turn the pane under the hotbox into another editor (Maya 2022 hotbox South zone)"""
+    """Turn the pane under the hotbox into another editor (Maya hotbox South zone)"""
     bl_idname = "allset.hb_pane"
     bl_label = "Switch Panel Type"
     bl_options = {'INTERNAL'}
@@ -615,7 +630,7 @@ _PREF_ELEMENTS = {"HELP_LINE": "show_help_line", "STATUS_LINE": "show_status_lin
 
 
 class ALLSET_OT_hb_ui(bpy.types.Operator):
-    """Show or hide a Maya UI element (Maya 2022 hotbox East zone)"""
+    """Show or hide a Maya UI element (Maya hotbox East zone)"""
     bl_idname = "allset.hb_ui"
     bl_label = "Toggle UI Element"
     bl_options = {'INTERNAL'}
@@ -680,7 +695,7 @@ class ALLSET_OT_hb_mask(bpy.types.Operator):
 
 
 class ALLSET_OT_hb_style(bpy.types.Operator):
-    """Hotbox style: zones and menu rows, zones only, or centre only (Maya 2022 hotbox centre zone)"""
+    """Hotbox style: zones and menu rows, zones only, or centre only (Maya hotbox centre zone)"""
     bl_idname = "allset.hb_style"
     bl_label = "Hotbox Style"
     bl_options = {'INTERNAL'}

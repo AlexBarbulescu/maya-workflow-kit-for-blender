@@ -5,7 +5,7 @@ Maya highlights the component under the mouse before you click (``preSelectHilit
 following the select mode, also while the
 Move / Rotate / Scale tool is active: a vertex = 5 px red
 square, an edge = 2 px red line (an edge also near its vertices), a face = red outline + red stipple.
-Maya 2022 doesn't highlight objects in object mode (pre_01), so neither does the kit,
+Maya doesn't highlight objects in object mode, so neither does the kit,
 except for component targets while editing a custom pivot.
 
 Blender's ``GIZMO_GT_mesh_preselect_elem_3d`` picks the nearest vertex in every select
@@ -29,6 +29,8 @@ from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
+
+from .. import update_summary
 
 MODES = {'EDIT_MESH'}
 SELECT_TOOLS = ("builtin.select", "allset.target_weld_tool", "allset.cut_sew_tool")   # the edge a press cuts
@@ -273,7 +275,7 @@ def invalidate(_scene=None, depsgraph=None):
     keeps them and only forgets the selection."""
     global _coordinate_session
     if depsgraph is not None:
-        for u in depsgraph.updates:
+        for u in update_summary.updates(depsgraph, invalidate):
             if isinstance(u.id, (bpy.types.Mesh, bpy.types.Object)) and (u.is_updated_geometry or u.is_updated_transform):
                 # Only a running coordinate-only modal can retain topology.
                 # Transforms, other meshes and all explicit invalidations reset it.

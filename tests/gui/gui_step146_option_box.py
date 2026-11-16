@@ -1,7 +1,7 @@
 """#82: a Maya menu item's option box opens by holding the item, without a drag.
 
 Press and hold Display > Grid, Key > Set Key, Constrain > Parent: after Blender's hold time (0.2 s) its hold menu
-opens below the item and the kit puts the pointer on the menu's Option Box row (``menu_sets.LAST_WARP``), so letting
+opens below the item and the kit puts the pointer on the menu's Option Box row (``menu_option_box.LAST_WARP``), so letting
 go runs ``allset.menu_option_box`` and not the command. A plain click on the label still runs the command.
 """
 
@@ -132,7 +132,7 @@ def hold_case(menu, path):
         C["warp"] = list(warp[0]) if warp else []
         C["held_calls"] = list(C["calls"])
         x, y = C["warp"] if warp else C["row"]
-        mod(".ui.menu_sets").AWAY_TICK = 0.3       # the simulated back move (s_back) comes after the warp back
+        mod(".ui.menu_option_box").AWAY_TICK = 0.3       # the simulated back move (s_back) comes after the warp back
         ev('MOUSEMOVE', 'NOTHING', x=x, y=y)      # the warp's own move (simulation keeps the pointer in sim._pos)
         ev('LEFTMOUSE', 'RELEASE', x=x, y=y)
         # cursor_warp sends no event under --enable-event-simulate (a real session gets the OS move in a
@@ -174,7 +174,7 @@ def hold_case(menu, path):
 
     def s_after_esc():
         shot(f"146_{tag}_after_esc.png")
-        mod(".ui.menu_sets").AWAY_TICK = 0.05
+        mod(".ui.menu_option_box").AWAY_TICK = 0.05
         share = dark_share((C["row"][0] - px(200), C["row"][1]), px(20))
         if closes():
             check(f"{path}: the Maya menu is closed after the option window (dark share {share:.2f} at the item)",
