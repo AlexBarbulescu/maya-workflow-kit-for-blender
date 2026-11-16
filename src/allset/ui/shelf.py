@@ -653,6 +653,7 @@ classes = (ALLSET_OT_shelf_button, ALLSET_OT_shelf_select, ALLSET_OT_shelf_step,
            ALLSET_OT_shelf_button_menu,
            ALLSET_OT_shelf_slot, ALLSET_GT_shelf_icon, ALLSET_GT_shelf_tab, ALLSET_OT_shelf_tab,
            ALLSET_GT_shelf_scroll, ALLSET_OT_shelf_scroll, ALLSET_GGT_shelf)
+from .shelf_options_tnt import ALLSET_OT_shelf_python_option; classes += (ALLSET_OT_shelf_python_option,)  # noqa: E402,E702  tnt: Python button options
 
 
 _handle = []

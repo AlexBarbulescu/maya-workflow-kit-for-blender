@@ -9238,6 +9238,10 @@
    "Shelf Name": "Shelf Name",
    "Up": "Up"
   },
+  "Labels/ui/shelf_editor_drag": {
+   "Drag Button": "Drag Button",
+   "Shelf Editor Drag": "Shelf Editor Drag"
+  },
   "Labels/ui/shelf_editor_icon_picker": {
    "All Icons": "All Icons",
    "Blender Built-in": "Blender Built-in",
@@ -9270,6 +9274,9 @@
    "Maya Workflow Kit has no OpenPBR Surface material: use the Standard Surface Material button (a Principled BSDF material).": "Maya Workflow Kit has no OpenPBR Surface material: use the Standard Surface Material button (a Principled BSDF material).",
    "Sculpt mode Mask": "Sculpt mode Mask",
    "Standard Surface Material": "Standard Surface Material"
+  },
+  "Labels/ui/shelf_options_tnt": {
+   "Shelf Button Option": "Shelf Button Option"
   },
   "Labels/ui/shelf_run": {
    "Double-click or Ctrl+click: options": "Double-click or Ctrl+click: options",
@@ -11056,6 +11063,9 @@
   "Tooltips/ui/shelf_editor_buttons": {
    "Apply edited Shelf button properties without changing unrelated button data.": "Apply edited Shelf button properties without changing unrelated button data."
   },
+  "Tooltips/ui/shelf_editor_drag": {
+   "Press and hold, move the mouse up/down, release to drop the button there": "Press and hold, move the mouse up/down, release to drop the button there"
+  },
   "Tooltips/ui/shelf_editor_icon_picker": {
    "Change the page in the currently open Shelf icon picker.": "Change the page in the currently open Shelf icon picker.",
    "Native scrollable list with one horizontal strip of icon buttons per row.": "Native scrollable list with one horizontal strip of icon buttons per row.",
@@ -11064,6 +11074,9 @@
   "Tooltips/ui/shelf_header": {
    "Choose the shelf (Maya shelf tabs)": "Choose the shelf (Maya shelf tabs)",
    "Maya shelf menu: editor, shelf navigation and shelf management": "Maya shelf menu: editor, shelf navigation and shelf management"
+  },
+  "Tooltips/ui/shelf_options_tnt": {
+   "Run this option of the shelf button": "Run this option of the shelf button"
   },
   "Tooltips/ui/shelf_run": {
    "Run this shelf button (double-click or Ctrl+click: its options)": "Run this shelf button (double-click or Ctrl+click: its options)"

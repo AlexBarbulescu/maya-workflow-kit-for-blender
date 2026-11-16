@@ -468,6 +468,8 @@ class ALLSET_OT_shelf_button(bpy.types.Operator):
                     lambda ctx: run_action(ctx, (target, {}), option=bool(self.option)),
                 )
             if kind == "python":
+                if self.option and action.get("options"):  # tnt: double-click / Ctrl+click = its options popup
+                    from .shelf_options_tnt import popup; return popup(context, self.shelf, self.index, button.get("label", ""), action["options"])  # noqa: E702
                 code = action.get("code", "")
                 if not code.strip():
                     raise RuntimeError("Python command is empty")
