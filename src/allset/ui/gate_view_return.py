@@ -1,17 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""tnt: a gate button pressed in Blender's own perspective view looks through the view's startup camera (Maya's persp
-panel is that camera). Turning the gates off again puts that view back to its own perspective, so Blender's camera
-border (always drawn in a camera view) goes away like Maya's frame does. Views the user pointed at a camera
-themselves are left alone.
+"""tnt: a gate button in Blender's own view looks through the view's startup camera (Maya's persp / top / front / side
+panel is that camera). When the last gate goes off in a view looking through a startup camera, the view goes back to
+its own perspective / orthographic view, placed where the camera is, so Blender's camera border (always drawn in a
+camera view, no Python switch) goes away like Maya's frame. Checked on the camera, not remembered per session: the kit
+restores a panel's camera view after a reload or restart. Views through other cameras keep the camera view.
 """
 
-# RegionView3D pointer -> name of the camera a gate button made the view look through (session only)
-_entered = {}
-
-
-def entered(space, cam):
-    if space.region_3d is not None and cam is not None:
-        _entered[space.region_3d.as_pointer()] = cam.name
+from mathutils import Vector
 
 
 def _any_on(data):
@@ -22,17 +17,13 @@ def _any_on(data):
 
 
 def maybe_return(space, cam):
-    """Back to the view's own perspective when a gate button entered this camera view and nothing gate-like is on."""
     rv3d = space.region_3d
-    if rv3d is None or cam is None or cam.type != 'CAMERA':
+    if rv3d is None or cam is None or cam.type != 'CAMERA' or rv3d.view_perspective != 'CAMERA':
         return
-    ptr = rv3d.as_pointer()
-    if _entered.get(ptr) != cam.name:
+    from ..operators import startup_cameras
+    if not startup_cameras.is_startup(cam) or _any_on(cam.data):
         return
-    if rv3d.view_perspective != 'CAMERA':
-        _entered.pop(ptr, None)
-        return
-    if _any_on(cam.data):
-        return
-    _entered.pop(ptr, None)
-    rv3d.view_perspective = 'PERSP'
+    loc, rot, _scale = cam.matrix_world.decompose()
+    rv3d.view_rotation = rot
+    rv3d.view_location = loc + rot @ Vector((0.0, 0.0, -rv3d.view_distance))   # view pivots in front of the camera
+    rv3d.view_perspective = 'ORTHO' if cam.data.type == 'ORTHO' else 'PERSP'
