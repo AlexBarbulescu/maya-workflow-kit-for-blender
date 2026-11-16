@@ -167,7 +167,7 @@ class ALLSET_UL_shelf_editor_contents(bpy.types.UIList):
             return
 
         icon_kwargs = shelf.shelf_icons.icon_ui_kwargs(item.icon if item.icon != 'NONE' else 'DOT')
-        shelf_editor_drag.draw_grip(row, data.allset_se_index == item.button_index)  # tnt: press-hold-release to reorder
+        shelf_editor_drag.draw_grip(row, item.button_index)  # tnt: press-hold-release to reorder
         op = row.operator(
             ALLSET_OT_shelf_editor_select_button.bl_idname,
             text=item.label,
@@ -350,7 +350,7 @@ classes = (
     ALLSET_OT_shelf_editor_apply_button,
     ALLSET_OT_shelf_editor_delete_button,
     ALLSET_OT_shelf_editor_move_button,
-    shelf_editor_drag.ALLSET_OT_shelf_editor_drag_button,  # tnt: press-hold-release to reorder
+    *shelf_editor_drag.classes,  # tnt: press-hold-release to reorder
     ALLSET_OT_shelf_editor_save,
     ALLSET_OT_shelf_editor_cancel,
     ALLSET_PG_shelf_editor_list_item,
@@ -377,7 +377,6 @@ _WM_PROPS = (
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    shelf_editor_drag.register()  # tnt: press-hold-release to reorder
     wm = bpy.types.WindowManager
     wm.allset_se_shelf = StringProperty(options={'SKIP_SAVE'})
     wm.allset_se_index = IntProperty(default=-1, options={'SKIP_SAVE'})
