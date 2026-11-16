@@ -6,7 +6,7 @@ import math
 import bpy
 
 from .. import undo_steps
-from . import extrude, model_history, prim_history, units
+from . import extrude, extrude_rebuild, model_history, prim_history, soften_harden_edges, units
 
 
 def recording(context):
@@ -19,7 +19,7 @@ def _soften(bm, params, unit):
     if not math.isfinite(angle) or not 0 <= angle <= 180:
         raise ValueError('The edge angle must be between 0 and 180 degrees')
     bm.normal_update()
-    menu_items.soften_harden(bm, angle, menu_items._picked(bm, params['whole']))
+    menu_items.soften_harden(bm, angle, soften_harden_edges._picked(bm, params['whole']))
     if params['whole']:
         extrude.deselect_all(bm)
     return list(bm.verts)
@@ -80,7 +80,7 @@ def soften(context, ob, bm, angle, whole=False):
         for sequence in (bm.verts, bm.edges, bm.faces):
             for element in sequence:
                 element.select = True
-    record = extrude.record_new if ob.mode == 'EDIT' else extrude._record_bm
+    record = extrude.record_new if ob.mode == 'EDIT' else extrude_rebuild._record_bm
     return record(context, ob, bm, SOFT_EDGE,
                   {'angle': angle, 'whole': whole}, units.maya_unit(context.scene))
 
@@ -107,7 +107,7 @@ class ALLSET_OT_shape_history_edit(bpy.types.Operator):
             ob = context.active_object
             rec = extrude.object_record(ob)
             ok = (rec is not None and rec.spec.edit_op == 'shape_history_edit'
-                  and extrude.run_object(ob, rec, dict(rec.params, **params(rec.spec)), units.maya_unit(context.scene)))
+                  and extrude_rebuild.run_object(ob, rec, dict(rec.params, **params(rec.spec)), units.maya_unit(context.scene)))
             return {'FINISHED'} if ok else {'CANCELLED'}
         done = 0
         for ob in context.objects_in_mode_unique_data:

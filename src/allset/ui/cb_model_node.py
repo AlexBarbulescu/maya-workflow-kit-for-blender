@@ -13,6 +13,7 @@ from ..operators import bevel_maya, extrude  # noqa: F401  bevel_maya: registers
 from ..operators import uv_tools  # noqa: F401  registers the polyAutoProj spec
 from ..operators import move_component  # noqa: F401  registers the polyMoveFace / Edge / Vertex specs
 from ..operators import extrude_curve  # noqa: F401  registers the extrusion along a curve
+from ..operators import shape_history  # noqa: F401  tnt: registers shading/deletion before building text proxies
 
 
 # --- Channel Box INPUTS ------------------------------------------------------------------------------
