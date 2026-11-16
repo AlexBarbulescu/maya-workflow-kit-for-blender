@@ -36,6 +36,22 @@ def view_camera(space, scene):
     return space.camera if space.use_local_camera and space.camera is not None else scene.camera
 
 
+FILL_MARGIN = 1.05      # tnt: pushes Blender's dashed camera border just past the view edges
+
+
+def no_gate_fill(cam, region, scene):
+    """tnt: Maya with no Film / Resolution Gate fills the panel with the camera and draws no frame. Blender always
+    draws the camera border, so scale the fitted frame until it covers the view (border off-screen). 1.0 with a gate
+    or a user Overscan other than 1 (that one keeps showing the frame at 1 / overscan)."""
+    from ..ui.panel_menus import RES_GATE
+    if cam.data.show_sensor or cam.data.get(RES_GATE) or abs(overscan(cam) - 1.0) > 1e-6:
+        return 1.0
+    r = scene.render
+    frame = (r.resolution_x * r.pixel_aspect_x) / max(r.resolution_y * r.pixel_aspect_y, 1e-9)
+    view = region.width / max(region.height, 1)
+    return max(frame / view, view / frame) * FILL_MARGIN
+
+
 def apply_view(window, area):
     """Fit the camera frame of this view, then scale it down by the camera's overscan. False when the view doesn't
     look through a camera (or is a quad view)."""
@@ -50,6 +66,7 @@ def apply_view(window, area):
     with bpy.context.temp_override(window=window, area=area, region=region, space_data=space):
         bpy.ops.view3d.view_center_camera()
     fac = zoom_to_fac(rv3d.view_camera_zoom) / overscan(cam)
+    fac *= no_gate_fill(cam, region, window.scene)      # tnt: no gate -> the frame fills the view, border off-screen
     rv3d.view_camera_zoom = min(ZOOM_MAX, max(ZOOM_MIN, fac_to_zoom(fac)))
     from ..ui import camera_bookmarks
     camera_bookmarks.pan_zoom_forget(rv3d)       # the whole frame: no 2D pan / zoom left in this view

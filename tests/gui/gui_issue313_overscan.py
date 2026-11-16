@@ -64,7 +64,9 @@ def s_camera():
 @step
 def s_fit():
     fill = frame_fill()
-    check(f"looking through it: the frame fills the view at Overscan 1 ({fill[0]:.3f}, {fill[1]:.3f})", fits(fill, 1.0))
+    # tnt: no gate at Overscan 1 -> the frame covers the view (Blender's camera border off-screen, like Maya)
+    check(f"looking through it: the frame covers the view at Overscan 1 ({fill[0]:.3f}, {fill[1]:.3f})",
+          min(fill) > 1.0 - 0.03)
     C["cam"].data.allset_overscan = 1.3
 
 
