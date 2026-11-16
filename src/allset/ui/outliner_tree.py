@@ -117,8 +117,38 @@ def show_all():
     return n
 
 
+SORT_KEY = "allset_outliner_sort_alpha"    # tnt: on the screen ID, so the sort survives 5.2 <-> 5.3 (5.3's sort_method)
+
+
+def _maya_outliners(screen):
+    from .maya_outliner import is_maya_outliner
+    return [sp for a in screen.areas for sp in a.spaces if sp.type == 'OUTLINER' and is_maya_outliner(sp)]
+
+
+def store_sort():
+    """Write each screen's Maya Outliner sort into the screen: Blender 5.3 saves only its sort_method enum, so 5.2
+    reads such a file as Sort Alphabetically (and a version that drops the enum would too)."""
+    for screen in bpy.data.screens:
+        spaces = _maya_outliners(screen)
+        if spaces:
+            # shortcut: one value per screen (its first Maya Outliner); per area if a screen ever holds two that differ
+            screen[SORT_KEY] = sort_alpha(spaces[0])
+
+
+def restore_sort():
+    """Put back the sort ``store_sort`` saved, through compat (use_sort_alpha on 5.2, sort_method on 5.3)."""
+    for screen in bpy.data.screens:
+        want = screen.get(SORT_KEY)
+        if want is None:
+            continue
+        for sp in _maya_outliners(screen):
+            if sort_alpha(sp) != bool(want):
+                set_sort_alpha(sp, bool(want))
+
+
 @persistent
 def _on_save_pre(*_args):
+    store_sort()
     show_all()
 
 
@@ -133,6 +163,7 @@ def _on_load_post(*_args):
     SCROLL.clear()
     EXPANDED.clear()
     _bump_expand()
+    restore_sort()
     hide_all()
 
 
