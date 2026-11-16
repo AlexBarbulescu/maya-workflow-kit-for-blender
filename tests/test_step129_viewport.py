@@ -137,6 +137,7 @@ def test_gate_buttons_look_through_the_persp_camera():
     assert pm.state(ctx, "RES_GATE") and not cam.data.show_sensor and abs(cam.data.allset_overscan - 1.3) < 1e-6
     assert pm.apply(ctx, "RES_GATE")
     assert not pm.state(ctx, "RES_GATE") and abs(cam.data.allset_overscan - 1.0) < 1e-6
+    assert rv3d.view_perspective == 'PERSP'     # tnt: last gate off -> back to the view's own persp (no border)
     rv3d.view_perspective = 'PERSP'
 
 

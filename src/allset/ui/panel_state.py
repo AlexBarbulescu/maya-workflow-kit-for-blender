@@ -8,6 +8,7 @@ import bpy
 
 from ..operators import view as view_ops
 from . import camera_bookmarks
+from . import gate_view_return      # tnt
 from .panel_cameras import _look_through_panel_camera, _space, camera_locked, panel_camera, view_camera
 from .panel_menu_data import ALL_TYPES, LAYOUTS, LIGHTING, RENDERER, SHADING, SHOW, VIEW
 
@@ -339,6 +340,7 @@ def apply(context, key):
         ob = view_camera(context)
         if ob is None and key != "CAMERA_LOCK":
             ob = _look_through_panel_camera(context, space)
+            gate_view_return.entered(space, ob)          # tnt: gate off goes back to this view's own persp
         if ob is None or (key != "CAMERA_LOCK" and ob.type != 'CAMERA'):
             return False
         if key == "CAMERA_LOCK":
@@ -366,6 +368,8 @@ def apply(context, key):
         else:
             prop = CAMERA_DATA[key]
             setattr(ob.data, prop, not getattr(ob.data, prop))
+        if key != "CAMERA_LOCK":
+            gate_view_return.maybe_return(space, ob)     # tnt: last gate off -> back to the view's own persp
     elif key == "ISOLATE":
         area = context.area
         if area is None or area.type != 'VIEW_3D':
