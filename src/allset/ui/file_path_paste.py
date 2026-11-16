@@ -4,7 +4,12 @@ Blender turns the separators of a typed name into '_' when Enter is pressed (``I
 dialogs with a Python ``check`` see the real text (the kit's Import/Export does). For every other dialog this reads
 the '_' text back by walking the disk from the drive: each '_' is tried as a folder separator where such a folder
 exists. A folder opens it and keeps the name that was in the box before the paste (as Maya does); an existing file
-opens its folder with the file selected."""
+opens its folder with the file selected.
+
+Dialogs whose ``check`` rewrites the path (Save As, every exporter: they add the extension) see the raw text first,
+so Blender joins it to the current folder: folder ``C:\\scenes\\I:\\a\\`` + name ``b.blend``. A drive letter inside the
+folder path can only come from such a paste (':' is not allowed in names), so that is read back the same way; a
+missing file in an existing folder opens the folder with that name, ready to save."""
 
 import os
 import re
@@ -14,6 +19,7 @@ from bpy.app.handlers import persistent
 
 _OWNER = object()
 _DRIVE = re.compile(r'^_?([A-Za-z])__(.*)$')    # optional leading '_' = a pasted '"' quote
+_EMBEDDED = re.compile(r'.+?[\\/]"?([A-Za-z]:[\\/].*)$')   # Windows: a pasted absolute path joined to the folder
 _BAD = re.compile(r'[\x00-\x1f/\\?*:|"<>]')     # what BLI_path_make_safe_filename turns into '_'
 
 
@@ -75,7 +81,7 @@ def _remember():
             key = area.as_pointer()
             seen.add(key)
             name = params.filename
-            if name and (not _looks_pasted(name)
+            if name and not _EMBEDDED.match(params.directory.decode(errors="ignore")) and (not _looks_pasted(name)
                          or os.path.exists(os.path.join(params.directory.decode(errors="ignore"), name))):
                 _last[key] = name
     for key in [k for k in _last if k not in seen]:     # dialog closed
@@ -88,16 +94,35 @@ def last_name(area):
     return _last.get(area.as_pointer(), "") if area else ""
 
 
+def _embedded(params):
+    """(folder, file name) for a path a ``check`` joined to the current folder, or None. The name is "" for a folder."""
+    m = _EMBEDDED.match(params.directory.decode(errors="ignore")) if os.name == 'nt' else None
+    if not m:
+        return None
+    raw = os.path.join(m.group(1), params.filename).replace('"', "")
+    stem = os.path.splitext(raw)[0]
+    if os.path.isdir(raw):
+        return raw, ""
+    if os.path.isdir(stem):
+        return stem, ""                                         # check added the extension to a folder
+    name = os.path.basename(raw)
+    if name.startswith(".") and name.count(".") == 1 and os.path.isdir(os.path.dirname(raw)):
+        return os.path.dirname(raw), ""                         # folder pasted with a trailing '\\'
+    if os.path.isdir(os.path.dirname(raw)):
+        return os.path.dirname(raw), os.path.basename(raw)      # a file (new or existing) in a real folder
+    return None
+
+
 def _on_filename(*_args):
     wm = bpy.context.window_manager
     for window in wm.windows if wm else ():
         for area in window.screen.areas:
             space = area.spaces.active
             params = getattr(space, "params", None) if area.type == 'FILE_BROWSER' else None
-            if params is None or not _looks_pasted(params.filename):
+            if params is None:
                 continue
             try:
-                found = resolve(params.filename)
+                found = _embedded(params) or (resolve(params.filename) if _looks_pasted(params.filename) else None)
             except (OSError, RecursionError):
                 found = None
             if found:
