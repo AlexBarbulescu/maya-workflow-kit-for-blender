@@ -119,7 +119,8 @@ def frame_region(context, area, region, selected=True, children=False):
     loc, dist = framing.fit(points, rv3d.view_rotation, rv3d.window_matrix.copy(),
                             rv3d.view_distance, rv3d.view_perspective == 'ORTHO',
                             (region.width, region.height), rect,
-                            min_half=framing.MIN_HALF * units.maya_unit(context.scene))
+                            min_half=framing.MIN_HALF * units.maya_unit(context.scene),
+                            film_aspect=framing.FILM_ASPECT)     # tnt: Maya F fits the film-fit axis only
     rv3d.view_location = loc
     rv3d.view_distance = dist
     region.tag_redraw()
@@ -158,8 +159,11 @@ def frame_camera(context, cam, points):
     centre = sum((Vector(p) for p in points), Vector()) / len(points)
     forward = rot @ Vector((0.0, 0.0, -1.0))
     dist0 = max((centre - loc0).dot(forward), 1e-3)
+    data = cam.data
+    film = data.sensor_width / data.sensor_height if data.sensor_height > 0 else framing.FILM_ASPECT
     loc, dist = framing.fit(points, rot, win, dist0, ortho, size, (0.0, 0.0, size[0], size[1]),
-                            min_half=framing.MIN_HALF * units.maya_unit(context.scene))
+                            min_half=framing.MIN_HALF * units.maya_unit(context.scene),
+                            film_aspect=film)     # tnt: Maya GUI viewFit, the film-fit axis only, like the persp view
     if ortho:
         cam.data.ortho_scale *= dist / dist0
         dist = dist0
