@@ -13,6 +13,7 @@ import bpy
 from bpy.props import BoolProperty, EnumProperty, IntProperty, StringProperty
 
 from . import marked_window, shelf, shelf_editor_draft, window_places
+from . import shelf_editor_drag  # tnt: click-and-move to reorder
 from .shelf_editor_buttons import (ALLSET_MT_shelf_editor_add_action, ALLSET_OT_shelf_editor_add_button,
                                    ALLSET_OT_shelf_editor_apply_button, ALLSET_OT_shelf_editor_create_action,
                                    ALLSET_OT_shelf_editor_delete_button, ALLSET_OT_shelf_editor_move_button,
@@ -175,6 +176,7 @@ class ALLSET_UL_shelf_editor_contents(bpy.types.UIList):
         op.index = item.button_index
         if data.allset_se_index == item.button_index:
             controls = row.row(align=True)
+            shelf_editor_drag.draw_grip(controls)  # tnt: click-and-move to reorder
             move_up = controls.operator(ALLSET_OT_shelf_editor_move_button.bl_idname,
                                         text="", icon='TRIA_UP')
             move_up.direction = "UP"
@@ -348,6 +350,7 @@ classes = (
     ALLSET_OT_shelf_editor_apply_button,
     ALLSET_OT_shelf_editor_delete_button,
     ALLSET_OT_shelf_editor_move_button,
+    shelf_editor_drag.ALLSET_OT_shelf_editor_drag_button,  # tnt: click-and-move to reorder
     ALLSET_OT_shelf_editor_save,
     ALLSET_OT_shelf_editor_cancel,
     ALLSET_PG_shelf_editor_list_item,
