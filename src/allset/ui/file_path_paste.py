@@ -3,7 +3,8 @@
 Blender turns the separators of a typed name into '_' when Enter is pressed (``I:\\a\\b`` -> ``I__a_b``), so only
 dialogs with a Python ``check`` see the real text (the kit's Import/Export does). For every other dialog this reads
 the '_' text back by walking the disk from the drive: each '_' is tried as a folder separator where such a folder
-exists. A folder opens it; an existing file opens its folder with the file selected."""
+exists. A folder opens it and keeps the name that was in the box before the paste (as Maya does); an existing file
+opens its folder with the file selected."""
 
 import os
 import re
@@ -57,13 +58,43 @@ def resolve(name):
     return None
 
 
+def _looks_pasted(name):
+    return "__" in name or name.startswith("_")
+
+
+def _remember():
+    """Timer: note each open file browser's File Name text, so a pasted folder can put it back (clicked names don't
+    publish msgbus, so polling is the only way to see them)."""
+    seen = set()
+    wm = bpy.context.window_manager
+    for window in wm.windows if wm else ():
+        for area in window.screen.areas:
+            params = getattr(area.spaces.active, "params", None) if area.type == 'FILE_BROWSER' else None
+            if params is None:
+                continue
+            key = area.as_pointer()
+            seen.add(key)
+            name = params.filename
+            if name and (not _looks_pasted(name)
+                         or os.path.exists(os.path.join(params.directory.decode(errors="ignore"), name))):
+                _last[key] = name
+    for key in [k for k in _last if k not in seen]:     # dialog closed
+        del _last[key]
+    return 0.25
+
+
+def last_name(area):
+    """The File Name text ``area``'s file browser had before a path was pasted into it ("" if unknown)."""
+    return _last.get(area.as_pointer(), "") if area else ""
+
+
 def _on_filename(*_args):
     wm = bpy.context.window_manager
     for window in wm.windows if wm else ():
         for area in window.screen.areas:
             space = area.spaces.active
             params = getattr(space, "params", None) if area.type == 'FILE_BROWSER' else None
-            if params is None or not ("__" in params.filename or params.filename.startswith("_")):
+            if params is None or not _looks_pasted(params.filename):
                 continue
             try:
                 found = resolve(params.filename)
@@ -71,7 +102,7 @@ def _on_filename(*_args):
                 found = None
             if found:
                 params.directory = os.path.join(found[0], "").encode()
-                params.filename = found[1]
+                params.filename = found[1] or last_name(area)
                 area.tag_redraw()
 
 
@@ -89,10 +120,13 @@ def _on_load(*_args):
 def register():
     _subscribe()
     bpy.app.handlers.load_post.append(_on_load)
+    bpy.app.timers.register(_remember, first_interval=0.25, persistent=True)
 
 
 def unregister():
     if _on_load in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(_on_load)
     bpy.msgbus.clear_by_owner(_OWNER)
-
+    if bpy.app.timers.is_registered(_remember):
+        bpy.app.timers.unregister(_remember)
+    _last.clear()

@@ -246,7 +246,8 @@ class _FileDialog:
                 folder = os.path.abspath(os.path.join(os.fsdecode(space.params.directory), path))
                 if os.path.isdir(folder):
                     # check runs before Blender sanitizes filename separators; return the new browser path.
-                    self.filepath = os.path.join(folder, "")
+                    from ..ui import file_path_paste     # tnt: keep the name the box had before the paste
+                    self.filepath = os.path.join(folder, file_path_paste.last_name(context.area))
                     return True
         if self.mode == 'IMPORT' or not self.filepath or format_of(self.filepath) == self.export_type:
             return False
