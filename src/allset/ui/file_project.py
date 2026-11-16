@@ -12,6 +12,7 @@ import os
 import bpy
 
 from .. import live_refs
+from . import file_path_paste  # tnt
 from ..operators import project
 
 IMAGE_OPEN = "IMAGE_OT_open"
@@ -80,10 +81,12 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.types.FILEBROWSER_PT_directory_path.append(_texture_browser)
+    file_path_paste.register()  # tnt: pasted full path in any File Name box opens it
 
 
 def unregister():
     bpy.types.FILEBROWSER_PT_directory_path.remove(_texture_browser)
+    file_path_paste.unregister()  # tnt
     if bpy.app.timers.is_registered(_move_browsers):
         bpy.app.timers.unregister(_move_browsers)
     _pending.clear()
