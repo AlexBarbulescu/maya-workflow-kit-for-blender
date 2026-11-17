@@ -324,6 +324,9 @@ def fit_columns(start_fit=True):
         # extra height goes to the viewport under the shelf row (the shelf row keeps its height).
         strip = strip_area(screen)
         strip_fitted = False
+        # tnt: the shelf row's own fit rides along with the Status Line move (a second pass flicked the top at startup)
+        row_d = round(SHELF_PX * scale) - row.height if row is not None else 0
+        row_d = row_d if abs(row_d) > 2 and (armed or (resized and not user)) else 0
         if strip is not None and row is not None and (loaded or resized) \
                 and 0 <= strip.y - (row.y + row.height) <= round(GAP_PX * max(scale, 1.0)):
             hdr = next((r.height for r in strip.regions if r.type == 'HEADER'), 0)
@@ -332,14 +335,12 @@ def fit_columns(start_fit=True):
                 needed = strip_fitted = True
                 x = strip.x + strip.width // 2
                 if _move_edge(window, strip, x, strip.y, extra, (x, strip.y - 1), pending):
-                    _move_edge(window, row, x, row.y, extra, (x, row.y - 1), pending)
+                    _move_edge(window, row, x, row.y, extra - row_d, (x, row.y - 1), pending)
         # the Maya shelf row (tab row + icon row, 64 px at scale 1): grow it downwards
-        if row is not None and not strip_fitted:
-            d = round(SHELF_PX * scale) - row.height
-            if abs(d) > 2 and (armed or (resized and not user)):
-                needed = True
-                _move_edge(window, row, row.x + row.width // 2, row.y, -d,
-                           (row.x + row.width // 2, row.y - 1), pending)
+        if row_d and not strip_fitted:
+            needed = True
+            _move_edge(window, row, row.x + row.width // 2, row.y, -row_d,
+                       (row.x + row.width // 2, row.y - 1), pending)
         # the Time Slider (#109): its ruler keeps 36 px times the UI scale. The template area has a
         # fixed height, so at UI 1.25 the taller header left a 29 px ruler that Blender's current-frame box filled:
         # grow it upwards (to time_slider_goal: a height Blender's edge snap doesn't pull back)
@@ -366,22 +367,24 @@ def fit_columns(start_fit=True):
             continue
         if settle(column.spaces.active, context.preferences):
             column.tag_redraw()
-        if not armed:
-            pass
-        elif abs(column.width - want) > 1 and column.x + column.width < window.width - 2:
+        fit_col = armed and abs(column.width - want) > 1 and column.x + column.width < window.width - 2
+        if fit_col:
             needed = True
             _move_edge(window, column, column.x + column.width, column.y + column.height // 2,
                        want - column.width, (column.x + column.width + 1, column.y + column.height // 2), pending)
-        elif abs(column.width - want) <= 1:
+        if fit_col or (armed and abs(column.width - want) <= 1):
             # the layout Outliner right of the column keeps Maya's panel width at this scale (widening the column
-            # took its pixels)
+            # took its pixels). tnt: its right edge goes where it ends once the column is fitted, in the same pass
+            # as the column (fitted a tick later, the panels visibly jumped twice at startup)
             outl = next((a for a in screen.areas if a.type == 'OUTLINER' and abs(a.x - (column.x + column.width)) <= GAP_PX
                          and a.height >= column.height - 4), None)
-            wo = _outliner_px(scale)
-            if outl is not None and abs(outl.width - wo) > 2 and outl.x + outl.width < window.width - 2:
-                needed = True
-                _move_edge(window, outl, outl.x + outl.width, outl.y + outl.height // 2, wo - outl.width,
-                           (outl.x + outl.width + 1, outl.y + outl.height // 2), pending)
+            if outl is not None:
+                right = outl.x + outl.width
+                goal = outl.x + (want - column.width if fit_col else 0) + _outliner_px(scale)
+                if abs(goal - right) > 2 and right < window.width - 2:
+                    needed = True
+                    _move_edge(window, outl, right, outl.y + outl.height // 2, goal - right,
+                               (right + 1, outl.y + outl.height // 2), pending)
         if armed and not needed:
             _disarm(screen)      # fitted: the user's own edge moves stay
         narrow = column.width < want - 1

@@ -117,7 +117,8 @@ def _prepare_layout(window, ws, fresh=False):
             if sizes == previous:
                 break
             previous = sizes
-            toolbox.fit_columns(start_fit=False)
+            # tnt: a move Blender refuses (mouse over a region) starts the cursor fit now, not at the next 0.5 s tick
+            toolbox.fit_columns(start_fit=True)
     with bpy.context.temp_override(window=window, screen=screen):
         time_slider.fit_timelines()     # at the final sizes; else the first draw schedules it and the ruler jumps
 

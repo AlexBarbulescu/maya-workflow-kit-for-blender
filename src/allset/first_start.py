@@ -19,7 +19,7 @@ meanwhile): ``open_layout_later`` does it from a timer after the operator has re
 import bpy
 from bpy.app.handlers import persistent
 
-from . import app_template, preferences
+from . import app_template, preferences, startup_park_tnt
 
 _armed = [False]
 
@@ -159,7 +159,11 @@ def _on_load_post(*_args):
 def _open_layout():
     if _window() is None:
         return 0.1
-    new_maya_scene()
+    startup_park_tnt.park(_window())   # tnt: the Maya scene is fitted before its first frame
+    try:
+        new_maya_scene()
+    finally:
+        startup_park_tnt.restore()   # tnt
     return None
 
 
