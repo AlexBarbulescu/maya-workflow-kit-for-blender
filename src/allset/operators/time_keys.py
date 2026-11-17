@@ -20,7 +20,8 @@ from bpy.props import BoolProperty, EnumProperty
 from .. import results
 from .. import undo_steps
 from .. import i18n
-from .key_nodes import _cb, _in, keys_in, _move, node_fcurves, nodes, prefix, time_range  # noqa: F401
+from .key_nodes import (_cb, _in, keys_in, _move, node_fcurves, nodes, prefix, slider_fcurves,  # noqa: F401
+                        time_range, without_deformer_curves)
 from .key_scope import (_CLIPBOARD, copy_scope, CurveRef, delete_scope, EPS, KeyScope, _offset_value,  # noqa: F401
                         PASTE_METHODS, paste_scope, scale_scope, scope_curves, scope_nodes, scope_range, _snap,
                         snap_scope, value_unit)
@@ -145,7 +146,7 @@ def delete_keys(context, a, b):
 def copy_keys(context, a, b):
     """Time Slider copy: the nodes' keys in a..b onto the animation clipboard (see ``copy_scope``)."""
     # Time Slider frames are whole: a key within half a frame of the range counts (like ``_in``)
-    return copy_scope(context, KeyScope(time_range="Start/End", start=a, end=b), pad=0.5 - EPS)
+    return copy_scope(context, KeyScope(time_range="Start/End", start=a, end=b, slider=True), pad=0.5 - EPS)
 
 
 def paste_keys(context, frame):
@@ -186,7 +187,7 @@ def inbetween(context, frame, delta):
     (Remove only where the next key is more than one frame away, so keys never collide)."""
     n = 0
     for node in nodes(context):
-        for fc in node_fcurves(node):
+        for fc in slider_fcurves(node):
             later = [kp for kp in fc.keyframe_points if kp.co.x > frame + 0.5]
             if not later:
                 continue
@@ -212,8 +213,8 @@ def set_tangent(context, a, b, kind):
 
 
 def key_span(context):
-    """(first, last) key frame of the nodes, or None."""
-    frames = [kp.co.x for node in nodes(context) for fc in node_fcurves(node) for kp in fc.keyframe_points]
+    """(first, last) key frame of the nodes' Time Slider curves, or None."""
+    frames = [kp.co.x for node in nodes(context) for fc in slider_fcurves(node) for kp in fc.keyframe_points]
     return (int(round(min(frames))), int(round(max(frames)))) if frames else None
 
 
@@ -347,8 +348,8 @@ class ALLSET_OT_time_keys(bpy.types.Operator):
 
 
 def sound_span(scene):
-    """(start, end) of the time slider sound: Maya min = offset, max = int(offset + length). Blender has no
-    "displayed" sound: the active sound strip, else the first one."""
+    """(start, end) of the Time Slider sound: from the sound's offset to the whole frame its end falls in, like Maya.
+    Blender has no "displayed" sound: the active sound strip, else the first one."""
     from .. import compat
     if scene.sequence_editor is None:
         return None
@@ -386,8 +387,8 @@ class ALLSET_OT_time_set_range(bpy.types.Operator):
         elif self.mode == "SOUND":
             span = sound_span(scene)
             if span is None:
-                self.report({'ERROR'}, "No sound displayed. Import a sound file, then use the Sound menu to display "
-                                       "it in the Time Slider")
+                self.report({'ERROR'}, "No sound to take the range from: import a sound first (Audio > Import "
+                                       "Audio...)")
                 return {'CANCELLED'}
             a, b = span
         else:
@@ -404,4 +405,40 @@ class ALLSET_OT_time_set_range(bpy.types.Operator):
         return {'FINISHED'}
 
 
-classes = (ALLSET_OT_set_key, ALLSET_OT_time_keys, ALLSET_OT_time_set_range)
+def jump_frame(frames, current, forward):
+    """Maya Next / Previous Key: the first key frame after (before) ``current``; past the last (first) key it goes
+    round to the first (last). None without keys."""
+    whole = sorted({int(round(f)) for f in frames})
+    if not whole:
+        return None
+    if forward:
+        later = [f for f in whole if f > current]
+        return later[0] if later else whole[0]
+    earlier = [f for f in whole if f < current]
+    return earlier[-1] if earlier else whole[-1]
+
+
+class ALLSET_OT_key_jump(bpy.types.Operator):
+    """Go to the next / previous key the Time Slider shows (Maya . / ,)"""
+    bl_idname = "allset.key_jump"
+    bl_label = "Jump to Key"
+    bl_options = {'UNDO_GROUPED'}
+    bl_undo_group = "Frame Change"
+
+    next: BoolProperty(name="Next", default=True, options={'SKIP_SAVE'})
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene is not None
+
+    def execute(self, context):
+        from ..ui import time_slider
+        frames = [f for f, _bd in time_slider.key_frames(time_slider.tick_nodes(context))]
+        frame = jump_frame(frames, context.scene.frame_current, self.next)
+        if frame is None:
+            return {'CANCELLED'}
+        context.scene.frame_current = frame
+        return {'FINISHED'}
+
+
+classes = (ALLSET_OT_set_key, ALLSET_OT_time_keys, ALLSET_OT_time_set_range, ALLSET_OT_key_jump)

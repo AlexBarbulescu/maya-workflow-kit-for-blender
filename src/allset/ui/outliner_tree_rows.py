@@ -66,22 +66,23 @@ def natural_key(name):
 
 
 def icon_kind(ob):
-    from ..operators import create
+    from ..operators import create, distance_tool
     from .hypergraph_layout import node_kind
-    return node_kind(ob.type, bool(ob.get(create.LOCATOR_PROP)))
+    return node_kind(ob.type, bool(ob.get(create.LOCATOR_PROP)), distance_tool.is_dimension(ob))
 
 
 def _icon_kinds():
     """``icon_kind`` as a function of (object, its type) for one rows build: the imports are done once, and only an
-    empty's kind depends on the locator property (``node_kind``), so only empties read it."""
-    from ..operators import create
+    empty's kind depends on its properties (locator, distance dimension: ``node_kind``), so only empties read them."""
+    from ..operators import create, distance_tool
     from .hypergraph_layout import node_kind
     prop = create.LOCATOR_PROP
+    is_dimension = distance_tool.is_dimension
     kinds = {}
 
     def kind(ob, t):
         if t == 'EMPTY':
-            return node_kind(t, bool(ob.get(prop)))
+            return node_kind(t, bool(ob.get(prop)), is_dimension(ob))
         got = kinds.get(t)
         if got is None:
             got = kinds[t] = node_kind(t)
@@ -272,12 +273,16 @@ def tail_rows(scene, opts):
             if match is None or match(n)]
     for coll in sets.all_sets():
         mem = sets.members(coll, scene)
-        opened = bool(mem) and (coll.allset_expanded or match is not None)
+        parts = sets.part_objects(coll, scene)
+        opened = bool(mem or parts) and (coll.allset_expanded or match is not None)
         below = [Row('MEMBER', ob.name, coll.name, 1, False, False, ob.name, icon_kind(ob), None) for ob in mem
                  if match is None or match(ob.name)] if opened else []
+        # component members: one row per Maya name (pCube1.vtx[0:3]); the row's object is the mesh
+        below += [Row('MEMBER', ob.name, coll.name, 1, False, False, label, icon_kind(ob), None) for ob in parts
+                  for label in sets.component_names(coll, ob) if match is None or match(label)] if opened else []
         if match is not None and not match(coll.name) and not below:
             continue
-        rows.append(Row('SET', coll.name, "", 0, bool(mem), opened, coll.name, 'SET', ('S', coll.name)))
+        rows.append(Row('SET', coll.name, "", 0, bool(mem or parts), opened, coll.name, 'SET', ('S', coll.name)))
         rows += below
     return rows
 

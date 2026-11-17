@@ -20,7 +20,7 @@ from .cb_inputs import constrained_keys
 from .cb_values import (_non_euler_rot, auto_keys, driver, entry_kind, get_value, has_channel, keyframe, set_value,
                         shape_owner, shape_paths)
 from .cb_selection import (cell_key, drawn_keys, entry_keys, redraw_selection, select_channel, select_range,
-                           selected_channels, set_selected_channels)
+                           selected_channels, selection_column, set_selected_channels, set_selection_column)
 from .cb_slider import drag_limit
 from .cb_menus import ALLSET_MT_cb_channels, ALLSET_MT_cb_edit
 
@@ -352,6 +352,7 @@ class ALLSET_OT_cb_channel_drag(bpy.types.Operator):
             return self._on_release(context, event)
         if event.type == 'ESC' and event.value == 'PRESS':
             set_selected_channels(self._base)
+            set_selection_column(self._column)
             self._press = None
             redraw_selection()
             return {'RUNNING_MODAL'}
@@ -382,9 +383,10 @@ class ALLSET_OT_cb_channel_drag(bpy.types.Operator):
             bpy.ops.wm.call_menu(name=ALLSET_MT_cb_edit.__name__)
             return {'RUNNING_MODAL'}
         if hit is not None:
-            key, _part = hit
+            key, part = hit
             if key not in selected_channels(context):
                 set_selected_channels([key], context)
+                set_selection_column(part)
                 _anchor["key"] = key
                 redraw_selection()
         self._menu_beside(context, y)
@@ -421,6 +423,7 @@ class ALLSET_OT_cb_channel_drag(bpy.types.Operator):
         self._extended = None
         self._ctrl = event.ctrl
         self._base = selected_channels(context)
+        self._column = selection_column()
         self._anchor = key
         self._part = part
         self._key = key
@@ -432,6 +435,7 @@ class ALLSET_OT_cb_channel_drag(bpy.types.Operator):
         elif part == 'VALUE':
             if key not in self._base:
                 set_selected_channels([key], context)
+                set_selection_column('VALUE')
                 _anchor["key"] = key
         elif event.shift and _anchor["key"] is not None:
             select_range(ob, _anchor["key"], key, "SET", context=context)
@@ -469,6 +473,7 @@ class ALLSET_OT_cb_channel_drag(bpy.types.Operator):
         self._extended = cur
         base = self._base if self._ctrl else None
         select_range(self._ob, self._anchor, cur, "ADD" if self._ctrl else "SET", base=base, context=context)
+        set_selection_column(self._part)
         redraw_selection()
 
     def _on_move(self, context, event):
@@ -492,7 +497,7 @@ class ALLSET_OT_cb_channel_drag(bpy.types.Operator):
             if part == "VALUE" and not (shift or ctrl):
                 # #375, Maya: after a drag over the values, typing goes straight into every selected channel
                 try:
-                    edit_field(context, self._extended or self._key, blank=True)
+                    edit_field(context, self._extended or self._key)
                 except RuntimeError:
                     pass
         elif part == "VALUE" and (shift or ctrl):
@@ -502,6 +507,7 @@ class ALLSET_OT_cb_channel_drag(bpy.types.Operator):
             else:
                 select_channel(self._key, "TOGGLE", context)
                 _anchor["key"] = self._key
+            set_selection_column('VALUE')
         elif part == "VALUE" and not (event.ctrl or event.shift):
             # a click on a field: Maya edits it in place. The press was eaten, so the field is edited in a popup
             # over it (text active at once); Enter writes the text into every selected channel (apply_entry).
@@ -526,19 +532,49 @@ def field_owner(context, key):
     return None, None
 
 
-_edit = {"key": None, "blank": False}
+# the open value editor: its channel, the text it opened with, whether Enter was pressed, and its watcher's number
+_edit = {"key": None, "text": "", "enter": False, "watch": 0}
 
 
-def edit_field(context, key, blank=False):
-    """Edit channel ``key``'s field in a popover at the mouse with the text active at once (Maya: a click into a
-    field edits it); Enter writes the text into every selected channel (apply_entry) and closes it, like F2.
-    ``blank`` (after a drag over the values, #375): an empty field, so a click away changes no channel."""
-    if field_owner(context, key)[0] is None:
+def edit_field(context, key):
+    """Edit channel ``key``'s value in a popover at the mouse, its text selected so typing replaces it (Maya: a click
+    into a field, or the end of a drag over the values, edits that cell). Like Maya, Enter writes the text into every
+    selected channel (apply_entry), also when it is unchanged; a click away writes it only when it was changed, and
+    Esc writes nothing (``Scene.allset_cb.entry_text``)."""
+    owner, prop = field_owner(context, key)
+    if owner is None:
         return False
     _edit["key"] = key
-    _edit["blank"] = blank
+    _edit["text"] = getattr(owner, prop)
+    _edit["enter"] = False
     bpy.ops.wm.call_panel(name=ALLSET_PT_cb_field.__name__, keep_open=False)
+    # Blender commits the field the same way on Enter and on a click away; a window handler added after the popover
+    # gets each event before it, so this one notes the Enter press first
+    _edit["watch"] += 1
+    bpy.ops.allset.cb_entry_enter('INVOKE_DEFAULT')
     return True
+
+
+class ALLSET_OT_cb_entry_enter(bpy.types.Operator):
+    """Channel Box value editor: note an Enter press before the editor's field takes it (Enter writes an unchanged value, a click away doesn't)"""
+    bl_idname = "allset.cb_entry_enter"
+    bl_label = "Value Editor Enter"
+    bl_options = {'INTERNAL'}
+
+    def invoke(self, context, event):
+        self._watch = _edit["watch"]
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        if self._watch != _edit["watch"]:        # the editor committed, or a newer one opened
+            return {'FINISHED', 'PASS_THROUGH'}
+        if event.value == 'PRESS':
+            if event.type in {'RET', 'NUMPAD_ENTER'}:
+                _edit["enter"] = True
+            elif event.type == 'ESC':            # the editor closes without writing
+                return {'FINISHED', 'PASS_THROUGH'}
+        return {'PASS_THROUGH'}
 
 
 class ALLSET_PT_cb_field(bpy.types.Panel):
@@ -549,11 +585,10 @@ class ALLSET_PT_cb_field(bpy.types.Panel):
     bl_ui_units_x = 6
 
     def draw(self, context):
-        owner, prop = field_owner(context, _edit["key"] or "")
-        if owner is None:
+        if field_owner(context, _edit["key"] or "")[0] is None:
             return
         if _edit["blank"]:
             owner, prop = context.scene.allset_cb, "entry_text"
         row = self.layout.row()
         row.activate_init = True
-        row.prop(owner, prop, text="")
+        row.prop(context.scene.allset_cb, "entry_text", text="")

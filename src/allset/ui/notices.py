@@ -522,12 +522,13 @@ NOTICES.update({
 # Greyed items (no Blender action in Maya Workflow Kit) by Maya menu path prefix: (closest Blender feature, one line).
 # notices.category picks the longest matching prefix; tests/test_step101_menu_honesty.py checks that every
 # greyed menu item has a notice and that every rule here matches at least one greyed item.
-# (Create Description... / Create Interactive Groom Splines are mapped to a new hair Curves object.)
+# (Create Description... / Create Interactive Groom Splines are mapped to a new hair Curves object, the Interactive
+# Grooming Tools brushes to the hair sculpt brushes or their own notice.)
 _XGEN_ITEMS = ("XGen Editor", "XGen Library", "Import Collections or Descriptions...",
                "Export Collections or Descriptions...", "Export Selection as Archive(s)...",
                "Batch Convert Scenes to Archives...", "Convert XGen Primitives to Polygons...",
                "Convert to Interactive Groom...", "Import Preset...", "Export as Preset...",
-               "Interactive Groom Editor", "Interactive Grooming Tools", "Cache",
+               "Interactive Groom Editor", "Cache",
                "Convert Interactive Groom to Polygons...", "Display HUD")
 CATEGORIES = {
     # whole Maya-only systems
@@ -645,8 +646,6 @@ CATEGORIES = {
                      "data-blocks as assets, expose values with library overrides or custom properties."),
     "Modify/Convert": ("Object > Convert", "Blender converts curves, text, meshes and Grease Pencil; subdiv surfaces, "
                        "Paint Effects, displacement and fluids aren't separate types."),
-    "Edit": ("Edit menu", "Blender has no fur and no level of detail switching: Object > Link/Transfer Data "
-             "copies data between objects."),
     **{f"Edit/{sub}": ("Outliner / Purge", "Blender has no node of this type: delete it in the Outliner, or File > "
                        "Clean Up > Purge for unused data.") for sub in ("Delete All by Type", "Delete by Type")},
     "File": ("File menu", "Blender has no ATOM files or After Effects Live Link: move animation with "
@@ -1245,9 +1244,6 @@ MARKING.update({
     "SHIFT_OBJECT/Transfer Vertex Order": (
         "Sort Mesh Elements", "Blender can't copy another mesh's vertex order: Mesh > Sort Elements reorders vertices "
         "by a rule."),
-    **{f"SHIFT_OBJECT/Booleans/{label}": ("Boolean modifier", "Blender's Boolean modifier does Union, Difference "
-                                          "and Intersect only: split pieces with Separate after a Difference.")
-       for label in ("Slice", "Hole Punch", "Cut Out", "Split Edges")},
     "SHIFT_OBJECT/Polygon Display/Toggle Border Edges": _BORDER,
     "SHIFT_EDGE/Polygon Display/Toggle Border Edges": _BORDER,
     "SHIFT_DEFAULT/Polygon Display All/Toggle All Geometry Border Edges": _BORDER,

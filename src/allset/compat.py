@@ -238,6 +238,43 @@ def uv_sync_from_mesh(bm):
         bm.uv_select_sync_from_mesh()
 
 
+# --- Refilling an edit-mode BMesh ------------------------------------------------------------------
+# ``BMesh.clear()`` also empties the BMesh's own select mode, and ``from_mesh`` doesn't set it again. 5.3's
+# edit-mode click selection reads that mode (5.2 reads the tool settings): with it empty a click on a face, edge or
+# vertex picks nothing (and deselects) until the select mode is set again (#380); ``select_flush_mode`` flushes
+# nothing on every version. Every kit path that refills a BMesh goes through these.
+
+_SELECT_MODE_NAMES = ('VERT', 'EDGE', 'FACE')
+
+
+def bmesh_select_mode(bm):
+    """The select mode ``bm`` should keep: its own, else (an edit-mode BMesh already emptied) the scene's mesh select
+    mode."""
+    mode = set(bm.select_mode)
+    if not mode and bm.is_wrapped:
+        ts = getattr(getattr(bpy.context, "scene", None), "tool_settings", None)
+        if ts is not None:
+            mode = {name for name, on in zip(_SELECT_MODE_NAMES, ts.mesh_select_mode) if on}
+    return mode
+
+
+def clear_bmesh(bm):
+    """``bm.clear()`` keeping its select mode (see above)."""
+    mode = bmesh_select_mode(bm)
+    bm.clear()
+    if mode:
+        bm.select_mode = mode
+
+
+def refill_bmesh(bm, me):
+    """Replace the contents of ``bm`` (often the edit-mode BMesh) by mesh ``me``, keeping its select mode."""
+    clear_bmesh(bm)
+    mode = set(bm.select_mode)
+    bm.from_mesh(me)
+    if mode:
+        bm.select_mode = mode
+
+
 # --- Bone visibility ------------------------------------------------------------------------
 # 5.x: a bone is hidden in pose / object mode by ``PoseBone.hide``; ``Bone.hide`` only hides the edit bone
 # (api notes).
@@ -403,6 +440,13 @@ def gn_input_set(md, key, value):
     md[key] = value
 
 
+def gn_input_path(key):
+    """The data path, on the modifier, of the value of input ``key`` (what a key on that input animates)."""
+    if GN_INPUT_STRUCT:
+        return f"properties.inputs.{key}.value"
+    return f'["{key}"]'
+
+
 def gn_input_attribute(md, key, attribute):
     """Make input ``key`` read the named attribute ``attribute`` (a vertex group) instead of a value."""
     if GN_INPUT_STRUCT:
@@ -539,6 +583,20 @@ def keep_unified_switches(ups, brush, switches):
     for name, on in switches.items():
         if unified_on(ups, brush, name) != on:
             set_unified(ups, brush, name, on)
+
+
+# --- Weight paint brush asset shelf ----------------------------------------------------------------------------
+# Up to 5.2 the weight paint brushes' asset shelf (``VIEW3D_AST_brush_weight_paint``) is hidden by default: a 3D View
+# shows it only once the user opens it. 5.3 gave it the default-visible option of the other paint modes' shelves: the
+# first time a view is in Weight Paint, Blender opens the shelf under it.
+WEIGHT_SHELF_TYPE = "VIEW3D_AST_brush_weight_paint"
+
+
+def weight_shelf_shown_first():
+    """The weight paint brush shelf type when Blender opens it the first time a view is in Weight Paint (5.3), else
+    None."""
+    cls = getattr(bpy.types, WEIGHT_SHELF_TYPE, None)
+    return cls if cls is not None and 'DEFAULT_VISIBLE' in getattr(cls, "bl_options", ()) else None
 
 
 # --- Essentials weight paint brushes -------------------------------------------------------------------------

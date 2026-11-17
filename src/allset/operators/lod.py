@@ -1,13 +1,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Maya Edit > LOD (Level of Detail): Create LOD Group, Generate LOD Meshes, Ungroup LOD Group.
 
-Maya 2026 (lodUtils.mel createLodGroup, doPerformPolyReduceArgList, performDeleteLod):
+Like Maya 2026:
 
 - Create LOD Group: a ``LOD_Group_<N>`` node with one ``LOD_<i>`` transform per selected top-level object (that
-  object under it); no selection = 3 empty levels. A selected object with a parent is refused.
-- Generate LOD Meshes (factory: 1 level, 33.3% of the vertices removed): the selection goes under ``LOD_0`` of a
-  new group (or the group it is already in), ``LOD_1`` gets reduced duplicates (polyReduce, with history).
-- Ungroup LOD Group: the ``LOD_<i>`` transforms go back to the group's parent, the group is deleted.
+  object under it); no selection = 3 empty levels. A selected object with a parent is refused. The group is selected
+  (after Generate LOD Meshes too).
+- Generate LOD Meshes (the menu item: 1 level, 33.3% of the vertices removed): the selection goes under ``LOD_0`` of
+  a new group (or the group it is already in), ``LOD_1`` gets reduced duplicates (with history).
+- Ungroup LOD Group (the group or one of its levels selected): every level's objects go to the group's parent and
+  are selected; the levels and the group are deleted. An object inside a level alone is refused.
 
 Blender has no LOD switching: the group is an Empty and every level stays visible. The reduction is a live
 Decimate modifier (Maya's polyReduce history); its ratio is of faces, Maya's percentage is of vertices.
@@ -19,7 +21,7 @@ from .. import results
 from . import naming
 
 GROUP, LEVEL = "allset_lod_group", "allset_lod_level"
-REDUCE = 100.0 / 3.0          # Maya LODPercentArray[0]: remove 33.3% of the vertices
+REDUCE = 100.0 / 3.0          # Maya's first generated level: 33.3% of the vertices removed
 
 
 def _empty(context, name, parent=None):
@@ -88,12 +90,40 @@ def generate(context, objects):
     return out
 
 
+def picked_group(ob):
+    """The LOD group of a selected group or level transform (Maya ungroups from those), else None."""
+    if ob.get(GROUP):
+        return ob
+    if ob.get(LEVEL) is not None and ob.parent is not None and ob.parent.get(GROUP):
+        return ob.parent
+    return None
+
+
 def ungroup(group):
-    """Maya Ungroup LOD Group: the LOD_<i> transforms to the group's parent, the group deleted."""
+    """Maya Ungroup LOD Group: every level's objects to the group's parent (world place kept), the level transforms
+    and the group deleted; returns the objects moved."""
+    moved = []
     for lv in list(group.children):
-        _parent_keep(lv, group.parent)
-        lv.pop(LEVEL, None)
+        for ob in list(lv.children):
+            _parent_keep(ob, group.parent)
+            moved.append(ob)
+        if lv.get(LEVEL) is not None:
+            bpy.data.objects.remove(lv)
+        else:                                   # not a level: kept, like the objects
+            _parent_keep(lv, group.parent)
+            moved.append(lv)
     bpy.data.objects.remove(group)
+    return moved
+
+
+def _select_only(context, objects):
+    context.view_layer.update()         # objects made / removed just now: the view layer first, then the selection
+    for o in list(context.view_layer.objects.selected):
+        o.select_set(False)
+    for o in objects:
+        o.select_set(True)
+    if objects:
+        context.view_layer.objects.active = objects[0]
 
 
 class ALLSET_OT_lod(bpy.types.Operator):
@@ -113,12 +143,16 @@ class ALLSET_OT_lod(bpy.types.Operator):
             sel.remove(act)
             sel.append(act)
         if self.action == 'UNGROUP':
-            groups = {lod_group_of(o) for o in sel} - {None}
+            # like Maya: the LOD group or one of its level transforms; an object inside a level is not enough
+            groups = {picked_group(o) for o in sel} - {None}
             if not sel or not groups:
-                self.report({'ERROR'}, "Nothing selected." if not sel else "The selected objects have no LOD group.")
+                self.report({'ERROR'}, "Nothing selected." if not sel else
+                            "Select a LOD group or one of its levels: nothing ungrouped.")
                 return {'CANCELLED'}
+            moved = []
             for g in groups:
-                ungroup(g)
+                moved += ungroup(g)
+            _select_only(context, moved)
             return {'FINISHED'}
         if self.action == 'CREATE':
             sel = [o for o in sel if o.type != 'CAMERA']
@@ -127,6 +161,7 @@ class ALLSET_OT_lod(bpy.types.Operator):
                     self.report({'ERROR'}, f"{o.name} has a parent: only top-level objects can be LOD levels.")
                     return {'CANCELLED'}
             group = create_group(context, sel)
+            _select_only(context, [group])          # Maya selects the new LOD group
             results.result(self, group.name)
             return {'FINISHED'}
         meshes = [o for o in sel if o.type == 'MESH']
@@ -138,6 +173,9 @@ class ALLSET_OT_lod(bpy.types.Operator):
         except ValueError as ex:
             self.report({'ERROR'}, str(ex))
             return {'CANCELLED'}
+        group = lod_group_of(meshes[0])
+        if group is not None:
+            _select_only(context, [group])
         results.result(self, f"{len(out)} LOD mesh(es)")
         return {'FINISHED'}
 

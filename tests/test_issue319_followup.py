@@ -77,10 +77,13 @@ def test_fit_timelines_records_and_runs_headless():
 def test_view_lock_operator_and_keymap():
     assert "allset.time_view_lock" in mp.PASS_THROUGH_FIRST
     locks = [(km, ev) for km, idname, ev, _p, _s in mp.ADDED if idname == "allset.time_view_lock"]
-    assert len(locks) == 7, locks
-    assert all(km == "Dopesheet" for km, _ev in locks)
+    assert len(locks) == 15, locks
+    # over the Timeline the wheel / trackpad / zoom keys reach "View2D" before "Dopesheet" (#292)
+    assert all(km == "View2D" for km, _ev in locks)
     types_ = sorted({ev["type"] for _km, ev in locks})
-    assert types_ == ["MIDDLEMOUSE", "WHEELDOWNMOUSE", "WHEELUPMOUSE"]
+    assert types_ == ["MIDDLEMOUSE", "NUMPAD_MINUS", "NUMPAD_PLUS", "TRACKPADPAN", "TRACKPADZOOM", "WHEELDOWNMOUSE",
+                      "WHEELLEFTMOUSE", "WHEELRIGHTMOUSE", "WHEELUPMOUSE"], types_
+    assert not [ev for _km, ev in locks if ev["type"] == "MIDDLEMOUSE" and not (ev.get("ctrl") or ev.get("shift"))],         "a plain MMB stays the Time Slider's Maya middle drag"
     assert bpy.ops.allset.time_view_lock.get_rna_type() is not None
 
 
@@ -108,6 +111,27 @@ def test_row_plan_fits_short_headers():
         assert used <= width + 1e-6 or bar == rb.MIN_BAR_UNITS, (width, used)
     # transport buttons in the header take their share
     assert ts.row_plan(60.0, transport=True)[0] < ts.row_plan(60.0)[0]
+
+
+def test_narrow_row_with_the_transport_buttons_keeps_every_control():
+    """Blender 5.x puts the current time field and the transport buttons in the Range Slider row: on a narrow row the
+    fields narrow to their numbers, then the icon buttons a little, and only on the narrowest the current time field
+    goes (the Time Slider shows the current frame). The planned row never needs more than its width."""
+    th = import_module(f"{MODULE}.ui.time_slider_header")
+    floor = 2.55
+    for width in (31.4, 35.0, 39.4, 47.4, 63.0):
+        bar, shown, field, icons, clock = th.row_layout(width, transport=True, floor=floor)
+        assert bar >= rb.MIN_BAR_UNITS and not shown or width >= 47.4, (width, shown)
+        assert field >= floor and icons >= th.ICON_FLOOR, (width, field, icons)
+        fixed = th.ROW_CORE_UNITS - th.ROW_FIELDS * th.FIELD_UNITS + th.ROW_TRANSPORT_UNITS - th.FIELD_UNITS
+        used = (fixed - (1.0 - icons) * th.ROW_ICONS + th.ROW_FIELDS * field + clock + bar
+                + sum(u for n, u in th.ROW_OPTIONAL if n in shown))
+        assert used <= width + 1e-6 or bar == rb.MIN_BAR_UNITS and clock == 0, (width, used)
+    assert th.row_layout(31.4, True, floor)[4] == 0.0                     # the narrowest: no current time field
+    assert th.row_layout(39.4, True, floor)[4] >= floor                   # it comes back with a little more room
+    assert th.row_layout(63.0, True, floor)[2:] == (th.FIELD_UNITS, 1.0, th.FIELD_UNITS)
+    assert th.row_layout(30.0)[2:] == (th.FIELD_UNITS, 1.0, 0.0)          # no transport in the row: as before
+    assert th.field_floor((1, 120, 1), 1.0) < th.field_floor((1001, 1250), 1.0)
 
 
 def test_next_extra_floor():

@@ -55,6 +55,9 @@ def _nonlinear_handles(scene):
     from .history import NONLINEARS
     used = {getattr(md, "origin", None) or getattr(md, "start_position_object", None) or getattr(md, "object", None)
             for o in scene.objects for md in getattr(o, "modifiers", ()) if md.type in NONLINEARS}
+    from . import bend_deformer
+    used |= {bend_deformer.handle_of(md) for o in scene.objects for md in getattr(o, "modifiers", ())
+             if bend_deformer.is_bend(md)}                                      # a mesh's bend: nodes
     return [ob for ob in scene.objects if ob in used]
 
 
@@ -320,4 +323,37 @@ def message(action, had_selection, changed):
     return None
 
 
-classes = (ALLSET_OT_visibility,)
+def reveal_components(meshes):
+    """Unhide every vertex, edge and face of ``meshes`` (mesh data, object mode); returns how many had hidden ones."""
+    n = 0
+    for me in meshes:
+        changed = False
+        for elems in (me.vertices, me.edges, me.polygons):
+            flags = [False] * len(elems)
+            elems.foreach_get("hide", flags)
+            if any(flags):
+                elems.foreach_set("hide", [False] * len(elems))
+                changed = True
+        if changed:
+            me.update()
+            n += 1
+    return n
+
+
+class ALLSET_OT_show_all_components(bpy.types.Operator):
+    """Show every hidden vertex, edge and face of every mesh in the scene, selected or not (Maya Display > Show >
+    All Components, also from object mode)"""
+    bl_idname = "allset.show_all_components"
+    bl_label = "All Components"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        editing = {ob.data for ob in context.objects_in_mode_unique_data} if context.mode == 'EDIT_MESH' else set()
+        if editing:
+            bpy.ops.mesh.reveal(select=False)         # the meshes in Edit Mode keep their data in the edit mesh
+        others = {ob.data for ob in context.view_layer.objects if ob.type == 'MESH'} - editing
+        reveal_components(m for m in others if not m.library)
+        return {'FINISHED'}
+
+
+classes = (ALLSET_OT_visibility, ALLSET_OT_show_all_components)

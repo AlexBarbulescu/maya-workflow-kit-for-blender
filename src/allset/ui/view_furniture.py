@@ -42,11 +42,17 @@ from .view_furniture_state import (_APPLY_LATER, _HANDLERS, _HIDDEN, _PENDING, _
 from .view_furniture_draw import (_batches, _cached_batch, _cube_face_batch, _cube_plan, _draw_controls,  # noqa: F401
                                   _draw_hud, _draw_strip, _face_label, _face_label_matrix, _fill, _hud_callback,
                                   _lines, _plan,
-                                  _plans, _sh, _shader, _strip_batch, _text, _triad_plan, draw_cube)
-from .view_furniture_hud import hud_lines, timecode  # noqa: F401  (tnt)
+                                  _plans, _sh, _shader, _strip_batch, _text, _triad_plan, draw_cube, hud_lens,
+                                  hud_lines, timecode)
 
 # Four view: the ViewCube shows in one panel only (Maya: the active panel), the last one the mouse was in.
 _ACTIVE = {"region": None}
+_PREPARED = {}      # gizmo group pointer -> the button settings it last wrote (draw_prepare)
+
+
+def _note_panel(area):
+    from . import playback_redraw
+    playback_redraw.note_panel(area)
 
 
 def _cube_here(context):
@@ -379,6 +385,7 @@ class ALLSET_GT_view_cube(bpy.types.Gizmo):
     def test_select(self, context, location):
         _ensure_cube_controls(self)
         space, region = context.space_data, context.region
+        _note_panel(context.area)          # the mouse is in this panel: Update View: Active redraws it
         if space.region_quadviews and _ACTIVE["region"] != region.as_pointer():
             _ACTIVE["region"] = region.as_pointer()
             context.area.tag_redraw()
@@ -432,13 +439,21 @@ class ALLSET_GGT_view_cube(bpy.types.GizmoGroup):
         size = cube_size(region.width, region.height, s)
         centre, _label, _triad = layout(_bounds(context), s, size)
         hide = not _cube_here(context) or not _prefs().show_view_cube_buttons
-        for i, button in enumerate((self.camera_button, self.projection_button)):
+        icons = ('VIEW_CAMERA' if rv.view_perspective == 'CAMERA' else 'VIEW_CAMERA_UNSELECTED',
+                 'VIEW_PERSPECTIVE' if rv.is_perspective else 'VIEW_ORTHO')
+        places = tuple((centre[0] + size * .5, centre[1] - size * .8 - (18 + 30 * i) * s) for i in range(2))
+        state = (hide, 14 * s, places, icons)
+        key = self.as_pointer() if hasattr(self, "as_pointer") else id(self)
+        if _PREPARED.get(key) == state:
+            return          # every redraw of a playing view: the same settings, each gizmo write costs Python time
+        if len(_PREPARED) > 32:
+            _PREPARED.clear()
+        _PREPARED[key] = state
+        for button, (x, y), icon in zip((self.camera_button, self.projection_button), places, icons):
             button.hide = hide
             button.scale_basis = 14 * s
-            button.matrix_basis.translation = (centre[0] + size * .5,
-                                                centre[1] - size * .8 - (18 + 30 * i) * s, 0)
-        self.camera_button.icon = 'VIEW_CAMERA' if rv.view_perspective == 'CAMERA' else 'VIEW_CAMERA_UNSELECTED'
-        self.projection_button.icon = 'VIEW_PERSPECTIVE' if rv.is_perspective else 'VIEW_ORTHO'
+            button.matrix_basis.translation = (x, y, 0)
+            button.icon = icon
 
 
 classes = (ALLSET_OT_view_cube_face, ALLSET_OT_view_cube_control, ALLSET_MT_view_cube, ALLSET_GT_view_cube, ALLSET_GGT_view_cube)

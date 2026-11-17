@@ -81,11 +81,12 @@ def common_parent(objects):
     return parents.pop() if len(parents) == 1 else None
 
 
-def set_parent_keep_world(child, parent):
-    """Parent with identity parent-inverse while keeping the world matrix."""
+def set_parent_keep_world(child, parent, frame=None):
+    """Parent while keeping the world matrix; the parent inverse is ``frame`` (the parent's Maya frame,
+    ``freeze.frame_inverse``) or the identity."""
     world = child.matrix_world.copy()
     child.parent = parent
-    child.matrix_parent_inverse = Matrix.Identity(4)
+    child.matrix_parent_inverse = Matrix.Identity(4) if frame is None else frame
     child.matrix_world = world
 
 
@@ -132,8 +133,9 @@ def make_group(context, objects):
     if parent is not None:
         # Under the common parent with an identity local transform, so the
         # group pivot sits at the parent's origin (Maya zeroPivot).
+        from .freeze import frame_inverse
         grp.parent = parent
-        grp.matrix_parent_inverse = Matrix.Identity(4)
+        grp.matrix_parent_inverse = frame_inverse(parent)     # a frozen parent's frame, like Maya
     grp.matrix_basis = Matrix.Identity(4)
     context.view_layer.update()
 
@@ -143,6 +145,11 @@ def make_group(context, objects):
             skin_follow.ensure(ob)      # its skin moves with the group (meshes bound before the kit's follow)
         set_parent_keep_world(ob, grp)
     return grp
+
+
+def frame_inverse(ob):
+    from .freeze import frame_inverse as frame
+    return frame(ob)
 
 
 def ungroup(context, groups, world=False, preserve=True):
@@ -159,11 +166,12 @@ def ungroup(context, groups, world=False, preserve=True):
         for child in kids:
             if not preserve:
                 local = grp.matrix_parent_inverse @ grp.matrix_basis @ child.matrix_parent_inverse @ child.matrix_basis
+                frame = frame_inverse(target) if target is not None else Matrix.Identity(4)
                 child.parent = target
-                child.matrix_parent_inverse = Matrix.Identity(4)
-                child.matrix_basis = local
+                child.matrix_parent_inverse = frame         # values in the new parent's frame, like Maya
+                child.matrix_basis = frame.inverted_safe() @ local
             elif target is not None:
-                set_parent_keep_world(child, target)
+                set_parent_keep_world(child, target, frame_inverse(target))
             else:
                 world_m = child.matrix_world.copy()
                 child.parent = None

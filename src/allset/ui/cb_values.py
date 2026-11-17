@@ -80,6 +80,20 @@ def input_owner(ob, key):
     return row_owner(ob, "INPUT", name, mod_type, nth)
 
 
+def path_struct(owner, path):
+    """(struct, property name) of ``path`` on ``owner``: a path through nested structs (a Geometry Nodes input's
+    ``properties.inputs.Socket_2.value``) resolves to its last struct, which keys and names it."""
+    head, dot, prop = path.rpartition(".")
+    if not dot or path.startswith("["):
+        i = path.find("[")
+        if i > 0:       # an ID property of an object the owner points at (a lattice bend's handle: origin["..."])
+            sub = owner.path_resolve(path[:i])
+            if sub is not None:
+                return sub, path[i:]
+        return owner, path
+    return owner.path_resolve(head), prop
+
+
 def input_paths(owner, key):
     """[(path on the modifier, index)] a key on an INPUTS channel sets."""
     name = input_parts(key)[2]
@@ -117,9 +131,19 @@ def _own_weight(ob, key):
 
 def input_curve_id(ob, key):
     """The ID whose animation holds INPUTS channel ``key`` of ``ob``: the node's own, or for a deformer a handle or
-    lattice shows (bend1 in the INPUTS of bend1Handle) the deformed object's, where the modifier is."""
+    lattice shows (bend1 in the INPUTS of bend1Handle) the deformed object's, where the modifier is; a deformer value
+    kept on its handle (a lattice bend's Curvature) the handle's."""
     owner = input_owner(ob, key)
-    return owner.id_data if owner is not None else None
+    if owner is None:
+        return None
+    if isinstance(owner, bpy.types.Modifier):
+        paths = input_paths(owner, key)
+        if paths:
+            try:
+                return path_struct(owner, paths[0][0])[0].id_data
+            except (ValueError, AttributeError):
+                pass
+    return owner.id_data
 
 
 def input_curve_paths(ob, key):
@@ -131,7 +155,7 @@ def input_curve_paths(ob, key):
     if prop is not None:
         from ..operators import constrain_multi
         return [(constrain_multi.weight_path(ob, prop), -1)]
-    return [(owner.path_from_id(p), i) for p, i in input_paths(owner, key)]
+    return [(sub.path_from_id(name), i) for p, i in input_paths(owner, key) for sub, name in [path_struct(owner, p)]]
 
 
 def history_node_of(ob, key):
@@ -364,10 +388,11 @@ def keyframe(ob, key, keytype='KEYFRAME'):
         done = False
         for p, i in (shape_paths(owner, key) if kind == "SHAPE" else input_paths(owner, key)):
             try:
-                if owner.keyframe_insert(p, index=i, keytype=keytype):
-                    graph_key_menu.after_insert(owner, p, i, bpy.context.scene.frame_current)
+                sub, name = path_struct(owner, p)
+                if sub.keyframe_insert(name, index=i, keytype=keytype):
+                    graph_key_menu.after_insert(sub, name, i, bpy.context.scene.frame_current)
                     done = True
-            except (TypeError, RuntimeError):
+            except (TypeError, RuntimeError, ValueError):
                 pass
         return done
     from ..operators import anim_layers

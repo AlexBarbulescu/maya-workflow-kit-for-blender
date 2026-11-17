@@ -310,6 +310,12 @@ class ALLSET_AddonPreferences(bpy.types.AddonPreferences):
     cb_sync_graph: bpy.props.BoolProperty(
         name="Sync Selection in Graph Editor",
         description="Selecting channels in the Channel Box selects their curves, and S keys only the selected channels")
+    # Maya Preferences > Time Slider > Playback > Update View (ui/playback_redraw.py)
+    playback_update_view: bpy.props.EnumProperty(
+        name="Update View", default='ACTIVE',
+        items=(('ACTIVE', "Active", "While playing, only the active panel of the four view is redrawn (the one the mouse "
+                                    "was last in); every panel when playback stops, like Maya"),
+               ('ALL', "All", "Every panel is redrawn while playing")))
     cb_sync_timeline: bpy.props.BoolProperty(
         name="Sync Timeline Display",
         description="The Time Slider shows only the keys of the channels selected in the Channel Box")
@@ -489,7 +495,7 @@ class ALLSET_AddonPreferences(bpy.types.AddonPreferences):
     tool_settings_tab: bpy.props.BoolProperty(
         name="Tool Settings Tab",
         description="Tool Settings open as a tab of the Maya dock on the right, next to the Channel Box and the "
-                    "Attribute Editor (off: their own dock left of the viewport)",
+                    "Attribute Editor (off: their own window, or a dock left of the viewport once docked)",
         default=False, update=_update_dock_colors)
 
     def _update_panel_memory(self, context):
@@ -514,6 +520,17 @@ class ALLSET_AddonPreferences(bpy.types.AddonPreferences):
                 if area.type == 'OUTLINER':
                     area.tag_redraw()
 
+    outliner_instance_marks: bpy.props.BoolProperty(
+        name="Mark Instances in the Outliner",
+        description="Instance copies (Duplicate Special > Instance) and their groups show purple in the Maya "
+                    "Outliner, with a chain-link badge and an \"Instance of <source>\" tip on hover (off: like "
+                    "Maya, they look like other objects)",
+        default=False, update=_update_outliner)
+    unshare_instances: bpy.props.BoolProperty(
+        name="Freeze / Delete History Unshare Instances",
+        description="Freeze Transformations and Delete History first give an instance its own data, so edits on the "
+                    "original no longer show on it (off: like Maya, the instance keeps sharing its data)",
+        default=False)
     outliner_columns: bpy.props.BoolProperty(
         name="Outliner Column Icons", description="Blender's selectable / eye / render icons at the right of the "
                                                   "Maya Outliner rows (each one also has its own toggle)",
@@ -623,6 +640,9 @@ class ALLSET_AddonPreferences(bpy.types.AddonPreferences):
         description="Autosave folder when the destination is Named Folder")
     # Maya option window values (operators/option_windows.py).
     option_settings: bpy.props.StringProperty(options={'HIDDEN'})   # JSON {window key: {field: value}}
+    # The user's own edits of the Maya keys while they are out (Blender mode), and of Blender's keys the Maya keys
+    # switch off while they are on (keymap/user_keys.py); unset when there is nothing to keep.
+    user_keys: bpy.props.StringProperty(options={'HIDDEN'})   # JSON {"maya": [...], "blender": [...]}
 
     # Scene concepts.
     parent_mode: bpy.props.EnumProperty(
@@ -801,6 +821,9 @@ class ALLSET_AddonPreferences(bpy.types.AddonPreferences):
         sub.prop(self, "outliner_select_column")
         sub.prop(self, "outliner_eye_column")
         sub.prop(self, "outliner_render_column")
+        row = box.row()
+        row.prop(self, "outliner_instance_marks")
+        row.prop(self, "unshare_instances")
 
 
 # Undo depth (B6): Maya's undo queue is infinite, Blender keeps 32 steps

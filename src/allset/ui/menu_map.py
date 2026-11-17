@@ -217,7 +217,7 @@ MAP = {
     "Create/Free Image Plane": _create('IMAGE_PLANE'),
     "Create/Locator": _create('LOCATOR'),
     "Create/Annotation...": ("tool", "builtin.annotate", False),
-    "Create/Measure Tools/Distance Tool": ("tool", "builtin.measure", False),
+    "Create/Measure Tools/Distance Tool": ("tool", "allset.distance_tool", False),   # locators + distanceDimension
     "Create/Empty Group": _create('EMPTY_GROUP'),
     "Create/Sets/Set": "allset.create_set",                       # kit sets (operators/sets.py)
     "Create/Sets/Quick Select Set...": "allset.create_quick_select_set",
@@ -317,8 +317,8 @@ MAP = {
     "Display/Show/Show Selection": ("allset.visibility", {"action": 'SHOW_SELECTED'}),
     "Display/Show/Show Last Hidden": ("allset.visibility", {"action": 'SHOW_LAST'}),
     "Display/Show/All": ("allset.visibility", {"action": 'SHOW_ALL'}),
-    "Display/Show/All Components": ("mesh.reveal", {"select": False}),   # Maya showAllComponents
-    # Maya hideShow -<type> -hide / -show: the visibility of every node of the type (operators/visibility.py)
+    "Display/Show/All Components": "allset.show_all_components",     # every mesh, also from object mode
+    # Maya Hide / Show > <type>: the visibility of every node of the type (operators/visibility.py)
     **{f"Display/{verb}/{label}": ("allset.visibility", {"action": f'{verb.upper()}_TYPE', "kind": kind})
        for verb in ("Hide", "Show")
        for label, kind in ((f"{verb} Geometry/All", 'GEOMETRY'), (f"{verb} Geometry/NURBS Surfaces", 'NURBS_SURFACES'),
@@ -524,11 +524,11 @@ MAP = {
     "Key/Scale Keys": "allset.opt_scale_keys",
     # --- Playback ---
     "Playback/Playblast": ("v3d", "allset.playblast", {}),
-    "Playback/Play": "screen.animation_play",
-    "Playback/Backward": ("screen.animation_play", {"reverse": True}),
+    "Playback/Play": "allset.play",             # from the viewport (ui/playback_redraw.py)
+    "Playback/Backward": ("allset.play", {"reverse": True}),
     "Playback/Stop": ("screen.animation_cancel", {"restore_frame": False}),
-    "Playback/Next Key": ("screen.keyframe_jump", {"next": True}),
-    "Playback/Prev Key": ("screen.keyframe_jump", {"next": False}),
+    "Playback/Next Key": ("allset.key_jump", {"next": True}),
+    "Playback/Prev Key": ("allset.key_jump", {"next": False}),
     "Playback/Next Frame": ("screen.frame_offset", {"delta": 1}),
     "Playback/Prev Frame": ("screen.frame_offset", {"delta": -1}),
     "Playback/Play Range Start": ("screen.frame_jump", {"end": False}),
@@ -773,7 +773,7 @@ MAP.update({
     "Display/Polygons/Edge Width...": ("allset.theme_setting", {"name": "Edge Width"}),
     "Display/Animation": ("v3d", "wm.call_panel", {"name": "VIEW3D_PT_overlay_bones", "keep_open": True}),
     "Display/Animation/Joint Size...": "allset.joint_size",              # Maya jointDisplayScale
-    "Display/Animation/Joint Labels": "allset.joint_label_toggle",       # Maya displayJointLabels 2
+    "Display/Animation/Joint Labels": "allset.joint_label_toggle",       # the selected joints and the joints below them
     "Display/Rendering": ("v3d", "wm.call_panel", {"name": "VIEW3D_PT_shading", "keep_open": True}),
     # #136: Maya's Wireframe Color window (user palette 1-8 / RGB, Apply / Default / Close)
     "Display/Wireframe Color...": ("allset.wireframe_color", {}),

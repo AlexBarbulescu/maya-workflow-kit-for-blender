@@ -1,6 +1,6 @@
 """Maya items that were greyed: Set Range to Sound Length, HUD Current Frame / Focal Length / Scene Timecode /
 In-view Messages, Display > Animation submenu (Joint Labels), Mesh > Clipboard Actions, Edit > Transfer Attribute
-Values, Edit > LOD (behaviour measured in Maya 2026, see operators/attr_clipboard.py and operators/lod.py)."""
+Values, Edit > LOD (see operators/attr_clipboard.py and operators/lod.py)."""
 
 import os
 import struct
@@ -31,7 +31,7 @@ def _run(path):
     mod, _, name = target.partition(".")
     try:
         return getattr(getattr(bpy.ops, mod), name)(**props)
-    except RuntimeError:                # an ERROR report (Maya's error): nothing done
+    except RuntimeError:                # an ERROR report (an error in Maya too): nothing done
         return {'CANCELLED'}
 
 
@@ -60,10 +60,23 @@ def _select(*obs, active=None):
 def test_menu_paths():
     assert menu_map.is_submenu("Display/Animation", [("x",)]) and "Display/Animation" in menu_map.MAP
     assert menu_map.spec("Display/Animation/Joint Labels")[1] == "allset.joint_label_toggle"
-    assert menu_map.OBJECT_MODE["Display/Show/All Components"] == ('ALL', 'VERT')
+    assert "Display/Show/All Components" not in menu_map.OBJECT_MODE      # its own operator, any mode
     for p in ("Display/Heads Up Display/Current Frame", "Display/Heads Up Display/Focal Length",
               "Display/Heads Up Display/Scene Timecode", "Display/Heads Up Display/In-view Messages"):
         assert menu_map.spec(p) is not None, p
+
+
+def test_show_all_components_on_every_mesh():
+    _clear()
+    a, b = _mesh("pCube1", faces=6), _mesh("pCube2", faces=6, x=3)
+    for ob in (a, b):
+        ob.data.polygons[0].hide = True
+        ob.data.vertices[0].hide = True
+    _select(a)                                       # object mode, one of the two selected: both shown, like Maya
+    assert _run("Display/Show/All Components") == {'FINISHED'}
+    for ob in (a, b):
+        assert not any(p.hide for p in ob.data.polygons) and not any(v.hide for v in ob.data.vertices), ob.name
+    assert bpy.context.mode == 'OBJECT' and bpy.context.selected_objects == [a]
 
 
 def test_hud_lines():
@@ -74,8 +87,9 @@ def test_hud_lines():
         maya_hud_current_frame = maya_hud_focal_length = maya_hud_scene_timecode = True
     scene = bpy.context.scene
     lines = furniture.hud_lines(P, scene, 7.0, 35.0)
-    assert [a for a, _b in lines] == ["Frame:", "Focal Length:", "Scene Timecode:"]   # Maya blocks 10, 17, 18
-    assert lines[0][1] == "7" and lines[1][1] == "35.000"
+    assert [a for a, _b in lines] == ["Frame:", "Focal Length:", "Scene Timecode:"]   # bottom first, like Maya
+    assert lines[0][1] == "7" and lines[1][1] == "35"
+    assert furniture.hud_lines(P, scene, 7.0, 35.123456)[1][1] == "35.123"
     P.maya_hud_focal_length = False
     assert [a for a, _b in furniture.hud_lines(P, scene, 7.0, 35.0)] == ["Frame:", "Scene Timecode:"]
 
@@ -84,7 +98,7 @@ def test_set_range_to_sound_length():
     scene = bpy.context.scene
     if scene.sequence_editor:
         scene.sequence_editor_clear()
-    assert _run("Playback/Set Range to/Sound Length") == {'CANCELLED'}       # Maya: "No sound displayed..."
+    assert _run("Playback/Set Range to/Sound Length") == {'CANCELLED'}       # no sound: an error, like Maya
     path = os.path.join(tempfile.mkdtemp(), "beep.wav")
     rate = 8000
     with wave.open(path, "wb") as w:
@@ -145,13 +159,13 @@ def test_transfer_attribute_values():
     a.rotation_mode = 'YZX'
     a["foo"], a["bar"], b["foo"] = 5.0, 7.0, 0.0
     _select(a, b, c)
-    assert _run("Edit/Transfer Attribute Values") == {'CANCELLED'}        # Maya: Too many objects selected
+    assert _run("Edit/Transfer Attribute Values") == {'CANCELLED'}        # more than two: refused
     _select(a)
-    assert _run("Edit/Transfer Attribute Values") == {'CANCELLED'}        # Maya: Select a source and a target
+    assert _run("Edit/Transfer Attribute Values") == {'CANCELLED'}        # one: refused
     _select(a, b, active=b)                                                 # b picked second = target
     _run("Edit/Transfer Attribute Values")
     assert tuple(b.location) == (3, 4, 5) and tuple(b.scale) == (2, 2, 2) and b.rotation_mode == 'YZX'
-    assert b["foo"] == 5.0 and "bar" not in b            # Maya: foo copied, bar not added
+    assert b["foo"] == 5.0 and "bar" not in b            # foo copied, bar not added
 
 
 def test_lod_create_generate_ungroup():
@@ -162,10 +176,15 @@ def test_lod_create_generate_ungroup():
     group = lod.lod_group_of(s)
     assert group is not None and group.name.startswith("LOD_Group_")
     assert s.parent.name == "LOD_0" and c.parent.name.startswith("LOD_1")    # one level per object
+    assert bpy.context.selected_objects == [group]                          # the new group selected
     _select(s)
+    assert _run("Edit/LOD (Level of Detail)/Ungroup LOD Group") == {'CANCELLED'}   # an object in a level: refused
+    assert lod.lod_group_of(s) is group
+    _select(s.parent)                                                       # a level (or the group itself)
     _run("Edit/LOD (Level of Detail)/Ungroup LOD Group")
-    assert lod.lod_group_of(s) is None and not any(o.get(lod.GROUP) for o in bpy.data.objects)
-    assert s.parent is not None and s.parent.parent is None                 # LOD_0 kept at the top, like Maya
+    assert not any(o.get(lod.GROUP) or o.get(lod.LEVEL) is not None for o in bpy.data.objects)
+    assert s.parent is None and c.parent is None                            # back at the group's parent
+    assert set(bpy.context.selected_objects) == {s, c}, [o.name for o in bpy.context.selected_objects]
     _clear()
     s = _mesh("pSphere1", faces=6)
     _select(s)
@@ -173,6 +192,7 @@ def test_lod_create_generate_ungroup():
     group = lod.lod_group_of(s)
     one = lod.level(group, 1)
     assert s.parent == lod.level(group, 0) and len(one.children) == 1
+    assert bpy.context.selected_objects == [group]
     dup = one.children[0]
     assert dup.type == 'MESH' and dup.data is not s.data and dup.modifiers[0].type == 'DECIMATE'
-    assert abs(dup.modifiers[0].ratio - 2 / 3) < 1e-6                     # Maya removes 33.3% (of vertices)
+    assert abs(dup.modifiers[0].ratio - 2 / 3) < 1e-6                     # 33.3% removed

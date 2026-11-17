@@ -1,16 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Maya Mesh > Clipboard Actions (polyClipboard) and Edit > Transfer Attribute Values (copyAttr -values).
+"""Maya Mesh > Clipboard Actions and Edit > Transfer Attribute Values, like Maya 2026:
 
-Behaviour measured in Maya 2026 (mayapy):
-
-- Copy Attributes takes the first selected face only: its shader and UVs (factory options UV on, Shader on, Color
-  off). An object selection is refused (Maya errors too).
+- Copy Attributes takes the first selected face only: its shader and UVs (the menu item's options: UV on, Shader on,
+  Color off). An object selection is refused.
 - Paste Attributes gives every target face (the selected faces; an object = all its faces) that shader and those
   UVs. Nothing selected or an empty clipboard is refused.
 - Clear Clipboard empties it.
 - Transfer Attribute Values copies, from the first selected object to the second, translate / rotate / scale /
-  visibility / rotate order and the custom attributes both have (no animation). Not exactly two objects:
-  "Select a source and a target." / "Too many objects selected. Select a source and a target."
+  visibility / rotate order and the custom attributes both have (values only, no animation). Exactly two objects.
 """
 
 import bmesh
@@ -64,8 +61,8 @@ def paste_faces(ob, bm, faces):
         if src:
             n, m = len(f.loops), len(src)
             for i, loop in enumerate(f.loops):
-                # shortcut: a face with another corner count samples the copied corners evenly; Maya resamples
-                # along the face border (a tri got a mid-edge UV), match that if users paste across face sizes
+                # a face with another corner count samples the copied corners evenly (Maya places them along the
+                # copied face's border instead)
                 loop[uv].uv = src[i * m // n]
     return len(faces)
 
@@ -123,7 +120,8 @@ CHANNELS = ("location", "scale", "rotation_mode", "rotation_euler", "rotation_qu
 
 
 def transfer_values(src, dst):
-    """Maya copyAttr -values: transform channels, visibility, rotate order and the custom attributes ``dst`` has."""
+    """Maya Transfer Attribute Values: transform channels, visibility, rotate order and the custom attributes ``dst``
+    has."""
     for attr in CHANNELS:
         setattr(dst, attr, getattr(src, attr))
     for key in src.keys():
@@ -141,8 +139,8 @@ class ALLSET_OT_transfer_values(bpy.types.Operator):
     def execute(self, context):
         sel = list(context.selected_objects)
         if len(sel) != 2:
-            self.report({'ERROR'}, "Too many objects selected. Select a source and a target." if len(sel) > 2
-                        else "Select a source and a target.")
+            self.report({'ERROR'}, "Select only two objects: the source, then the target." if len(sel) > 2
+                        else "Select two objects: the source, then the target.")
             return {'CANCELLED'}
         src = _first_selected(sel, context.view_layer.objects.active)
         dst = sel[1] if sel[0] is src else sel[0]

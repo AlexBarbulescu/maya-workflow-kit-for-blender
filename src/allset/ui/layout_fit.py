@@ -17,10 +17,33 @@ TIME_SLIDER_PX = 36  # = tools/make_startup.py TIME_SLIDER_PX (the Time Slider r
 
 
 def time_slider_area(screen):
-    """The Maya Workflow Kit layout's Time Slider: a Timeline with the Time Slider buttons in its sidebar."""
+    """The Maya Workflow Kit layout's Time Slider: a Timeline with its sidebar shown (Blender 5.x opens the
+    template's sidebar 1 px wide and the Time Slider buttons sit in the header; it is the Time Slider all the same)."""
     from .time_slider import has_slider_panel
     return next((a for a in screen.areas if a.type == 'DOPESHEET_EDITOR' and a.ui_type == 'TIMELINE'
-                 and has_slider_panel(a.spaces.active, a)), None)
+                 and has_slider_panel(a.spaces.active)), None)
+
+
+# Blender 5.x snaps a moved horizontal edge to the height "header + time scrub strip" (23 px x the UI scale) of an
+# animation editor below it whenever the edge lands within 0.6 header heights of that height, and keeps edge
+# positions on a 4 px grid (Blender's screen.area_move, also from Python). The Time Slider's ruler of
+# TIME_SLIDER_PX x the scale always lies in that band, so moving its top edge there snapped back and the Time Slider
+# kept the template's height (a 29 px ruler at UI 1.25, 2 px at 2.0). The fit takes the nearest height outside the
+# band instead.
+AREA_GRID = 4
+TIME_SCRUB_PX = 23
+
+
+def time_slider_goal(scale, hdr):
+    """Area height the fit gives the Time Slider whose header is ``hdr`` px at UI ``scale``: its ruler
+    TIME_SLIDER_PX x scale over the header, or the nearest height above Blender's edge snap band around
+    "header + time scrub strip" when that height lies in it."""
+    want = round(TIME_SLIDER_PX * scale) + hdr
+    snap = hdr + int(TIME_SCRUB_PX * scale)
+    band = int(hdr * 0.6)
+    if abs(want - snap) < band + AREA_GRID:
+        want = snap + band + AREA_GRID
+    return want
 _FIT_TICK = 0.5
 _fallback = set()   # screens whose main view shows its toolbar because the column is too narrow
 
@@ -100,6 +123,25 @@ _state = {}          # screen name -> [ui scale, area pointers, armed, monotonic
 # Time Slider jumped under the pointer. The fit is a load-time adjustment: it only runs within FIT_WINDOW seconds
 # of the screen being loaded / first seen / the UI scale changing.
 FIT_WINDOW = 3.0
+# #334: a cursor-warp fit never starts while a window is being dragged or resized. On Windows a pointer warp during a
+# title-bar drag moves the dragged window with it, and a window dragged onto a monitor with other display scaling
+# changes Blender's UI scale (one for all windows), which arms the fit. The warp waits until the UI scale and every
+# window's place and size are what the previous fit tick saw; until then FIT_WINDOW counts from now.
+_still = {"snap": None}
+
+
+def _windows_still(context):
+    """True when the UI scale and the place and size of every window seen by the previous call (a fit tick) are
+    unchanged (a window that opened or closed meanwhile doesn't count)."""
+    snap = (context.preferences.system.ui_scale,
+            {w.as_pointer(): (w.x, w.y, w.width, w.height) for w in context.window_manager.windows})
+    prev = _still["snap"]
+    _still["snap"] = snap
+    if prev is None:
+        return True
+    if prev[0] != snap[0]:
+        return False
+    return all(prev[1][ptr] == rect for ptr, rect in snap[1].items() if ptr in prev[1])
 
 
 def _armed(screen, scale):
@@ -245,6 +287,13 @@ def fit_columns(start_fit=True):
     poll failed; with ``start_fit`` a ALLSET_OT_fit_columns is started for the first of them."""
     from .status_line import main_view3d
     context = bpy.context
+    still = _windows_still(context) if start_fit else True
+    if not still:
+        import time
+        now = time.monotonic()
+        for state in _state.values():      # armed fits wait: their window counts from when the windows stand still
+            if state[2]:
+                state[3] = now
     want = column_width(context)
     pending = {}
     from .shelf import shelf_row_area, strip_area
@@ -284,12 +333,13 @@ def fit_columns(start_fit=True):
                            (row.x + row.width // 2, row.y - 1), pending)
         # the Time Slider (#109): its ruler keeps 36 px times the UI scale. The template area has a
         # fixed height, so at UI 1.25 the taller header left a 29 px ruler that Blender's current-frame box filled:
-        # grow it upwards
+        # grow it upwards (to time_slider_goal: a height Blender's edge snap doesn't pull back)
         slider = time_slider_area(screen)
         if slider is not None:
             hdr = next((r.height for r in slider.regions if r.type == 'HEADER'), 0)
-            d = round(TIME_SLIDER_PX * scale) + hdr - slider.height
-            if abs(d) > 2 and armed:
+            off = abs(round(TIME_SLIDER_PX * scale) + hdr - slider.height) >= AREA_GRID
+            d = time_slider_goal(scale, hdr) - slider.height if off else 0
+            if abs(d) >= AREA_GRID and armed:
                 needed = True
                 top = slider.y + slider.height
                 _move_edge(window, slider, slider.x + slider.width // 2, top, d,
@@ -342,7 +392,7 @@ def fit_columns(start_fit=True):
             with context.temp_override(window=window, screen=screen, area=main):
                 main.spaces.active.show_region_toolbar = False
             _fallback.discard(key)
-    if start_fit and pending and not _running[0] and auto_warp():
+    if start_fit and still and pending and not _running[0] and auto_warp():
         window, edge = next(iter(pending.values()))
         key = window.screen.name
         if _warps.get(key, 0) < MAX_WARPS:

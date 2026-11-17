@@ -9,6 +9,7 @@ from uuid import uuid4
 import bmesh
 import bpy
 
+from .. import compat
 from . import units
 from .extrude_face import extrude, mesh_axes, position
 from .extrude_record import (RECORDS, Record, _pre_signature, _store, _store_generic, _uv_signature, keep,
@@ -27,9 +28,8 @@ def restore_mesh(bm, source):
     mode = set(bm.select_mode) or {'VERT'}
     try:
         source.to_mesh(me)
-        bm.clear()
-        bm.from_mesh(me)
-        bm.select_mode = mode
+        compat.refill_bmesh(bm, me)
+        bm.select_mode = mode   # tnt: keep the {'VERT'} fallback when the edit bmesh had no mode
     finally:
         bpy.data.meshes.remove(me)
 
@@ -54,8 +54,7 @@ def _rebuild(ob, rec, bm, params, unit):
                     raise ValueError('The attributes do not produce a valid '+rec.spec.node_type)
             except Exception:
                 if rollback is not None:
-                    bm.clear()
-                    bm.from_mesh(rollback)
+                    compat.refill_bmesh(bm, rollback)
                 raise
             preview_data = getattr(tracked, 'preview_data', None)
             if rollback is not None:

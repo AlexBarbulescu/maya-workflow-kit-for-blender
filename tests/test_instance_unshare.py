@@ -1,5 +1,6 @@
-"""Duplicate Special > Instance: the Outliner marks instances (and the groups above them), and Freeze
-Transformations / Delete History turn an instance into a plain object that no longer follows the original."""
+"""Duplicate Special > Instance: with their add-on preferences on, the Outliner marks instances (and the groups above
+them), and Freeze Transformations / Delete History turn an instance into a plain object that no longer follows the
+original. Both preferences are off by default: like Maya, an instance stays an instance and looks like other objects."""
 
 import importlib
 
@@ -10,6 +11,20 @@ import kit
 
 def _mod(name):
     return importlib.import_module(kit.MODULE + "." + name)
+
+
+def _prefs():
+    return bpy.context.preferences.addons[kit.MODULE].preferences
+
+
+class _Unshare:
+    """The Freeze / Delete History unshare preference on inside the block."""
+
+    def __enter__(self):
+        _prefs().unshare_instances = True
+
+    def __exit__(self, *exc):
+        _prefs().unshare_instances = False
 
 
 def _instance_pair():
@@ -84,15 +99,114 @@ def _check_plain(grp, kids, copy):
     assert not {_key(ob) for ob in (grp, copy, *kids, *copy.children)} & keys
 
 
-def test_freeze_on_instance_group_makes_plain_objects():
+def test_preferences_off_by_default():
+    assert not _prefs().outliner_instance_marks and not _prefs().unshare_instances
+
+
+def test_default_freeze_and_delete_history_keep_the_instance():
     grp, kids, copy = _instance_pair()                # copy in place: Freeze has nothing to bake
     assert bpy.ops.allset.freeze_transform() == {'FINISHED'}
+    assert bpy.ops.allset.delete_history() == {'FINISHED'}
+    assert {c.data for c in copy.children} == {k.data for k in kids}     # still shared, like Maya
+
+
+def _mesh(name, x=0.0):
+    me = bpy.data.meshes.new(name + "Shape")
+    me.from_pydata([(0, 0, 0), (1, 0, 0), (0, 1, 0)], [], [(0, 1, 2)])
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    ob.location.x = x
+    return ob
+
+
+def _pick(*obs):
+    for ob in bpy.context.scene.objects:
+        ob.select_set(ob in obs)
+    bpy.context.view_layer.objects.active = obs[-1]
+
+
+def _instance_of(ob):
+    _pick(ob)
+    assert bpy.ops.allset.duplicate_special(geometry_type='INSTANCE') == {'FINISHED'}
+    return bpy.context.view_layer.objects.active
+
+
+def _clear():
+    for ob in list(bpy.data.objects):
+        bpy.data.objects.remove(ob)
+
+
+def test_default_freeze_skips_an_instance_and_freezes_the_rest():
+    _clear()
+    src = _mesh("pCube1")
+    inst = _instance_of(src)
+    inst.location.x = 3.0
+    plain = _mesh("pCube3", x=2.0)
+    bpy.context.view_layer.update()
+    _pick(inst, plain)
+    assert bpy.ops.allset.freeze_transform() == {'FINISHED'}
+    assert tuple(inst.location) == (3.0, 0.0, 0.0) and inst.data is src.data      # not frozen, like Maya
+    assert tuple(plain.location) == (0.0, 0.0, 0.0)                                # frozen as usual
+
+
+def test_default_freeze_of_a_group_holding_an_instance():
+    _clear()
+    src = _mesh("pCube1")
+    inst = _instance_of(src)
+    plain = _mesh("pCube3", x=1.0)
+    holder = bpy.data.objects.new("holder", None)
+    bpy.context.scene.collection.objects.link(holder)
+    inst.parent = plain.parent = holder
+    inst.location.y = 2.0
+    holder.location.x = 5.0
+    bpy.context.view_layer.update()
+    world = inst.matrix_world.translation.copy()
+    _pick(holder)
+    assert bpy.ops.allset.freeze_transform() == {'FINISHED'}
+    bpy.context.view_layer.update()
+    assert tuple(holder.location) == (0.0, 0.0, 0.0)                     # the group freezes, like Maya
+    assert (inst.matrix_world.translation - world).length < 1e-6          # the instance stays where it is,
+    assert inst.location.y == 2.0 and inst.data is src.data             # not frozen: still an instance
+    assert tuple(plain.location) == (0.0, 0.0, 0.0)
+
+
+def test_default_freeze_of_an_instanced_group():
+    grp, kids, copy = _instance_pair()
+    copy.location.z = 4.0
+    bpy.context.view_layer.update()
+    _pick(copy)
+    assert bpy.ops.allset.freeze_transform() == {'FINISHED'}
+    assert tuple(copy.location) == (0.0, 0.0, 4.0)                        # not frozen, nor anything below it
+    assert {c.data for c in copy.children} == {k.data for k in kids}
+    grp.location.x = 1.0                                                    # the original group: the same
+    _pick(grp)
+    assert bpy.ops.allset.freeze_transform() == {'FINISHED'}
+    assert grp.location.x == 1.0
+
+
+def test_default_delete_history_bakes_the_shared_mesh_for_every_instance():
+    _clear()
+    src = _mesh("pCube1")
+    src.modifiers.new("solid", 'SOLIDIFY')
+    inst = _instance_of(src)
+    assert [m.type for m in inst.modifiers] == ['SOLIDIFY']
+    _pick(inst)
+    assert bpy.ops.allset.delete_history() == {'FINISHED'}
+    assert inst.data is src.data and len(src.data.vertices) == 6      # still shared, the history baked in once
+    assert not inst.modifiers and not src.modifiers                   # gone on both, like Maya's shared shape
+
+
+def test_freeze_on_instance_group_makes_plain_objects():
+    grp, kids, copy = _instance_pair()                # copy in place: Freeze has nothing to bake
+    with _Unshare():
+        assert bpy.ops.allset.freeze_transform() == {'FINISHED'}
     _check_plain(grp, kids, copy)
 
 
 def test_delete_history_on_instance_group_makes_plain_objects():
     grp, kids, copy = _instance_pair()
-    assert bpy.ops.allset.delete_history() == {'FINISHED'}
+    with _Unshare():
+        assert bpy.ops.allset.delete_history() == {'FINISHED'}
     _check_plain(grp, kids, copy)
 
 
@@ -105,7 +219,8 @@ def test_delete_history_bakes_the_copy_only():
     c.select_set(True)
     bpy.context.view_layer.objects.active = c
     before = {k.name: len(k.data.vertices) for k in kids}
-    assert bpy.ops.allset.delete_history() == {'FINISHED'}
+    with _Unshare():
+        assert bpy.ops.allset.delete_history() == {'FINISHED'}
     assert not c.modifiers and len(c.data.vertices) == 6         # solidify baked into the copy's own mesh
     assert {k.name: len(k.data.vertices) for k in kids} == before  # the original's mesh untouched
 

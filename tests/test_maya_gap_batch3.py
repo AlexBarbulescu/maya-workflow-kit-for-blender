@@ -1,6 +1,6 @@
-"""Maya items that were greyed: Modify > Convert > Displacement to Polygons (measured in Maya 2026: a new
-``<name>_displacement1`` object, the source untouched, nothing selected = error) and Generate > Interactive
-Grooming Tools brushes (Blender hair Curves sculpt brushes)."""
+"""Maya items that were greyed: Modify > Convert > Displacement to Polygons (like Maya: a new
+``<name>_displacement1`` object, the source untouched, nothing selected = error, a mesh without displacement is
+copied with a warning) and Generate > Interactive Grooming Tools brushes (Blender hair Curves sculpt brushes)."""
 
 from importlib import import_module
 
@@ -23,7 +23,7 @@ def _run(path):
     mod, _, name = target.partition(".")
     try:
         return getattr(getattr(bpy.ops, mod), name)(**props)
-    except RuntimeError:                # an ERROR report (Maya's error): nothing done
+    except RuntimeError:                # an ERROR report (an error in Maya too): nothing done
         return {'CANCELLED'}
 
 
@@ -36,12 +36,16 @@ def _select(*obs):
 def test_displacement_to_polygons():
     _clear()
     _select()
-    assert _run("Modify/Convert/Displacement to Polygons") == {'CANCELLED'}     # Maya: only surface shapes
+    assert _run("Modify/Convert/Displacement to Polygons") == {'CANCELLED'}     # nothing selected: an error
     bpy.ops.mesh.primitive_plane_add()
     plane = bpy.context.active_object
     plane.name = "pPlane1"
     _select(plane)
-    assert _run("Modify/Convert/Displacement to Polygons") == {'CANCELLED'}     # no Displace modifier
+    assert _run("Modify/Convert/Displacement to Polygons") == {'FINISHED'}      # no Displace modifier: a copy
+    plain = bpy.context.active_object
+    assert plain is not plane and plain.name == "pPlane1_displacement1"
+    bpy.data.objects.remove(plain)
+    _select(plane)
     bpy.ops.object.modifier_add(type='SUBSURF')
     mod = plane.modifiers.new("displace", 'DISPLACE')
     mod.strength = 2.0

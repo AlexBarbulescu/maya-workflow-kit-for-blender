@@ -26,15 +26,23 @@ def main_window(wm=None):
     return wm.windows[0] if wm.windows else None
 
 
-def split_side(context, window, side, width, ui_type):
+def split_side(context, window, side, width, ui_type, then=None, max_share=0.4):
     """Split ``window``'s main viewport and return the new area on ``side`` ('LEFT' / 'RIGHT') of ``width`` unscaled
-    px (VERTICAL factor < 0.5 = new area left, factor > 0.5 = new area right, ``1 - factor`` wide)."""
+    px, at most ``max_share`` of the viewport (VERTICAL factor < 0.5 = new area left, factor > 0.5 = new area right,
+    ``1 - factor`` wide); ``then(new)`` finishes it. In the four view the area goes beside the whole view, never
+    inside one of its panels: it comes on a later tick (``four_view.in_one_panel``) and True is returned."""
     screen = window.screen
+    from . import four_view
+    if four_view.is_four(screen) and not bpy.app.background:
+        done = four_view.in_one_panel(
+            context, window,
+            lambda ctx, win, _panel: split_side(ctx, win, side, width, ui_type, then, max_share))
+        return True if done else None
     area, region = _main_view(screen)
     if area is None or region is None:
         return None
     scale = context.preferences.system.ui_scale or 1.0
-    share = min(0.4, width * scale / max(area.width, 1))
+    share = min(max_share, width * scale / max(area.width, 1))
     factor = share if side == 'LEFT' else 1.0 - share
     before = {a.as_pointer() for a in screen.areas}
     with context.temp_override(window=window, screen=screen, area=area, region=region):
@@ -43,27 +51,56 @@ def split_side(context, window, side, width, ui_type):
     new = next((a for a in screen.areas if a.as_pointer() not in before), None)
     if new is not None:
         new.ui_type = ui_type
+        if then is not None:
+            then(new)
     return new
 
 
+def stack_width(context, window):
+    """(unscaled px, share of the viewport at most) for a new tab stack: the width the tab it raises needs, like
+    Maya (the Attribute Editor's stack is wider than the Channel Box's; layout_fit.dock_width), leaving the viewport
+    at least layout_fit.MIN_VIEW_PX like a tab change's resize does, so a later tab change resizes it the same way."""
+    from . import layout_fit
+    system = context.preferences.system
+    scale = system.ui_scale or 1.0
+    kind = getattr(context.window_manager, "allset_dock", 'CHANNEL_BOX')
+    want = layout_fit.dock_width(scale, system.pixel_size, kind=kind)
+    area = _main_view(window.screen)[0]
+    if area is None or area.width - round(layout_fit.MIN_VIEW_PX * scale) < want:
+        return want / scale, 0.4         # a small window: the stack takes at most 40 % of the viewport
+    return want / scale, 1.0
+
+
 def open_stack(context, window=None):
-    """The stack area right of ``window``'s viewport (made if missing)."""
+    """The stack area right of ``window``'s viewport (made if missing), as wide as its raised tab needs."""
     window = window or main_window(context.window_manager)
     if window is None:
         return None
     stack = find_stack(window.screen)
     if stack is not None:
         return stack
-    new = split_side(context, window, 'RIGHT', WIDTH, 'PROPERTIES')
-    if new is not None:
-        set_role_later(new, 'STACK', window)
-    return new
+    width, max_share = stack_width(context, window)
+    win_ptr = live_refs.pointer(window)
+    return split_side(context, window, 'RIGHT', width, 'PROPERTIES',
+                      then=lambda new: set_role_later(new, 'STACK', live_refs.window(win_ptr) or window),
+                      max_share=max_share)
 
 
 def close_area(context, window, area):
-    """``screen.area_close`` (GUI only: it hangs in background)."""
+    """``screen.area_close`` (GUI only: it hangs in background). A column beside the whole four view (the tab stack)
+    is closed with the four view folded into one panel, which takes the column's place: the four view stays four
+    equal panels."""
     if bpy.app.background or area is None:
         return False
+    from . import four_view
+    if four_view.beside(window.screen, area):
+        ptr = area.as_pointer()
+
+        def act(ctx, win, _panel):
+            column = next((a for a in win.screen.areas if a.as_pointer() == ptr), None)
+            if column is not None:
+                close_area(ctx, win, column)
+        return four_view.in_one_panel(context, window, act)
     with context.temp_override(window=window, screen=window.screen, area=area):
         return bpy.ops.screen.area_close() == {'FINISHED'}
 
@@ -249,6 +286,8 @@ def dock(context, window=None):
         if kind is None or main is None:
             return False
         close_window_later(window)
+        if kind == 'TOOL_SETTINGS':
+            tool_dock.set_docked(True)          # it opens docked again next time, like a docked Maya panel
 
         def back():
             main = live_refs.window(main_ptr)
@@ -259,10 +298,9 @@ def dock(context, window=None):
                     if kind == 'TOOL_SETTINGS':
                         tool_dock.open_dock(bpy.context, main)
                     elif not any(a.type == 'OUTLINER' for a in main.screen.areas):
-                        new = split_side(bpy.context, main, 'LEFT', WIDTH, 'OUTLINER')
-                        if new is not None:
-                            from . import maya_outliner
-                            maya_outliner.setup(new.spaces.active)
+                        from . import maya_outliner
+                        split_side(bpy.context, main, 'LEFT', WIDTH, 'OUTLINER',
+                                   then=lambda new: maya_outliner.setup(new.spaces.active))
             except ReferenceError:
                 pass
             return None
@@ -273,9 +311,12 @@ def dock(context, window=None):
 
 
 def close_floating():
-    """Switch to Blender: close windows whose only area is a kit role (they would show Blender's Tool tab)."""
+    """Switch to Blender: close windows whose only area is a kit role or the Tool Settings (they would show Blender's
+    Tool tab)."""
+    from . import tool_dock
     wm = bpy.context.window_manager
     for window in list(wm.windows):
-        if is_floating(window, wm) and role(window.screen.areas[0]) is not None:
+        if is_floating(window, wm) and (role(window.screen.areas[0]) is not None
+                                        or tool_dock.is_dock(window.screen.areas[0])):
             close_window_later(window)
     _torn_menus.clear()

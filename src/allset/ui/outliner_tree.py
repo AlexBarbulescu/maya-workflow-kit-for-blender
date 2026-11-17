@@ -47,9 +47,9 @@ from .outliner_tree_rows import (ALL_TYPES, CAMERAS, DEFAULT_SETS, EXPANDED, Opt
                                  natural_key, options, set_expanded, subtree_keys, tail_rows, type_group)
 from .outliner_tree_select import (_keep_hidden, active_row, deselect_all, is_picked, picked_unselectable,  # noqa: F401
                                    select_row, unselectable, visible_signature)
-from .outliner_tree_geometry import (CHILD_SELECTED, COLUMNS, ICON_RGB, JOINT_RGB, SCROLL, SCROLLBAR,  # noqa: F401
-                                     SCROLL_X, SEARCH_ROW, _ICON_PARTS, _draw_restrict, _font_size, _icon, _quad,
-                                     _restrict_textures, _triangle, column_xs, eye_x, first_row, page_rows,
+from .outliner_tree_geometry import (CHILD_SELECTED, COLUMNS, ICON_RGB, INSTANCE_RGB, JOINT_RGB, SCROLL,  # noqa: F401
+                                     SCROLLBAR, SCROLL_X, SEARCH_ROW, _ICON_PARTS, _draw_restrict, _font_size, _icon,
+                                     _quad, _restrict_textures, _triangle, column_xs, eye_x, first_row, page_rows,
                                      restrict_texture, row_index_at, row_rect, scrollbar, shift_x, top, unit)
 
 # The kit tree replaces Blender's rows in Maya Outliners (tests switch it off to see Blender's rows).
@@ -377,7 +377,20 @@ def selected_ancestors(context, limit=2000):
     return ancestors_of(items)
 
 
-INSTANCE_RGB = (0.78, 0.58, 1.0)      # soft purple: an instance (shared data) or a group holding one
+def draw():
+    context = bpy.context
+    space, region, area = context.space_data, context.region, context.area
+    if region is None or area is None or region.type != 'WINDOW' or not is_tree(space):
+        return
+    try:
+        _draw(context, space, region, area)
+    except ReferenceError:
+        pass
+    except Exception:                  # a broken draw prints once, not at every redraw
+        if not _state.get("draw_error"):
+            _state["draw_error"] = True
+            import traceback
+            traceback.print_exc()
 
 
 def instance_keys(context):
@@ -385,7 +398,6 @@ def instance_keys(context):
     instance groups above them; the originals and the groups holding them stay unmarked."""
     from ..operators.duplicate import INSTANCE_TAG, is_instance
     keys = set()
-    # shortcut: walks every object of the view layer per redraw; cache on the depsgraph if big scenes stutter
     for ob in context.view_layer.objects:
         if ob.get(INSTANCE_TAG) and is_instance(ob):
             while ob is not None and ob.get(INSTANCE_TAG) and ('O', ob.session_uid) not in keys:
@@ -405,8 +417,9 @@ def _draw_instance_tip(prefs, region, u, dy, x, y0, y1, ob_name, by_name):
         source = instance_source(ob) if ob is not None else ""
     except ReferenceError:
         return
-    label = bpy.app.translations.pgettext_iface("Instance of")
-    label = f"{label} {source}" if source else bpy.app.translations.pgettext_iface("Instance")
+    from .. import i18n
+    label = bpy.app.translations.pgettext_iface(i18n.mark("Instance of"))
+    label = f"{label} {source}" if source else bpy.app.translations.pgettext_iface(i18n.mark("Instance"))
     wcol = prefs.themes[0].user_interface.wcol_tooltip
     pad, w = 0.3 * u, blf.dimensions(0, label)[0]
     bx0 = max(0.0, min(x, region.width - w - 2 * pad))
@@ -420,22 +433,6 @@ def _draw_instance_tip(prefs, region, u, dy, x, y0, y1, ob_name, by_name):
     blf.color(0, *tuple(wcol.text)[:3], 1.0)
     blf.position(0, round(bx0 + pad), round((by0 + by1) / 2 - dy), 0)
     blf.draw(0, label)
-
-
-def draw():
-    context = bpy.context
-    space, region, area = context.space_data, context.region, context.area
-    if region is None or area is None or region.type != 'WINDOW' or not is_tree(space):
-        return
-    try:
-        _draw(context, space, region, area)
-    except ReferenceError:
-        pass
-    except Exception:                  # a broken draw prints once, not at every redraw
-        if not _state.get("draw_error"):
-            _state["draw_error"] = True
-            import traceback
-            traceback.print_exc()
 
 
 def _draw(context, space, region, area):
@@ -471,7 +468,9 @@ def _draw(context, space, region, area):
     back = tuple(th.space.back)[:3]
     child_rgba = (*(b + (c - b) * CHILD_SELECTED for b, c in zip(back, sel_rgba[:3])), 1.0)
     above = selected_ancestors(context)
-    instances = instance_keys(context)
+    from .. import preferences
+    # instance copies purple with a chain-link badge: an add-on preference (Maya draws them like other objects)
+    instances = instance_keys(context) if preferences.get(context).outliner_instance_marks else ()
     by_name = object_names()
     cols = column_xs(space, region, u, n, first)
     tris, tcol, lines, lcol, textures, names, icons = [], [], [], [], [], [], []

@@ -4824,7 +4824,6 @@
    "Blender has no component metadata: store values as custom properties (Attribute Editor Extra Attributes) or mesh attributes.": "Blender has no component metadata: store values as custom properties (Attribute Editor Extra Attributes) or mesh attributes.",
    "Blender has no connection graph: attribute links are drivers (Expression Editor).": "Blender has no connection graph: attribute links are drivers (Expression Editor).",
    "Blender has no editor by this name: any area's editor-type menu gives the closest editor.": "Blender has no editor by this name: any area's editor-type menu gives the closest editor.",
-   "Blender has no fur and no level of detail switching: Object > Link/Transfer Data copies data between objects.": "Blender has no fur and no level of detail switching: Object > Link/Transfer Data copies data between objects.",
    "Blender has no gravity field: a Wind field blowing down (Blender's strength); the scene's gravity is global (Scene properties).": "Blender has no gravity field: a Wind field blowing down (Blender's strength); the scene's gravity is global (Scene properties).",
    "Blender has no hierarchy pick mode: pick roots in the Outliner, Select > Hierarchy takes the children.": "Blender has no hierarchy pick mode: pick roots in the Outliner, Select > Hierarchy takes the children.",
    "Blender has no hierarchy select mode: click the object and use Select > Hierarchy (or the Outliner) to take its children.": "Blender has no hierarchy select mode: click the object and use Select > Hierarchy (or the Outliner) to take its children.",
@@ -4958,7 +4957,6 @@
    "Draw Sharp brush": "Draw Sharp brush",
    "Edge crease": "Edge crease",
    "Edit Mode": "Edit Mode",
-   "Edit menu": "Edit menu",
    "Edit mode": "Edit mode",
    "Edit mode tools": "Edit mode tools",
    "Emit from Object": "Emit from Object",
@@ -5617,6 +5615,11 @@
    "Smooth Mesh Preview": "Smooth Mesh Preview",
    "Smoothing Level": "Smoothing Level"
   },
+  "Labels/operators/distance_tool": {
+   "Distance Tool": "Distance Tool",
+   "End Point": "End Point",
+   "Start Point": "Start Point"
+  },
   "Labels/operators/dome_light": {
    "Dome Light": "Dome Light"
   },
@@ -5789,6 +5792,7 @@
   "Labels/operators/freeze": {
    "Center Pivot": "Center Pivot",
    "Freeze Transformations": "Freeze Transformations",
+   "Not frozen, an instance shares its geometry: {names}": "Not frozen, an instance shares its geometry: {names}",
    "Reset Transformations": "Reset Transformations",
    "Rotate": "Rotate",
    "Scale": "Scale",
@@ -7329,7 +7333,9 @@
    "Breakdown": "Breakdown",
    "Channels": "Channels",
    "Global Key": "Global Key",
+   "Jump to Key": "Jump to Key",
    "Min/Max": "Min/Max",
+   "Next": "Next",
    "Rotate": "Rotate",
    "Run from a global hotkey: only in object / pose mode (S also in component mode)": "Run from a global hotkey: only in object / pose mode (S also in component mode)",
    "Scale": "Scale",
@@ -7557,6 +7563,7 @@
   },
   "Labels/operators/visibility": {
    "Action": "Action",
+   "All Components": "All Components",
    "Dependent": "Dependent",
    "First Selection": "First Selection",
    "Independent": "Independent",
@@ -7665,7 +7672,9 @@
    "A new Maya panel's Material Preview shows Blender's HDRI as its background and the look-dev spheres (off: the Maya view background)": "A new Maya panel's Material Preview shows Blender's HDRI as its background and the look-dev spheres (off: the Maya view background)",
    "A pie at the right end of the In-View Editor's title sets how fast a drag changes its values: click or drag round it, from 2 % (empty) to full speed (full) (off: no pie, the values change at full speed)": "A pie at the right end of the In-View Editor's title sets how fast a drag changes its values: click or drag round it, from 2 % (empty) to full speed (full) (off: no pie, the values change at full speed)",
    "A radial submenu is linked by a line to the centre of the menu it opened from, with a ring there: resting the pointer on that ring for a moment goes back to that menu. The line from the centre to the pointer shows only near a centre": "A radial submenu is linked by a line to the centre of the menu it opened from, with a ring there: resting the pointer on that ring for a moment goes back to that menu. The line from the centre to the pointer shows only near a centre",
+   "Active": "Active",
    "Active Only": "Active Only",
+   "All": "All",
    "Along Normals": "Along Normals",
    "Alt+LMB does nothing in top/front/side orthographic views (Maya)": "Alt+LMB does nothing in top/front/side orthographic views (Maya)",
    "Always": "Always",
@@ -7724,6 +7733,8 @@
    "Fixed-length Tangents": "Fixed-length Tangents",
    "Flat": "Flat",
    "Focal Length": "Focal Length",
+   "Freeze / Delete History Unshare Instances": "Freeze / Delete History Unshare Instances",
+   "Freeze Transformations and Delete History first give an instance its own data, so edits on the original no longer show on it (off: like Maya, the instance keeps sharing its data)": "Freeze Transformations and Delete History first give an instance its own data, so edits on the original no longer show on it (off: like Maya, the instance keeps sharing its data)",
    "Ghost Next": "Ghost Next",
    "Ghost Previous": "Ghost Previous",
    "Grid Behind Surfaces": "Grid Behind Surfaces",
@@ -7752,6 +7763,7 @@
    "In-View Editor Speed Pie": "In-View Editor Speed Pie",
    "In-View Editors": "In-View Editors",
    "In-View Messages": "In-View Messages",
+   "Instance copies (Duplicate Special > Instance) and their groups show purple in the Maya Outliner, with a chain-link badge and an \"Instance of <source>\" tip on hover (off: like Maya, they look like other objects)": "Instance copies (Duplicate Special > Instance) and their groups show purple in the Maya Outliner, with a chain-link badge and an \"Instance of <source>\" tip on hover (off: like Maya, they look like other objects)",
    "Interactive Creation": "Interactive Creation",
    "Interactive Creation switches to the Select tool after one primitive; off, the tool keeps drawing primitives": "Interactive Creation switches to the Select tool after one primitive; off, the tool keeps drawing primitives",
    "Interval (minutes)": "Interval (minutes)",
@@ -7769,6 +7781,7 @@
    "Lock Tumble in Ortho Views": "Lock Tumble in Ortho Views",
    "Make Blender feel like Maya": "Make Blender feel like Maya",
    "Manipulators": "Manipulators",
+   "Mark Instances in the Outliner": "Mark Instances in the Outliner",
    "Marking Menus": "Marking Menus",
    "Marking menus and the hotbox's menus stay hidden while the pointer keeps moving and show after a pause; a hidden mark picks radial items only, by the stroke's latest direction, also in submenus, and shows the names of the menus it passed (off: the menu shows a moment after the press, like Maya)": "Marking menus and the hotbox's menus stay hidden while the pointer keeps moving and show after a pause; a hidden mark picks radial items only, by the stroke's latest direction, also in submenus, and shows the names of the menus it passed (off: the menu shows a moment after the press, like Maya)",
    "Marquee Selects Hidden Components": "Marquee Selects Hidden Components",
@@ -7898,13 +7911,14 @@
    "The keys Maya mode uses. The Maya / Blender switch shortcut (Ctrl+Alt+Shift+M) works with both": "The keys Maya mode uses. The Maya / Blender switch shortcut (Ctrl+Alt+Shift+M) works with both",
    "The panel Renderer menu lists Eevee and Cycles, which set the scene's render engine for Rendered shading (off: one item, Rendered shading with the scene's engine; Maya's panel renderer changes only that panel)": "The panel Renderer menu lists Eevee and Cycles, which set the scene's render engine for Rendered shading (off: one item, Rendered shading with the scene's engine; Maya's panel renderer changes only that panel)",
    "Tool Settings Tab": "Tool Settings Tab",
-   "Tool Settings open as a tab of the Maya dock on the right, next to the Channel Box and the Attribute Editor (off: their own dock left of the viewport)": "Tool Settings open as a tab of the Maya dock on the right, next to the Channel Box and the Attribute Editor (off: their own dock left of the viewport)",
+   "Tool Settings open as a tab of the Maya dock on the right, next to the Channel Box and the Attribute Editor (off: their own window, or a dock left of the viewport once docked)": "Tool Settings open as a tab of the Maya dock on the right, next to the Channel Box and the Attribute Editor (off: their own window, or a dock left of the viewport once docked)",
    "Top bar shows the Maya menus, menu sets and Status Line instead of Blender's menus and workspace tabs (Blender menus stay as submenus)": "Top bar shows the Maya menus, menu sets and Status Line instead of Blender's menus and workspace tabs (Blender menus stay as submenus)",
    "Transform Constraint": "Transform Constraint",
    "UI Elements": "UI Elements",
    "UV Manipulator": "UV Manipulator",
    "UV Pre-selection": "UV Pre-selection",
    "Unconstrained Drag": "Unconstrained Drag",
+   "Update View": "Update View",
    "Value Lines": "Value Lines",
    "Value change accelerates with drag distance": "Value change accelerates with drag distance",
    "View Axis": "View Axis",
@@ -8114,7 +8128,8 @@
    "Select Channel": "Select Channel",
    "Select Channels": "Select Channels",
    "Set": "Set",
-   "Toggle": "Toggle"
+   "Toggle": "Toggle",
+   "Value Editor Enter": "Value Editor Enter"
   },
   "Labels/ui/cb_keys": {
    "Rotate X": "Rotate X",
@@ -8475,8 +8490,10 @@
    "Hotkey": "Hotkey",
    "Hotkey Editor": "Hotkey Editor",
    "Import...": "Import...",
+   "Key in Use": "Key in Use",
    "Kit hotkey: — (Maya mode off or the item was removed)": "Kit hotkey: — (Maya mode off or the item was removed)",
    "Press a key... (Esc cancels)": "Press a key... (Esc cancels)",
+   "Remove From Others": "Remove From Others",
    "Restore": "Restore",
    "Restore All Maya Hotkeys": "Restore All Maya Hotkeys",
    "Search": "Search",
@@ -8818,6 +8835,8 @@
    "Show Set Members": "Show Set Members"
   },
   "Labels/ui/outliner_tree": {
+   "Instance": "Instance",
+   "Instance of": "Instance of",
    "Outliner Hover": "Outliner Hover",
    "Outliner Pan": "Outliner Pan",
    "Outliner Scroll": "Outliner Scroll",
@@ -8955,6 +8974,11 @@
    "New Perspective": "New Perspective",
    "Panel Toolbar Hover": "Panel Toolbar Hover",
    "Stereo Cameras": "Stereo Cameras"
+  },
+  "Labels/ui/playback_redraw": {
+   "Play / Stop": "Play / Stop",
+   "Play backwards": "Play backwards",
+   "Reverse": "Reverse"
   },
   "Labels/ui/pose_editor": {
    "Add Pose": "Add Pose",
@@ -9865,6 +9889,9 @@
    "Switch the 3D view's display like Maya's 4/5/6/7 keys": "Switch the 3D view's display like Maya's 4/5/6/7 keys",
    "Toggle a component type in the pick mask (Maya Shift+Q marking menu)": "Toggle a component type in the pick mask (Maya Shift+Q marking menu)"
   },
+  "Tooltips/operators/distance_tool": {
+   "Distance Tool click: the first click places a locator, the second one another locator and a distance\ndimension between them (Maya Distance Tool)": "Distance Tool click: the first click places a locator, the second one another locator and a distance\ndimension between them (Maya Distance Tool)"
+  },
   "Tooltips/operators/dome_light": {
    "Dome light: an image (HDRI) around the scene lights it, Blender's World environment. Rotate the domeLight\nlocator to turn the image; its Intensity attribute is the brightness": "Dome light: an image (HDRI) around the scene lights it, Blender's World environment. Rotate the domeLight\nlocator to turn the image; its Intensity attribute is the brightness"
   },
@@ -10482,6 +10509,7 @@
   },
   "Tooltips/operators/time_keys": {
    "Edit the selection's keys in the Time Slider range (Shift-drag), else at the current frame (Maya Time Slider menu)": "Edit the selection's keys in the Time Slider range (Shift-drag), else at the current frame (Maya Time Slider menu)",
+   "Go to the next / previous key the Time Slider shows (Maya . / ,)": "Go to the next / previous key the Time Slider shows (Maya . / ,)",
    "Set a key on every keyable channel of the selection (Maya S); the active keying set if there is one": "Set a key on every keyable channel of the selection (Maya S); the active keying set if there is one",
    "Set the playback range (Maya Time Slider > Set Range to)": "Set the playback range (Maya Time Slider > Set Range to)"
   },
@@ -10614,7 +10642,8 @@
    "Zoom the UV / Image Editor in / out with a left / right drag (Maya Alt+RMB dolly)": "Zoom the UV / Image Editor in / out with a left / right drag (Maya Alt+RMB dolly)"
   },
   "Tooltips/operators/visibility": {
-   "Maya object visibility (h, Ctrl+H, Alt+H, Shift+H, Ctrl+Shift+H)": "Maya object visibility (h, Ctrl+H, Alt+H, Shift+H, Ctrl+Shift+H)"
+   "Maya object visibility (h, Ctrl+H, Alt+H, Shift+H, Ctrl+Shift+H)": "Maya object visibility (h, Ctrl+H, Alt+H, Shift+H, Ctrl+Shift+H)",
+   "Show every hidden vertex, edge and face of every mesh in the scene, selected or not (Maya Display > Show >\nAll Components, also from object mode)": "Show every hidden vertex, edge and face of every mesh in the scene, selected or not (Maya Display > Show >\nAll Components, also from object mode)"
   },
   "Tooltips/operators/weight_paint": {
    "Maya Copy Vertex Weights while painting: remember the active (else first selected) vertex's weights": "Maya Copy Vertex Weights while painting: remember the active (else first selected) vertex's weights",
@@ -10703,6 +10732,7 @@
    "Set a breakdown key on every channel shown (Maya Channels > Breakdown All)": "Set a breakdown key on every channel shown (Maya Channels > Breakdown All)"
   },
   "Tooltips/ui/cb_drag": {
+   "Channel Box value editor: note an Enter press before the editor's field takes it (Enter writes an unchanged value, a click away doesn't)": "Channel Box value editor: note an Enter press before the editor's field takes it (Enter writes an unchanged value, a click away doesn't)",
    "Channel Box: remember the channel under the mouse and watch for a drag over the rows": "Channel Box: remember the channel under the mouse and watch for a drag over the rows",
    "Clear the Channel Box channel selection": "Clear the Channel Box channel selection",
    "Drag a numeric Channel Box value horizontally": "Drag a numeric Channel Box value horizontally",
@@ -10798,13 +10828,14 @@
    "Choose replacement components on the proposed input, then Enter to apply or Esc to cancel": "Choose replacement components on the proposed input, then Enter to apply or Esc to cancel"
   },
   "Tooltips/ui/hotkey_editor": {
-   "Assign a new key to this command: press the key (with Ctrl / Alt / Shift), Esc cancels": "Assign a new key to this command: press the key (with Ctrl / Alt / Shift), Esc cancels",
+   "Assign a new key to this command: press it (with Ctrl / Alt / Shift); a key in use asks first, Esc cancels": "Assign a new key to this command: press it (with Ctrl / Alt / Shift); a key in use asks first, Esc cancels",
    "Give this command its Maya hotkey back": "Give this command its Maya hotkey back",
    "Import a hotkey set exported from Maya's Hotkey Editor (.mhk) or the kit's Export (.json): its keys replace\nthe kit keys of the same commands (only key bindings are read; nothing in the file is run)": "Import a hotkey set exported from Maya's Hotkey Editor (.mhk) or the kit's Export (.json): its keys replace\nthe kit keys of the same commands (only key bindings are read; nothing in the file is run)",
    "Maya's Hotkey Editor (a marked Properties Tool tab in its own window)": "Maya's Hotkey Editor (a marked Properties Tool tab in its own window)",
    "Maya's Hotkey Editor list: command, Maya key, the kit's key, status": "Maya's Hotkey Editor list: command, Maya key, the kit's key, status",
    "Open Blender's Preferences > Keymap (every Blender and add-on key)": "Open Blender's Preferences > Keymap (every Blender and add-on key)",
-   "Open the Hotkey Editor: Maya's hotkeys, the kit's keys for them, search and assign new keys": "Open the Hotkey Editor: Maya's hotkeys, the kit's keys for them, search and assign new keys"
+   "Open the Hotkey Editor: Maya's hotkeys, the kit's keys for them, search and assign new keys": "Open the Hotkey Editor: Maya's hotkeys, the kit's keys for them, search and assign new keys",
+   "Take this command's key from the other commands that use it, like Maya (their Restore gives it back)": "Take this command's key from the other commands that use it, like Maya (their Restore gives it back)"
   },
   "Tooltips/ui/hs_drag": {
    "Maya Hypershade: drag a material swatch with the middle mouse button onto an object to assign it": "Maya Hypershade: drag a material swatch with the middle mouse button onto an object to assign it"
@@ -10978,6 +11009,9 @@
    "Panel toolbar: watch for a right-click on the camera icon": "Panel toolbar: watch for a right-click on the camera icon",
    "Right-click on the panel toolbar's camera, Bookmarks or 2D Pan/Zoom icon: its menu": "Right-click on the panel toolbar's camera, Bookmarks or 2D Pan/Zoom icon: its menu",
    "The scene's cameras: pick one to look through it in this view": "The scene's cameras: pick one to look through it in this view"
+  },
+  "Tooltips/ui/playback_redraw": {
+   "Play the animation, or stop it when it plays (Maya Play / Stop)": "Play the animation, or stop it when it plays (Maya Play / Stop)"
   },
   "Tooltips/ui/pose_editor": {
    "Maya's Pose Editor (a marked Properties Tool tab in its own window)": "Maya's Pose Editor (a marked Properties Tool tab in its own window)"

@@ -20,41 +20,8 @@ from .cb_inputs import (SHAPE_PROPS, _drawing_sigs, _inputs, _modifier_props, _n
                         rebuild_rows, row_for, shape_label, weight_name)
 from .cb_values import (_held_states, _holding, _holds_states, channel_label, entry_kind, get_value, has_channel,
                         row_state)
-from .cb_selection import sel_toggle, selected_channels
+from .cb_selection import sel_toggle, selected_channels, selection_column, value_cell
 from .cb_menus import ALLSET_OT_cb_rotate_order, MENU_BAR
-
-
-def _left_pad(text):
-    """Spaces after ``text`` that move it, centred in a Channel Box value cell, to the cell's left edge.
-    shortcut: the cell width is estimated from the region width (half the row, less the state icon column); the
-    estimate is kept a little short so the text never clips; measure the real button if it lands off."""
-    import blf
-    region = bpy.context.region
-    if region is None:
-        return ""
-    prefs = bpy.context.preferences
-    s = prefs.system.ui_scale
-    blf.size(0, prefs.ui_styles[0].widget.points * s)
-    space = blf.dimensions(0, "a a")[0] - blf.dimensions(0, "aa")[0]
-    if space <= 0:
-        return ""
-    cell = (region.width - 24 * s) * 0.5 - 20 * s
-    room = cell - 30 * s - blf.dimensions(0, text)[0]
-    return " " * max(0, int(room / space))
-
-
-def value_cell(layout, owner, prop, selected):
-    """A Channel Box value field; selected (#375), Maya's blue value cell: a pressed toggle of the twin ``<prop>_on``
-    showing the value (UILayout can't colour a text field). The drag watcher eats the press either way and edits
-    ``prop`` (edit_field)."""
-    twin = prop + "_on"
-    if selected and twin in owner.bl_rna.properties:
-        # one pressed toggle (two joined buttons draw a divider, and a narrow one drops its text); a toggle centres
-        # its text, so trailing spaces push the value to the cell's left edge like the text field's
-        val = getattr(owner, prop)
-        layout.prop(owner, twin, text=val + _left_pad(val), toggle=True, translate=False)
-    else:
-        layout.prop(owner, prop, text="")
 
 
 # Maya's dock is one tab stack with vertical tabs on its right edge: the
@@ -162,6 +129,7 @@ def _row_label(row, key, selected, sel_owner=None, sel_prop=None):
         sel_toggle(sub, sel_owner, sel_prop, selected, i18n.iface(label) if key in MAIN_BY_KEY else label,
                    translate=key not in MAIN_BY_KEY)
         return
+    selected = selected and selection_column() == "NAME"
     op = sub.operator("allset.cb_select_channel", text=channel_label(key), depress=selected,
                       emboss=selected)
     op.key = key

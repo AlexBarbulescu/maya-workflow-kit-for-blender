@@ -17,7 +17,7 @@ from bpy.props import BoolProperty, EnumProperty, FloatProperty
 from mathutils import Matrix, Vector
 
 from .. import results
-from . import freeze, naming, parenting, units
+from . import freeze, naming, units
 
 # Maya Y-up axis -> Blender (axis index, sign): X -> X, Y -> Z, Z -> -Y
 MAYA_AXES = {'X': (0, 1.0), 'Y': (2, 1.0), 'Z': (1, -1.0)}
@@ -111,20 +111,23 @@ def separate(context, ob):
                  "delta_rotation_euler", "delta_scale"):
         setattr(grp, attr, getattr(ob, attr))
     context.view_layer.update()
-    # Maya: the pieces have translate 0 and their pivot at the group's own origin, not at its pivot
-    # (polySurface1/2 rotatePivot (0, 0, 0) under pCube2). The group carries the pivot
-    # offset in delta_location, so each piece's pivot moves back by it (freeze.shift_pivot keeps the data).
+    # Maya: the pieces have translate 0 and their pivot at the group's frame origin, not at its pivot
+    # (polySurface1/2 rotatePivot (0, 0, 0) under pCube2). The group carries the pivot offset in delta_location: the
+    # pieces' parent inverse takes it out (the group's frame, like freeze.frame_inverse) and their geometry is
+    # baked into that frame, so their own transform is the identity.
     lin = Matrix.LocRotScale(None, grp.matrix_basis.to_quaternion(), grp.matrix_basis.to_scale()).to_3x3()
-    back = lin.inverted_safe() @ -Vector(grp.delta_location)
+    frame = Matrix.Translation(-(lin.inverted_safe() @ Vector(grp.delta_location)))
+    to_frame = (grp.matrix_world @ frame).inverted_safe()
     for piece in pieces:
-        world = piece.matrix_world.copy()      # separate copied the original's pivot delta to every piece
+        world = piece.matrix_world.copy()
+        piece.parent = grp
+        piece.matrix_parent_inverse = frame
         piece.delta_location, piece.delta_rotation_euler, piece.delta_scale = (0, 0, 0), (0, 0, 0), (1, 1, 1)
-        piece.matrix_world = world
-        parenting.set_parent_maya(piece, grp)
-        context.view_layer.update()
-        if back.length > 1e-9:
-            freeze.shift_pivot(piece, back)
+        piece.delta_rotation_quaternion = (1, 0, 0, 0)
+        piece.matrix_basis = Matrix.Identity(4)
+        freeze.bake_into_data(piece, to_frame @ world)
         _maya_rename(piece, "polySurface")
+    context.view_layer.update()
     for o in context.selected_objects:
         o.select_set(False)
     for piece in pieces:
@@ -382,10 +385,9 @@ def _boolean_order(context, objs):
     return order[0], order[1:]
 
 
-# Maya 2026 Booleans that keep or drop parts of the first mesh's own surface (polyCBoolOp -op 5..8, checked in Maya on
-# a cube cut by a smaller one): Slice = the Difference and the Intersection as two closed shells; Hole Punch = the
-# first mesh outside the others, left open; Cut Out = the first mesh inside them, open; Split Edges = the first mesh
-# cut along the intersection, nothing removed.
+# Maya 2026 Booleans that keep or drop parts of the first mesh's own surface: Slice = the Difference and the
+# Intersection as two closed shells; Hole Punch = the first mesh outside the others, left open; Cut Out = the first
+# mesh inside them, open; Split Edges = the first mesh cut along the intersection, nothing removed.
 CUTS = {'SLICE', 'HOLE_PUNCH', 'CUT_OUT', 'SPLIT_EDGES'}
 
 

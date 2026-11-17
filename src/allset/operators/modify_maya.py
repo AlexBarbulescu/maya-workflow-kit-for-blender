@@ -102,11 +102,11 @@ class ALLSET_OT_smooth_to_polygons(bpy.types.Operator):
 # --- Convert > Displacement to Polygons ----------------------------------------------------------
 
 NO_SURFACE = "Select a polygon mesh to convert."      # Maya also errors when nothing is selected
-NO_DISPLACE = "No Displace modifier on the selected meshes: Blender's material displacement can't be baked."
+NO_DISPLACE = "{} has no Displace modifier: its copy has the mesh as it shows (material displacement isn't baked)."
 
 
 def displacement_to_polygons(context, obs):
-    """Maya displacementToPoly: a new ``<name>_displacement<N>`` mesh object per mesh in ``obs`` holding its
+    """Maya Displacement to Polygons: a new ``<name>_displacement<N>`` mesh object per mesh in ``obs`` holding its
     displaced geometry (the evaluated modifier stack); the source is left as it is. Returns the new objects."""
     from . import naming
     deps = context.evaluated_depsgraph_get()
@@ -138,10 +138,9 @@ class ALLSET_OT_displacement_to_polygons(bpy.types.Operator):
         if not meshes:
             self.report({'ERROR'}, NO_SURFACE)
             return {'CANCELLED'}
-        meshes = [ob for ob in meshes if any(m.type == 'DISPLACE' for m in ob.modifiers)]
-        if not meshes:
-            self.report({'WARNING'}, NO_DISPLACE)
-            return {'CANCELLED'}
+        for ob in meshes:       # like Maya: a mesh without displacement is converted too, with a warning
+            if not any(m.type == 'DISPLACE' for m in ob.modifiers):
+                self.report({'WARNING'}, NO_DISPLACE.format(ob.name))
         out = displacement_to_polygons(context, meshes)
         for ob in context.selected_objects:
             ob.select_set(False)

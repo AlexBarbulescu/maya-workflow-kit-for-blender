@@ -1,5 +1,5 @@
 """Maya items that were greyed or collapsed: Display > Hide / Show submenus and types, Time Slider Bookmarks, Mesh >
-Booleans Slice / Hole Punch / Cut Out / Split Edges (results checked against Maya 2026 polyCBoolOp on the same cubes)."""
+Booleans Slice / Hole Punch / Cut Out / Split Edges."""
 
 from importlib import import_module
 
@@ -72,7 +72,7 @@ def test_bookmark_menu_items():
 
 
 def _cubes():
-    """Maya's test: A = 2-unit cube at the origin, B = 1-unit cube at x=1 (straddles A's +X face)."""
+    """A = 2-unit cube at the origin, B = 1-unit cube at x=1 (straddles A's +X face)."""
     _clear()
     obs = []
     for name, size, x in (("A", 2.0, 0.0), ("B", 1.0, 1.0)):
@@ -117,30 +117,30 @@ def _stats(ob):
 def _bool(label):
     a = _cubes()
     _run(f"Mesh/Booleans/{label}")
-    assert "B" not in bpy.data.objects, "the cutter is used up (Maya with history off)"
+    assert "B" not in bpy.data.objects, "the cutter is used up (like Maya with history off)"
     return _stats(a)
 
 
 def test_boolean_slice():
     shells, border, area, lo, hi = _bool("Slice")
-    assert (shells, border) == (2, 0)                     # Maya: 2 closed shells
+    assert (shells, border) == (2, 0)                     # two closed shells
     assert area == 30.0       # outside shell 23 + 3 of B's walls, inside shell 1 + the same 3 walls
-    assert (lo, hi) == (-1.0, 1.0)                        # Maya bbox x: -1 .. 1
+    assert (lo, hi) == (-1.0, 1.0)                        # A's width
 
 
 def test_boolean_hole_punch():
     shells, border, area, lo, hi = _bool("Hole Punch")
-    assert shells == 1 and border == 4                    # Maya: open hole, 4 border edges
+    assert shells == 1 and border == 4                    # an open hole
     assert area == 23.0 and (lo, hi) == (-1.0, 1.0)       # A's 24 minus the 1x1 patch inside B
 
 
 def test_boolean_cut_out():
     shells, border, area, lo, hi = _bool("Cut Out")
-    assert shells == 1 and border == 4                    # Maya: one open patch
-    assert area == 1.0 and (lo, hi) == (1.0, 1.0)         # Maya bbox x: 1 .. 1
+    assert shells == 1 and border == 4                    # one open patch
+    assert area == 1.0 and (lo, hi) == (1.0, 1.0)         # the patch on A's +X face
 
 
 def test_boolean_split_edges():
     shells, border, area, lo, hi = _bool("Split Edges")
-    assert (shells, border) == (1, 0)                     # Maya: closed, nothing removed
+    assert (shells, border) == (1, 0)                     # closed, nothing removed
     assert area == 24.0 and (lo, hi) == (-1.0, 1.0)

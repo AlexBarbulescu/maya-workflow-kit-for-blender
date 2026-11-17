@@ -128,6 +128,7 @@ classes += graph_curves_203.classes
 from . import anim_layers_204  # noqa: E402  animation layers 4
 classes += anim_layers_204.classes
 from . import pins_205  # noqa: E402  UV / Proximity Pin, intermediate objects, wrap influences
+from . import bend_deformer  # noqa: E402  a lattice / surface bend follows its handle (#379)
 from . import skin_follow  # noqa: E402  a skin moves with its skeleton object; older files get it on load
 classes += pins_205.classes
 from . import deformers_205b  # noqa: E402  Morph / Jiggle deformers
@@ -226,12 +227,14 @@ from . import graph_bookmarks  # noqa: E402  Graph Editor List > Bookmarks
 classes += graph_bookmarks.classes
 from . import fill_bridge  # noqa: E402  Mesh > Fill Hole / Edit Mesh > Bridge with Maya's selection rules (#337)
 classes += fill_bridge.classes
+from . import distance_tool  # noqa: E402  Create > Measure Tools > Distance Tool (#370)
+classes += distance_tool.classes
 from . import attr_clipboard  # noqa: E402  Mesh > Clipboard Actions, Edit > Transfer Attribute Values
 classes += attr_clipboard.classes
 from . import lod  # noqa: E402  Edit > LOD (Level of Detail)
 classes += lod.classes
 
-from . import shape_history  # noqa: E402  persistent polySoftEdge / component deletion inputs
+from . import shape_history  # noqa: E402  tnt: persistent polySoftEdge / component deletion inputs
 classes += shape_history.classes
 
 _register_classes, _unregister_classes = bpy.utils.register_classes_factory(classes)
@@ -317,6 +320,7 @@ def register():
     constrain_199.register_handlers()
     graph_curves_203.register_handlers()
     pins_205.register_handlers()
+    bend_deformer.register_handlers()
     skin_follow.register_handlers()
     deformers_205b.register_handlers()
     deformers_205a.register_handlers()
@@ -348,6 +352,7 @@ def unregister():
     deformers_205a.unregister_handlers()
     deformers_205b.unregister_handlers()
     skin_follow.unregister_handlers()
+    bend_deformer.unregister_handlers()
     pins_205.unregister_handlers()
     graph_curves_203.unregister_handlers()
     constrain_199.unregister_handlers()
