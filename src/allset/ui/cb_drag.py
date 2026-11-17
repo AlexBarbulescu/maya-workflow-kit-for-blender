@@ -587,8 +587,6 @@ class ALLSET_PT_cb_field(bpy.types.Panel):
     def draw(self, context):
         if field_owner(context, _edit["key"] or "")[0] is None:
             return
-        if _edit["blank"]:
-            owner, prop = context.scene.allset_cb, "entry_text"
         row = self.layout.row()
         row.activate_init = True
         row.prop(context.scene.allset_cb, "entry_text", text="")

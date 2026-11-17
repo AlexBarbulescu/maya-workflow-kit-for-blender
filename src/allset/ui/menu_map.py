@@ -1058,7 +1058,6 @@ OBJECT_MODE = {
     # (Maya 2026); Automatic / Contour Stretch / Planar do that in their own operator.
     "UV/Cylindrical": ('ALL', 'FACE'),
     "UV/Spherical": ('ALL', 'FACE'),
-    "Display/Show/All Components": ('ALL', 'VERT'),     # Maya showAllComponents on the selected meshes
 }
 
 # Edit / Select / Modify items run in component (mesh edit) mode the way Maya runs them there (#39 /
