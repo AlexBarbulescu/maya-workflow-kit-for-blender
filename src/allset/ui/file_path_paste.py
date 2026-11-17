@@ -18,6 +18,7 @@ import bpy
 from bpy.app.handlers import persistent
 
 _OWNER = object()
+_last = {}          # file browser area pointer -> File Name text before a paste
 _DRIVE = re.compile(r'^_?([A-Za-z])__(.*)$')    # optional leading '_' = a pasted '"' quote
 _EMBEDDED = re.compile(r'.+?[\\/]"?([A-Za-z]:[\\/].*)$')   # Windows: a pasted absolute path joined to the folder
 _BAD = re.compile(r'[\x00-\x1f/\\?*:|"<>]')     # what BLI_path_make_safe_filename turns into '_'
