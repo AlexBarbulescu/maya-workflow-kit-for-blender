@@ -10,6 +10,7 @@ import math
 import bpy
 
 from .. import switch
+from . import layout_sizes_tnt
 from .toolbox_column import GAP_PX, OUTLINER_PX, column_width, is_toolbox, settle
 
 SHELF_PX = 64        # = tools/make_startup.py SHELF_PX
@@ -85,6 +86,10 @@ def text_px(text, scale):
     return len(text) * 7 * scale
 
 
+def _outliner_px(scale):
+    return layout_sizes_tnt.width('OUTLINER', scale) or round(OUTLINER_PX * scale)   # tnt: the user's width
+
+
 def dock_need(scale, pixel_size=1.0, measure=text_px):
     """{"labels", "ae_menu"}: px the tab stack needs at ``scale`` so the Channel Box labels aren't truncated and the
     AE menu bar is one row, both left of the vertical tab strip (``maya_dock_strip.reserved_px``)."""
@@ -102,6 +107,9 @@ def dock_need(scale, pixel_size=1.0, measure=text_px):
 def dock_width(scale, pixel_size=1.0, measure=text_px, kind='CHANNEL_BOX'):
     """The tab stack width at ``scale`` with ``kind`` raised: Maya's Attribute Editor stack for the AE (at least its
     one-row menu bar), else what the Channel Box needs, at least Maya's Channel Box stack (never above the AE's)."""
+    user = layout_sizes_tnt.width(layout_sizes_tnt.dock_key(kind), scale)   # tnt: the width the user dragged
+    if user:
+        return user
     need = dock_need(scale, pixel_size, measure)
     top = round(DOCK_MAX_PX * scale)
     if kind in WIDE_KINDS:
@@ -218,7 +226,7 @@ def _dock_target(window, scale, pixel_size, kind):
         outl = next((a for a in screen.areas if a.type == 'OUTLINER' and abs(a.x - (column.x + column.width)) <= GAP_PX
                      and abs(a.x + a.width - main.x) <= GAP_PX), None)
         if outl is not None:
-            left += round(OUTLINER_PX * scale) - outl.width
+            left += _outliner_px(scale) - outl.width
     return dock, min(want, dock.width + max(0, main.width - left - round(MIN_VIEW_PX * scale)))
 
 
@@ -305,6 +313,7 @@ def fit_columns(start_fit=True):
         user = window.workspace is not None and switch.USER_KEY in window.workspace
         # a workspace the user saved keeps the sizes it was saved with
         armed = loaded and not user
+        layout_sizes_tnt.sample(window, scale, loaded or resized or _running[0] or bool(_tab_target) or not still)  # tnt
         needed = False       # an edge of this screen is off its fitted place
         row = shelf_row_area(screen)
         if row is not None and row.spaces.active.show_region_header:
@@ -368,7 +377,7 @@ def fit_columns(start_fit=True):
             # took its pixels)
             outl = next((a for a in screen.areas if a.type == 'OUTLINER' and abs(a.x - (column.x + column.width)) <= GAP_PX
                          and a.height >= column.height - 4), None)
-            wo = round(OUTLINER_PX * scale)
+            wo = _outliner_px(scale)
             if outl is not None and abs(outl.width - wo) > 2 and outl.x + outl.width < window.width - 2:
                 needed = True
                 _move_edge(window, outl, outl.x + outl.width, outl.y + outl.height // 2, wo - outl.width,
@@ -475,6 +484,7 @@ def _fit_tick():
 @bpy.app.handlers.persistent
 def _fit_after_load(*_args):
     _warps.clear()
+    layout_sizes_tnt.forget()   # tnt
     _state.clear()       # a loaded layout may be fitted again: its areas as loaded, before any split (#53)
     try:
         scale = bpy.context.preferences.system.ui_scale
