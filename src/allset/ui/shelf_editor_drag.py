@@ -18,8 +18,6 @@ from bpy.props import IntProperty
 from .shelf_editor_draft import _draft_buttons, _redraw, _set_message, _wm
 
 ROW_PX = 20  # UIList DEFAULT row height in pixels at UI scale 1 (UI_UNIT_Y)
-# shortcut: diagnostics on the editor's message line while hold-drag is unconfirmed live; drop once it works.
-DIAG = "drag 0.17.15"
 _state = {"window": 0, "pending": False}  # window: as_pointer() of the window whose watcher runs
 
 
@@ -44,8 +42,6 @@ class ALLSET_OT_shelf_editor_drag_watch(bpy.types.Operator):
         self.dragging = False
         _state["window"] = context.window.as_pointer()
         context.window_manager.modal_handler_add(self)
-        _set_message(context, f"{DIAG}: ready (press-hold a grip)")
-        _redraw(context)
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
@@ -62,10 +58,8 @@ class ALLSET_OT_shelf_editor_drag_watch(bpy.types.Operator):
         self._select(target)
 
     def _begin(self, context, event):
-        index, probe = _hovered_grip(context)
+        index = _hovered_grip(context)
         if index is None:
-            _set_message(context, f"{DIAG}: no grip under mouse ({probe})")
-            _redraw(context)
             return False
         self.buttons = _draft_buttons(_wm(context).allset_se_shelf)
         self.start = index
@@ -91,7 +85,7 @@ class ALLSET_OT_shelf_editor_drag_watch(bpy.types.Operator):
         except Exception as error:  # any error would drop the handler silently; free the slot and say why
             _state["window"] = 0
             print("Shelf Editor drag stopped:", repr(error))
-            _set_message(context, f"{DIAG}: stopped: {error!r}")
+            _set_message(context, "")
             return {'CANCELLED', 'PASS_THROUGH'}
 
     def _modal(self, context, event):
@@ -118,7 +112,7 @@ _GRIP_CALL = re.compile(r"bpy\.ops\.allset\.shelf_editor_grip\(index=(-?\d+)\)")
 
 
 def _hovered_grip(context):
-    """(row index of the grip under the mouse or None, what the probe saw).
+    """Row index of the grip under the mouse, or None.
 
     Python can't read the hovered button (``context.button_operator`` exists only inside its right-click menu), but
     ``ui.copy_python_command_button`` (Ctrl+C over a button) writes the hovered operator call to the clipboard.
@@ -131,12 +125,12 @@ def _hovered_grip(context):
     try:
         bpy.ops.ui.copy_python_command_button()
     except RuntimeError:
-        return None, "not over an operator button"
+        return None             # not over an operator button
     copied = wm.clipboard
     if saved:
         wm.clipboard = saved
     match = _GRIP_CALL.search(copied)
-    return (int(match.group(1)), copied) if match else (None, copied[:60] or "nothing copied")
+    return int(match.group(1)) if match else None
 
 
 def _start_watch(window, area, region):
