@@ -190,7 +190,6 @@ def _op_description(path):
 # Bevel fraction 0.5, Chamfer Vertices 0.25 (Blender: percent of the adjacent edge).
 WHOLE_MESH_PROPS = {
     "Edit Mesh/Chamfer Vertices": {"offset_type": 'PERCENT', "offset_pct": 25.0, "affect": 'VERTICES'},
-    "Edit Mesh/Average Vertices": {"repeat": 10},
     # Circularize: allset.circularize's own defaults apply; the old LoopTools "value" key made every
     # object-mode Circularize raise TypeError
 }
@@ -206,6 +205,8 @@ class ALLSET_OT_menu_whole_mesh(bpy.types.Operator):
     item: StringProperty(options={'SKIP_SAVE'})
 
     def execute(self, context):
+        from ..operators import option_windows
+
         rule = menu_map.OBJECT_MODE.get(self.item)
         s = menu_map.spec(self.item)
         meshes = [ob for ob in context.selected_objects if ob.type == 'MESH']
@@ -219,11 +220,20 @@ class ALLSET_OT_menu_whole_mesh(bpy.types.Operator):
             view_layer.objects.active = meshes[0]
         mod, name = s[1].split(".")
         props = {**s[2], **WHOLE_MESH_PROPS.get(self.item, {})}
+        window = option_windows.find_path(self.item)
+        saved = option_windows.saved(window.key) if window is not None and window.click_saved else None
         bpy.ops.object.mode_set(mode='EDIT')
         try:
             bpy.ops.mesh.select_mode(type=rule[1])
             bpy.ops.mesh.select_all(action='SELECT')
-            getattr(getattr(bpy.ops, mod), name)('EXEC_DEFAULT', **props)
+            if saved is None:
+                getattr(getattr(bpy.ops, mod), name)('EXEC_DEFAULT', **props)
+            else:  # tnt: use the same saved options as a component-mode menu click
+                result = option_windows.run(window, context, saved)
+                if isinstance(result, str):
+                    self.report({'WARNING'}, result)
+                elif result == {'CANCELLED'}:
+                    return result
         except (RuntimeError, TypeError) as ex:
             self.report({'WARNING'}, str(ex).strip().splitlines()[-1])
         finally:

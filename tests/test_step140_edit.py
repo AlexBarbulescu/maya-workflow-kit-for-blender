@@ -137,6 +137,22 @@ def test_every_path_opens_its_window():
         assert hasattr(bpy.ops.allset, "opt_" + key)
 
 
+def test_edit_mesh_option_boxes_and_saved_whole_mesh_values():
+    _clear()
+    for label in ("Add Divisions", "Average Vertices", "Poke"):
+        assert menu_sets.option_kind(f"Edit Mesh/{label}") == "window"
+    assert menu_map.spec("Edit Mesh/Average Vertices")[2]["repeat"] == 10
+
+    bpy.ops.mesh.primitive_cube_add()
+    cube = bpy.context.active_object
+    ow.store("add_divisions", {"divisions": 2})
+    try:
+        assert bpy.ops.allset.menu_item(item="Edit Mesh/Add Divisions") == {'FINISHED'}
+        assert cube.mode == 'OBJECT' and len(cube.data.polygons) == 54
+    finally:
+        ow.store("add_divisions", None)
+
+
 def test_fields_labels_defaults_are_maya():
     for key, (title, button, fields) in FIELDS.items():
         w = ow._BY_KEY[key]

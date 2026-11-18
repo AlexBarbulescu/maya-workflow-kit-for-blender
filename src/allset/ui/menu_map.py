@@ -386,7 +386,7 @@ MAP = {
     "Edit Mesh/Merge": "allset.merge",          # always merges two vertices
     "Edit Mesh/Merge to Center": ("mesh.merge", {"type": 'CENTER'}),
     "Edit Mesh/Symmetrize": "allset.symmetrize",   # pick the seam edge first
-    "Edit Mesh/Average Vertices": "mesh.vertices_smooth",
+    "Edit Mesh/Average Vertices": ("mesh.vertices_smooth", {"repeat": 10}),  # tnt: same default in both modes
     "Edit Mesh/Chamfer Vertices": ("v3d", "mesh.bevel", {"affect": 'VERTICES'}),
     "Edit Mesh/Delete Edge/Vertex": "mesh.dissolve_mode",
     "Edit Mesh/Flip Triangle Edge": "mesh.edge_rotate",

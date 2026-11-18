@@ -43,6 +43,20 @@ NOTICES = {
         "Displace modifier (baked copy)", "Blender bakes the Displace modifiers into a new mesh; material "
         "displacement only shows in renders and is not baked."),
     "Mesh Display/Assign Existing Set/No bakesets defined": ("Render Properties > Bake", "Maya lists the scene's bake sets here; Blender bakes from Render Properties > Bake (Cycles)."),
+    # tnt: distinguish each Edit Mesh command from its closest Blender workflow.
+    "Edit Mesh/Reorder Vertices": (
+        "Mesh > Sort Elements", "Blender can sort vertex indices in Edit Mode. Maya starts its reordering from "
+        "three picked vertices."),
+    "Edit Mesh/Assign Invisible Faces": (
+        "Hide Selected (Edit Mode)", "Blender can hide selected faces while you edit. They still appear in renders."),
+    "Edit Mesh/Project Curve on Mesh": (
+        "Split Mesh with Projected Curve", "Knife Project cuts the mesh along a projected outline. It does not "
+        "create a curve on the surface."),
+    "Edit Mesh/Split Mesh with Projected Curve": (
+        "Knife Project", "Enter Edit Mode on the target mesh, then select the cutting curve in the Outliner. "
+        "The cut follows the current view."),
+    "Edit Mesh/Flip": (
+        "Mirror on Local X", "Blender mirrors the selection on local X around the current pivot."),
     # Skin
     **{f"Skin/{item}": ("Bind Skin / Paint Skin Weights", "Blender has no volume capsules to drag: Bind Skin gives Maya's "
                         "closest-distance weights, then paint them (Skin > Paint Skin Weights).")

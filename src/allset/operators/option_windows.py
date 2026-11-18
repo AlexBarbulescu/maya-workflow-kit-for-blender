@@ -116,6 +116,8 @@ def _extend():
     WINDOWS.extend(option_windows_trax.WINDOWS)    # Trax Editor Create Clip
     from . import option_windows_match
     WINDOWS.extend(option_windows_match.WINDOWS)    # Modify > Match Transformations
+    from . import option_windows_edit_mesh_tnt
+    WINDOWS.extend(option_windows_edit_mesh_tnt.WINDOWS)  # tnt: Edit Mesh settings before applying
 
 
 _extend()
