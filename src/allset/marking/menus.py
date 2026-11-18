@@ -539,9 +539,9 @@ SHIFT_VERTEX = MarkingMenu(
         "SW": ("Delete Vertex", "mesh.dissolve_verts"),
         "SE": ("Vertex Normals", Sub(radial={
             "S": ("Toggle Vertex Normal Display", _overlay("show_vertex_normals")),
-            "NE": ("Average Normals", "mesh.average_normals"),
+            "NE": ("Average Normals", _item("Mesh Display/Average")),  # tnt: reuse the distance-based command
             "E": ("Vertex Normal Edit Tool", _item("Mesh Display/Vertex Normal Edit Tool")),
-            "SE": ("Set Normals to Face", "mesh.set_normals_from_faces"),
+            "SE": ("Set Normals to Face", _item("Mesh Display/Set to Face")),  # tnt
         }, options={"Average Normals", "Set Normals to Face"})),
         "N": ("Merge Vertices", Sub(radial={
             "NE": ("Merge Vertices", _item("Edit Mesh/Merge")),        # polyMergeVert

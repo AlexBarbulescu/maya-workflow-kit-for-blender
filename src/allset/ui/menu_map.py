@@ -407,14 +407,14 @@ MAP = {
     "Mesh Tools/Crease Tool": ("tool", "allset.crease_tool", True),
     # --- Mesh Display ---
     "Mesh Display/Average": "allset.average_normals",     # Maya distance rule (normals_maya.py)
-    "Mesh Display/Conform": "mesh.normals_make_consistent",
-    "Mesh Display/Reverse": "mesh.flip_normals",
+    "Mesh Display/Conform": ("allset.reverse_mesh_normals", {"scope": 'CONFORM'}),  # tnt
+    "Mesh Display/Reverse": "allset.reverse_mesh_normals",  # tnt
     "Mesh Display/Set to Face": "allset.set_to_face_normal",
     "Mesh Display/Set Vertex Normal": "allset.set_vertex_normal",
     # Maya polySoftEdge: edges selected = those, object = every edge
     "Mesh Display/Harden Edge": ("allset.soften_harden", {"angle": 0.0}),
     "Mesh Display/Soften Edge": ("allset.soften_harden", {"angle": 180.0}),
-    "Mesh Display/Paint Vertex Color Tool": "paint.vertex_paint_toggle",
+    "Mesh Display/Paint Vertex Color Tool": "allset.paint_mesh_colors",  # tnt
     # --- Curves ---
     "Curves/Open/Close": "curve.cyclic_toggle",
     "Curves/Insert Knot": "allset.curve_insert_knot",      # operators/curves_maya.py (knot insertion, same shape)
@@ -822,8 +822,8 @@ MAP.update({
     "Mesh Display/Soften/Harden Edges": "allset.soften_harden",
     "Mesh Display/Lock Normals": "allset.lock_normals",     # only the selection (Maya)
     "Mesh Display/Unlock Normals": ("allset.lock_normals", {"unlock": True}),
-    "Mesh Display/Vertex Normal Edit Tool": ("v3d", "transform.rotate_normal", {}),
-    "Mesh Display/Create Empty Set": "geometry.color_attribute_add",
+    "Mesh Display/Vertex Normal Edit Tool": "allset.edit_vertex_normals",  # tnt
+    "Mesh Display/Create Empty Set": "allset.create_empty_color_set",  # tnt
     "Mesh Display/Delete Current Set": "geometry.color_attribute_remove",
     # Maya colour commands (operators/color_sets_maya.py)
     "Mesh Display/Apply Color": "allset.apply_color",
@@ -832,13 +832,11 @@ MAP.update({
     "Mesh Display/Set Keyframe for Vertex Color": "allset.color_keyframe",
     "Mesh Display/Prelight (Maya)": "allset.prelight",
     "Mesh Display/Assign New Set": "allset.bake_set_assign_new",
-    "Mesh Display/Assign Existing Set": "allset.bake_set_assign",
+    "Mesh Display/Assign Existing Set": ("menu", "ALLSET_MT_vertex_bake_sets"),  # tnt
     "Mesh Display/Edit Assigned Set": "allset.bake_set_edit",
     "Mesh Display/Per Instance Sharing/Select Shared Instances": "allset.select_shared_instances",
     "Mesh Display/Color Set Editor": _props('DATA'),
-    "Mesh Display/Toggle Display Colors Attribute": ("v3d", "wm.context_set_enum",
-                                                     {"data_path": "space_data.shading.color_type",
-                                                      "value": 'VERTEX'}),
+    "Mesh Display/Toggle Display Colors Attribute": "allset.toggle_mesh_colors",  # tnt
     # Curves
     "Curves/Attach": "allset.curve_attach",          # operators/curves_maya.py (Maya-style)
     "Curves/Detach": "allset.curve_detach",

@@ -19,7 +19,8 @@ def _soften(bm, params, unit):
     if not math.isfinite(angle) or not 0 <= angle <= 180:
         raise ValueError('The edge angle must be between 0 and 180 degrees')
     bm.normal_update()
-    menu_items.soften_harden(bm, angle, soften_harden_edges._picked(bm, params['whole']))
+    menu_items.soften_harden(bm, angle, soften_harden_edges._picked(bm, params['whole']),
+                            params.get('texture_borders', False))  # tnt
     if params['whole']:
         extrude.deselect_all(bm)
     return list(bm.verts)
@@ -27,7 +28,7 @@ def _soften(bm, params, unit):
 
 SOFT_EDGE = extrude.add_spec(extrude.Spec(
     'SOFT_EDGE', 'polySoftEdge', ('angle',), {'angle': 'Angle'}, {'angle': 30.0},
-    {'angle': 'NONE'}, None, 'shape_history_edit', _soften, hidden=('whole',),
+    {'angle': 'NONE'}, None, 'shape_history_edit', _soften, hidden=('whole', 'texture_borders'),
     in_view=False, preserve_ids=True))
 
 
@@ -74,7 +75,7 @@ DELETE = {mode: extrude.add_spec(extrude.Spec(
     preserve_ids=True, allow_empty=True)) for mode in ('FACE', 'EDGE', 'VERT')}
 
 
-def soften(context, ob, bm, angle, whole=False):
+def soften(context, ob, bm, angle, whole=False, texture_borders=False):
     """Record after the command has baked any displaced Smooth by Angle modifiers."""
     if whole:
         for sequence in (bm.verts, bm.edges, bm.faces):
@@ -82,7 +83,7 @@ def soften(context, ob, bm, angle, whole=False):
                 element.select = True
     record = extrude.record_new if ob.mode == 'EDIT' else extrude_rebuild._record_bm
     return record(context, ob, bm, SOFT_EDGE,
-                  {'angle': angle, 'whole': whole}, units.maya_unit(context.scene))
+                  {'angle': angle, 'whole': whole, 'texture_borders': texture_borders}, units.maya_unit(context.scene))
 
 
 @undo_steps.no_redo_panel

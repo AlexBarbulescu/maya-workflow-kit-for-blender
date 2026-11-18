@@ -111,6 +111,8 @@ classes += poly_attribute_nodes.classes
 from . import color_sets_maya, normals_maya  # noqa: E402  Mesh Display normals and colour sets
 
 classes += normals_maya.classes + color_sets_maya.classes
+from . import mesh_display_tnt  # noqa: E402  tnt: Mesh Display tools
+classes += mesh_display_tnt.classes
 
 from . import poly_cleanup  # noqa: E402  Mesh > Cleanup... (Maya polyCleanup)
 

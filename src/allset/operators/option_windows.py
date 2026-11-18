@@ -118,6 +118,8 @@ def _extend():
     WINDOWS.extend(option_windows_match.WINDOWS)    # Modify > Match Transformations
     from . import option_windows_edit_mesh_tnt
     WINDOWS.extend(option_windows_edit_mesh_tnt.WINDOWS)  # tnt: Edit Mesh settings before applying
+    from . import option_windows_mesh_display_tnt
+    WINDOWS.extend(option_windows_mesh_display_tnt.WINDOWS)  # tnt: Mesh Display settings
 
 
 _extend()

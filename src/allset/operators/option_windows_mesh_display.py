@@ -27,8 +27,11 @@ _OPS = {"Replace": 'REPLACE', "Add": 'ADD', "Subtract": 'SUBTRACT', "Remove": 'R
 
 
 def _run_apply_color(context, v):
+    channels = (True, True, True, True)
+    if v["effect"] == "Individual Channels":  # tnt
+        channels = tuple(v[k] for k in ("red", "green", "blue", "set_alpha"))
     return bpy.ops.allset.apply_color('EXEC_DEFAULT', operation=_OPS[v["operation"]], color=v["color"],
-                                      alpha=v["alpha"])
+                                      alpha=v["alpha"], channels=channels)
 
 
 _BLENDS = ("Overwrite", "Add", "Subtract", "Multiply", "Divide", "Average")   # vertexBakeSet colorBlending 0-5
@@ -64,10 +67,16 @@ WINDOWS = [
     # Mesh Display > Apply Color (default: Replace, all channels, 0.5 grey, alpha 1)
     Window("apply_color", "Apply Color Options", "Apply Color", ("allset.apply_color", {}), [
         F("operation", "Operation:", "enum", "Replace", items=tuple(_OPS)),
+        F("effect", "Effect:", "enum", "All Channels", items=("All Channels", "Individual Channels")),
+        F("red", "", "bool", True, text="Set Red"),
+        F("green", "", "bool", True, text="Set Green"),
+        F("blue", "", "bool", True, text="Set Blue"),
+        F("set_alpha", "", "bool", True, text="Set Alpha"),
         FApplyColor(),
         F("alpha", "Alpha value:", "float", 1.0, lo=0.0, hi=1.0),
     ], _run_apply_color, paths=("Mesh Display/Apply Color",),
-        missing=("Individual channels (Red / Green / Blue / Alpha each on its own)",)),
+        enabled=lambda v, field: field not in {"red", "green", "blue", "set_alpha"}
+        or v["effect"] == "Individual Channels"),
     # Mesh Display > Prelight (Maya) (values = the vertexBakeSet node's defaults)
     Window("prelight", "Prelight (Maya) Options", "Prelight", ("allset.prelight", {}), [
         F("bake_color", "", "bool", True, text="Bake shading group lighting"),

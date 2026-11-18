@@ -17,6 +17,7 @@ import bmesh
 import bpy
 from bpy.props import BoolProperty, FloatProperty
 from mathutils import Vector
+from mathutils.kdtree import KDTree
 
 from .. import results, undo_steps
 
@@ -50,10 +51,15 @@ def average(normals, locked, groups):
 
 
 def distance_groups(positions, chosen, corners_of, distance):
-    """Groups of the chosen vertices: vertices within ``distance`` (Maya -distance, <= so coincident vertices join at 0)
-    are averaged together (union-find over pairs)."""
-    chosen = sorted(chosen)
+    """Group selected corners by their vertices' distance. Loose vertices have no corner normals."""
+    chosen = sorted(chosen.intersection(corners_of))
+    if not chosen:
+        return []
     parent = {v: v for v in chosen}
+    tree = KDTree(len(chosen))  # tnt: avoid comparing every pair in a large selected mesh
+    for v in chosen:
+        tree.insert(positions[v], v)
+    tree.balance()
 
     def find(v):
         while parent[v] != v:
@@ -61,9 +67,9 @@ def distance_groups(positions, chosen, corners_of, distance):
             v = parent[v]
         return v
 
-    for i, a in enumerate(chosen):
-        for b in chosen[i + 1:]:
-            if (Vector(positions[a]) - Vector(positions[b])).length <= distance + 1e-9:
+    for a in chosen:
+        for _co, b, _distance in tree.find_range(positions[a], distance + 1e-9):
+            if a < b:
                 parent[find(a)] = find(b)
     groups = {}
     for v in chosen:
@@ -114,7 +120,7 @@ def write(me, normals, locked):
 def _targets(context):
     if context.mode == 'EDIT_MESH':
         return [o for o in context.objects_in_mode_unique_data if o.type == 'MESH']
-    return [o for o in context.selected_objects if o.type == 'MESH']
+    return list({o.data: o for o in context.selected_objects if o.type == 'MESH'}.values())  # tnt
 
 
 class _Selection:
@@ -127,6 +133,8 @@ class _Selection:
         for ob in self.obs:
             if self.edit:
                 bm = bmesh.from_edit_mesh(ob.data)
+                bm.verts.index_update()  # tnt: indices may be dirty after editing topology
+                bm.faces.index_update()
                 self.sel[ob.name] = ({v.index for v in bm.verts if v.select},
                                      {f.index for f in bm.faces if f.select})
             else:
@@ -246,6 +254,8 @@ class ALLSET_OT_average_normals(bpy.types.Operator):
                 normals, locked = current(me)
                 positions = [tuple(v.co) for v in me.vertices]
                 groups = distance_groups(positions, verts, corners_of_verts(me), self.distance)
+                if not groups:
+                    continue
                 average(normals, locked, groups)
                 write(me, normals, locked)
                 done += 1

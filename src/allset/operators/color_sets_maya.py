@@ -12,7 +12,8 @@ import math
 
 import bmesh
 import bpy
-from bpy.props import BoolProperty, EnumProperty, FloatProperty, FloatVectorProperty, IntProperty, StringProperty
+from bpy.props import (BoolProperty, BoolVectorProperty, EnumProperty, FloatProperty, FloatVectorProperty,
+                       IntProperty, StringProperty)
 
 from .. import results, undo_steps
 
@@ -135,18 +136,25 @@ def blend(old, new, mode):
 
 def _meshes(context):
     if context.mode == 'EDIT_MESH':
-        return [o for o in context.objects_in_mode_unique_data if o.type == 'MESH']
-    return [o for o in context.selected_objects if o.type == 'MESH']
+        objects = context.objects_in_mode_unique_data
+    else:
+        objects = context.selected_objects
+    # tnt: a shared mesh has one set of colors, even with several selected instances.
+    return list({o.data: o for o in objects if o.type == 'MESH' and o.data.is_editable}.values())
+
+
+def new_set(me, name, data_type='FLOAT_COLOR', domain='CORNER'):
+    attr = me.color_attributes.new(name, data_type, domain)
+    me.color_attributes.active_color = attr
+    attr.data.foreach_set("color", UNSET * len(attr.data))
+    return attr
 
 
 def current_set(me, create=False):
     """The active colour attribute (Maya current colour set); a new white ``colorSet1`` when asked and there is none."""
     attr = me.color_attributes.active_color
     if attr is None and create:
-        attr = me.color_attributes.new(NEW_SET, 'FLOAT_COLOR', 'CORNER')
-        for d in attr.data:
-            d.color = UNSET
-        me.color_attributes.active_color = attr
+        attr = new_set(me, NEW_SET)
         me.color_attributes.render_color_index = me.color_attributes.active_color_index
     return attr
 
@@ -161,10 +169,11 @@ class _Picked:
         for ob in _meshes(context):
             if self.edit:
                 bm = bmesh.from_edit_mesh(ob.data)
-                if mode[2] and not mode[0]:
-                    corners = [l.index for f in bm.faces if f.select for l in f.loops]
-                elif mode[0]:
-                    corners = [l.index for v in bm.verts if v.select for l in v.link_loops]
+                if mode[0] or mode[2]:
+                    # tnt: edit BMesh loop indices can be stale after a topology edit.
+                    loops = (loop for face in bm.faces for loop in face.loops)
+                    corners = [i for i, loop in enumerate(loops) if not loop.face.hide
+                               and (loop.vert.select if mode[0] else loop.face.select)]
                 else:
                     corners = None          # edges only: Maya "No vertex or vertex-face components were selected."
                     self.kind = 'EDGE'
@@ -208,9 +217,14 @@ class ALLSET_OT_apply_color(bpy.types.Operator):
     color: FloatVectorProperty(name="Color", size=3, default=APPLY_COLOR, subtype='COLOR', soft_min=0.0, soft_max=1.0,
                                options={'SKIP_SAVE'})
     alpha: FloatProperty(name="Alpha", default=APPLY_ALPHA, soft_min=0.0, soft_max=1.0, options={'SKIP_SAVE'})
+    channels: BoolVectorProperty(size=4, default=(True, True, True, True), options={'HIDDEN', 'SKIP_SAVE'})  # tnt
 
     def execute(self, context):
+        if self.operation != 'REMOVE' and not any(self.channels):
+            self.report({'WARNING'}, "Enable at least one color channel.")
+            return {'CANCELLED'}
         picked = _Picked(context)
+        changed = False
         try:
             for ob, corners in picked.items:
                 me = ob.data
@@ -218,14 +232,24 @@ class ALLSET_OT_apply_color(bpy.types.Operator):
                 if attr is None:
                     continue
                 old = _read(attr, me, corners)
-                _write(attr, me, {c: apply(old[c], tuple(self.color), self.alpha, self.operation) for c in corners})
+                _write(attr, me, {c: apply(old[c], tuple(self.color), self.alpha, self.operation, self.channels)
+                                  for c in corners})
                 me.update()
+                changed = True
         finally:
             picked.close()
         if not picked.items:
             self.report({'WARNING'}, "No vertex or vertex-face components were selected." if picked.kind == 'EDGE'
                         else "Select vertices, faces or meshes to colour.")
             return {'CANCELLED'}
+        if not changed:
+            return {'CANCELLED'}
+        if self.operation != 'REMOVE':  # tnt: show applied colors when already in Solid shading
+            from ..ui.status_line_buttons import view3d_space
+            from .mesh_display_tnt import show_colors
+            space = view3d_space(context)
+            if space is not None and space.shading.type == 'SOLID':
+                show_colors(space)
         results.result(self, "polyColorPerVertex")
         return {'FINISHED'}
 
@@ -335,9 +359,9 @@ class ALLSET_OT_color_keyframe(bpy.types.Operator):
                 if attr is None:
                     continue
                 index = sorted({me.loops[c].vertex_index for c in corners}) if attr.domain == 'POINT' else corners
+                name = bpy.utils.escape_identifier(attr.name)  # tnt: names may contain quotes or backslashes
                 for i in index:   # element-level keyframe_insert can't make a path to attribute data
-                    me.keyframe_insert(f'attributes["{attr.name}"].data[{i}].color', frame=frame, group=attr.name)
-                    keys += 1
+                    keys += me.keyframe_insert(f'attributes["{name}"].data[{i}].color', frame=frame, group=attr.name)
         finally:
             picked.close()
         if not keys:
@@ -479,30 +503,61 @@ class ALLSET_OT_prelight(bpy.types.Operator):
     scale_rgba: FloatProperty(name="Scale RGBA", default=1.0, options={'SKIP_SAVE'})
 
     def execute(self, context):
-        obs = [o for o in context.selected_objects if o.type == 'MESH']
-        if not obs:
+        if context.mode not in {'OBJECT', 'EDIT_MESH'}:
             self.report({'WARNING'}, "Select meshes to prelight.")
             return {'CANCELLED'}
-        if context.mode != 'OBJECT':
+        edit = context.mode == 'EDIT_MESH'
+        if edit:
             bpy.ops.object.mode_set(mode='OBJECT')
+        active = context.view_layer.objects.active
+        try:
+            return self._bake(context)
+        finally:
+            context.view_layer.objects.active = active
+            if edit:
+                bpy.ops.object.mode_set(mode='EDIT')
+
+    def _bake(self, context):
+        obs = [o for o in context.selected_objects if o.type == 'MESH' and o.data.is_editable]
+        if not obs or len({o.data for o in obs}) != len(obs):
+            self.report({'WARNING'}, "Select editable meshes with distinct mesh data to prelight.")
+            return {'CANCELLED'}
+        if context.view_layer.objects.active not in obs:
+            context.view_layer.objects.active = obs[0]
         scene = context.scene
         render = scene.render
         saved = (render.engine, scene.cycles.samples, scene.render.bake.target)
         olds = {}
+        created = {}
+        baked_ok = False
         try:
             render.engine = 'CYCLES'
             scene.cycles.samples = PRELIGHT_SAMPLES
             scene.render.bake.target = 'VERTEX_COLORS'
             for ob in obs:
+                had_set = current_set(ob.data) is not None
                 attr = current_set(ob.data, create=True)
+                if not had_set:
+                    created[ob.data] = attr
                 olds[ob.name] = [tuple(d.color) for d in attr.data]
-            bpy.ops.object.bake(type='DIFFUSE', pass_filter={'DIRECT', 'INDIRECT', 'COLOR'},
-                                target='VERTEX_COLORS')
+            with context.temp_override(selected_objects=obs):
+                baked_ok = 'FINISHED' in bpy.ops.object.bake(
+                    type='DIFFUSE', pass_filter={'DIRECT', 'INDIRECT', 'COLOR'},
+                    target='VERTEX_COLORS', use_selected_to_active=False)
         except RuntimeError as err:
             self.report({'ERROR'}, f"Prelight failed: {err}")
-            return {'CANCELLED'}
         finally:
             render.engine, scene.cycles.samples, scene.render.bake.target = saved
+            if not baked_ok:  # tnt: a partial bake can already have written to earlier meshes
+                for ob in obs:
+                    me = ob.data
+                    if me in created:
+                        me.color_attributes.remove(created[me])
+                    elif ob.name in olds:
+                        current_set(me).data.foreach_set("color", [c for rgba in olds[ob.name] for c in rgba])
+                    me.update()
+        if not baked_ok:
+            return {'CANCELLED'}
         for ob in obs:
             s = bake_settings(scene, ob)
             if self.use_options:
@@ -534,7 +589,8 @@ class ALLSET_OT_select_shared_instances(bpy.types.Operator):
             self.report({'WARNING'}, "One instance must be selected.")
             return {'CANCELLED'}
         datas = {o.data for o in picked}
-        others = [o for o in context.scene.objects if o.type == 'MESH' and o.data in datas and o not in picked]
+        # tnt: never set the active object to an instance outside the selectable view layer.
+        others = [o for o in context.selectable_objects if o.type == 'MESH' and o.data in datas and o not in picked]
         if not others:
             self.report({'WARNING'}, "The selected mesh has no other instances.")
             return {'CANCELLED'}

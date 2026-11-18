@@ -18,13 +18,22 @@ from .. import undo_steps
 
 # --- Mesh Display > Soften/Harden Edges -------------------------------------------------------
 
-def soften_harden(bm, angle, edges=None):
+def soften_harden(bm, angle, edges=None, texture_borders=False):
     """Maya polySoftEdge: an edge whose faces meet at less than ``angle`` degrees is soft, the rest hard;
     the faces shade smooth (Soften/Harden on an object = every edge, angle 30)."""
     limit = math.radians(angle) + 1e-6
-    for e in (bm.edges if edges is None else edges):
-        e.smooth = len(e.link_faces) != 2 or e.calc_face_angle(0.0) <= limit
-    for e in (bm.edges if edges is None else edges):
+    edges = bm.edges if edges is None else edges
+    borders = None
+    if texture_borders:  # tnt: use the same UV borders as the mesh selection command
+        from .uv_select_178 import texture_borders as find_borders
+        uv = bm.loops.layers.uv.active
+        if uv is not None:
+            borders = find_borders('EDGE', list(bm.faces), uv)
+    for e in edges:
+        if borders is not None:
+            e.smooth = e not in borders
+        else:
+            e.smooth = angle > 0.0 and (len(e.link_faces) != 2 or e.calc_face_angle(0.0) <= limit)
         for f in e.link_faces:
             f.smooth = True
 
@@ -82,7 +91,7 @@ def _set_flags(bm, flags):
         f.smooth = s
 
 
-def giving_way(ob, bm, angle, edges=None):
+def giving_way(ob, bm, angle, edges=None, texture_borders=False):
     """The Smooth by Angle modifiers (shown in the viewport) that would turn one of ``edges`` (None = every edge)
     back after Soften / Harden on ``bm``; empty when the result shows as it is. ``bm`` keeps its flags."""
     mods = [md for md in smooth_by_angle_mods(ob) if md.show_viewport]
@@ -91,7 +100,7 @@ def giving_way(ob, bm, angle, edges=None):
     bm.edges.index_update()
     targets = [e.index for e in (bm.edges if edges is None else edges)]
     before = _flags(bm)
-    soften_harden(bm, angle, edges)
+    soften_harden(bm, angle, edges, texture_borders)
     want = _flags(bm)
     for md in mods:
         smooth_by_angle(bm, *smooth_by_angle_inputs(md))
@@ -131,6 +140,8 @@ class ALLSET_OT_soften_harden(bpy.types.Operator):
 
     angle: FloatProperty(name="Angle", default=30.0, min=0.0, max=180.0,
                          description="Default 30: faces at a smaller angle shade smooth across the edge")
+    texture_borders: BoolProperty(name="Texture Borders", options={'SKIP_SAVE'},
+                                  description="Harden borders of the active UV map and soften other edges")
     option_box: BoolProperty(options={'HIDDEN', 'SKIP_SAVE'})
     # Quad Draw's options menu: every edge of the edited mesh, then nothing stays selected
     whole: BoolProperty(options={'HIDDEN', 'SKIP_SAVE'})
@@ -146,10 +157,20 @@ class ALLSET_OT_soften_harden(bpy.types.Operator):
 
     def label(self):
         """The undo step name: the Maya menu item this angle is."""
+        if self.texture_borders:
+            return self.bl_label
         return {180.0: "Soften Edge", 0.0: "Harden Edge"}.get(round(self.angle, 4), self.bl_label)
 
     def execute(self, context):
         obs = _meshes(context)
+        if context.mode == 'EDIT_MESH' and not self.whole:  # tnt: an empty component selection edits nothing
+            obs = [ob for ob in obs if _picked(bmesh.from_edit_mesh(ob.data), False)]
+        if self.texture_borders:
+            obs = [ob for ob in obs if ob.data.uv_layers.active is not None]
+        if not obs:
+            self.report({'WARNING'}, "Select edges or meshes with a UV map." if self.texture_borders
+                        else "Select edges or meshes to soften or harden.")
+            return {'CANCELLED'}
         edit = [ob for ob in obs if ob.mode == 'EDIT']
         if any(self._gives_way(ob) for ob in edit):
             if self._through_object_mode(context, edit):
@@ -176,13 +197,13 @@ class ALLSET_OT_soften_harden(bpy.types.Operator):
     def _soften(self, context, ob, bm, whole):
         from . import shape_history
         if shape_history.recording(context):
-            shape_history.soften(context, ob, bm, self.angle, whole)
+            shape_history.soften(context, ob, bm, self.angle, whole, self.texture_borders)
         else:
-            soften_harden(bm, self.angle, _picked(bm, whole))
+            soften_harden(bm, self.angle, _picked(bm, whole), self.texture_borders)
 
     def _gives_way(self, ob):
         bm = bmesh.from_edit_mesh(ob.data)
-        return bool(giving_way(ob, bm, self.angle, _picked(bm, self.whole)))
+        return bool(giving_way(ob, bm, self.angle, _picked(bm, self.whole), self.texture_borders))
 
     @staticmethod
     def _mesh_edit(ob, fn):
@@ -220,7 +241,7 @@ class ALLSET_OT_soften_harden(bpy.types.Operator):
                 bpy.ops.object.mode_set(mode='OBJECT')
 
         def bake(ob, bm):
-            for md in giving_way(ob, bm, self.angle, _picked(bm, self.whole)):
+            for md in giving_way(ob, bm, self.angle, _picked(bm, self.whole), self.texture_borders):
                 smooth_by_angle(bm, *smooth_by_angle_inputs(md))
                 ob.modifiers.remove(md)
         for ob in objects:

@@ -42,7 +42,17 @@ NOTICES = {
     "Modify/Convert/Displacement to Polygons": (
         "Displace modifier (baked copy)", "Blender bakes the Displace modifiers into a new mesh; material "
         "displacement only shows in renders and is not baked."),
-    "Mesh Display/Assign Existing Set/No bakesets defined": ("Render Properties > Bake", "Maya lists the scene's bake sets here; Blender bakes from Render Properties > Bake (Cycles)."),
+    # tnt: distinguish viewport display from materials and instance data.
+    "Mesh Display/Toggle Display Colors Attribute": (
+        "Solid viewport shading", "Show the current color attributes in this Blender viewport. "
+        "Click again to restore the prior shading."),
+    "Mesh Display/Color Set Editor": (
+        "Object Data Properties > Color Attributes", "Manage the active mesh's Blender color attributes here."),
+    "Mesh Display/Per Instance Sharing/Share Instances": (
+        "Linked mesh data", "Blender linked duplicates already share every color attribute. "
+        "An individual color set cannot be shared independently of the mesh."),
+    "Mesh Display/Assign Existing Set/No bakesets defined": (
+        "Mesh Display > Assign New Set", "Create a vertex bake set to list it here."),
     # tnt: distinguish each Edit Mesh command from its closest Blender workflow.
     "Edit Mesh/Reorder Vertices": (
         "Mesh > Sort Elements", "Blender can sort vertex indices in Edit Mode. Maya starts its reordering from "

@@ -4860,6 +4860,7 @@
    "Blender instances share mesh data (Alt+D, Object > Link/Transfer Data); per-instance attributes aren't available.": "Blender instances share mesh data (Alt+D, Object > Link/Transfer Data); per-instance attributes aren't available.",
    "Blender keeps the view's shading while you tumble (no wireframe fallback): nothing to switch.": "Blender keeps the view's shading while you tumble (no wireframe fallback): nothing to switch.",
    "Blender lights a view with every visible scene light and has no per-view light list: hide the lights you don't want (h) or use light linking (Object Properties > Shading).": "Blender lights a view with every visible scene light and has no per-view light list: hide the lights you don't want (h) or use light linking (Object Properties > Shading).",
+   "Blender linked duplicates already share every color attribute. An individual color set cannot be shared independently of the mesh.": "Blender linked duplicates already share every color attribute. An individual color set cannot be shared independently of the mesh.",
    "Blender makes a Spline IK constraint on the end bone and the curve curve1; there is no ikHandle / effector node.": "Blender makes a Spline IK constraint on the end bone and the curve curve1; there is no ikHandle / effector node.",
    "Blender makes the selected meshes smoke flows inside a new Mantaflow domain.": "Blender makes the selected meshes smoke flows inside a new Mantaflow domain.",
    "Blender mirrors the selection on local X around the current pivot.": "Blender mirrors the selection on local X around the current pivot.",
@@ -4945,6 +4946,7 @@
    "Color Material Channel": "Color Material Channel",
    "Control points": "Control points",
    "Copy Transforms constraints": "Copy Transforms constraints",
+   "Create a vertex bake set to list it here.": "Create a vertex bake set to list it here.",
    "Curve Draw tool": "Curve Draw tool",
    "Curve edit mode": "Curve edit mode",
    "Curve extrude + bevel, converted": "Curve extrude + bevel, converted",
@@ -4991,12 +4993,14 @@
    "Line Art / Freestyle": "Line Art / Freestyle",
    "Link + Library Override": "Link + Library Override",
    "Linked data": "Linked data",
+   "Linked mesh data": "Linked mesh data",
+   "Manage the active mesh's Blender color attributes here.": "Manage the active mesh's Blender color attributes here.",
    "Mantaflow fluid": "Mantaflow fluid",
    "Material Blend Setting": "Material Blend Setting",
    "Maya Workflow Kit project": "Maya Workflow Kit project",
-   "Maya lists the scene's bake sets here; Blender bakes from Render Properties > Bake (Cycles).": "Maya lists the scene's bake sets here; Blender bakes from Render Properties > Bake (Cycles).",
    "Measure tool": "Measure tool",
    "Mesh > Sort Elements": "Mesh > Sort Elements",
+   "Mesh Display > Assign New Set": "Mesh Display > Assign New Set",
    "Mesh select mode": "Mesh select mode",
    "Mirror on Local X": "Mirror on Local X",
    "Mist pass": "Mist pass",
@@ -5010,6 +5014,7 @@
    "NURBS surface edit mode": "NURBS surface edit mode",
    "Object > Convert": "Object > Convert",
    "Object > Link/Transfer Data": "Object > Link/Transfer Data",
+   "Object Data Properties > Color Attributes": "Object Data Properties > Color Attributes",
    "Object Properties > Viewport Display": "Object Properties > Viewport Display",
    "Object Properties > Visibility > Holdout": "Object Properties > Visibility > Holdout",
    "Object menu": "Object menu",
@@ -5031,7 +5036,6 @@
    "Render Animation": "Render Animation",
    "Render Current Frame": "Render Current Frame",
    "Render Image": "Render Image",
-   "Render Properties > Bake": "Render Properties > Bake",
    "Render Properties > Motion Blur": "Render Properties > Motion Blur",
    "Render Properties > Stereoscopy": "Render Properties > Stereoscopy",
    "Render properties": "Render properties",
@@ -5051,12 +5055,14 @@
    "Shader Editor / Texture Paint": "Shader Editor / Texture Paint",
    "Shape Keys filter": "Shape Keys filter",
    "Show > All / None": "Show > All / None",
+   "Show the current color attributes in this Blender viewport. Click again to restore the prior shading.": "Show the current color attributes in this Blender viewport. Click again to restore the prior shading.",
    "Six NURBS patches": "Six NURBS patches",
    "Smooth Shade All": "Smooth Shade All",
    "Snap With": "Snap With",
    "Snap to Face": "Snap to Face",
    "Snap to Face Project": "Snap to Face Project",
    "Snap to Grid": "Snap to Grid",
+   "Solid viewport shading": "Solid viewport shading",
    "Sort Mesh Elements": "Sort Mesh Elements",
    "Sound strips": "Sound strips",
    "Spline IK constraint": "Spline IK constraint",
@@ -6315,6 +6321,23 @@
    "Text to find; like Maya, $ = the end of the name (adds a suffix), ^ = the start (adds a prefix), . = any character": "Text to find; like Maya, $ = the end of the name (adds a suffix), ^ = the start (adds a prefix), . = any character",
    "Type": "Type"
   },
+  "Labels/operators/mesh_display_tnt": {
+   "Assign Existing Set": "Assign Existing Set",
+   "Clamped": "Clamped",
+   "Color Range": "Color Range",
+   "Conform": "Conform",
+   "Create Empty Color Set": "Create Empty Color Set",
+   "Face Corners": "Face Corners",
+   "Name": "Name",
+   "No bakesets defined": "No bakesets defined",
+   "Paint Vertex Color Tool": "Paint Vertex Color Tool",
+   "Reverse Normals": "Reverse Normals",
+   "Store On": "Store On",
+   "Toggle Display Colors Attribute": "Toggle Display Colors Attribute",
+   "Unclamped": "Unclamped",
+   "Vertex Normal Edit Tool": "Vertex Normal Edit Tool",
+   "Vertices": "Vertices"
+  },
   "Labels/operators/mesh_maya": {
    "Automatic": "Automatic",
    "Boolean": "Boolean",
@@ -6591,6 +6614,10 @@
   "Labels/operators/option_windows_mesh_display": {
    "Bake alpha": "Bake alpha",
    "Bake shading group lighting": "Bake shading group lighting",
+   "Set Alpha": "Set Alpha",
+   "Set Blue": "Set Blue",
+   "Set Green": "Set Green",
+   "Set Red": "Set Red",
    "Set user normal": "Set user normal"
   },
   "Labels/operators/option_windows_misc196": {
@@ -7277,7 +7304,9 @@
   "Labels/operators/soften_harden_edges": {
    "Angle": "Angle",
    "Default 30: faces at a smaller angle shade smooth across the edge": "Default 30: faces at a smaller angle shade smooth across the edge",
-   "Soften/Harden Edges": "Soften/Harden Edges"
+   "Harden borders of the active UV map and soften other edges": "Harden borders of the active UV map and soften other edges",
+   "Soften/Harden Edges": "Soften/Harden Edges",
+   "Texture Borders": "Texture Borders"
   },
   "Labels/operators/surfaces_maya": {
    "At path": "At path",
@@ -10279,6 +10308,14 @@
    "Put a prefix in front of the names of the selected objects and everything under them\n(Maya Modify > Prefix Hierarchy Names)": "Put a prefix in front of the names of the selected objects and everything under them\n(Maya Modify > Prefix Hierarchy Names)",
    "Replace text in object names: in the selected hierarchies, the selection only, or every object\n(Maya Modify > Search and Replace Names)": "Replace text in object names: in the selected hierarchies, the selection only, or every object\n(Maya Modify > Search and Replace Names)",
    "Sculpt the active mesh with this brush (Maya Mesh Tools > Sculpting Tools)": "Sculpt the active mesh with this brush (Maya Mesh Tools > Sculpting Tools)"
+  },
+  "Tooltips/operators/mesh_display_tnt": {
+   "Assign selected meshes to a vertex bake set in this scene": "Assign selected meshes to a vertex bake set in this scene",
+   "Enter Blender Vertex Paint on the active mesh and paint its current color set": "Enter Blender Vertex Paint on the active mesh and paint its current color set",
+   "Make an empty current color set on each selected mesh": "Make an empty current color set on each selected mesh",
+   "Reverse face winding or conform selected faces to the majority winding in each shell": "Reverse face winding or conform selected faces to the majority winding in each shell",
+   "Rotate the selected normals in Edit Mode. The option box opens the normals display controls": "Rotate the selected normals in Edit Mode. The option box opens the normals display controls",
+   "Toggle color attributes in the viewport and restore the previous shading when switched off": "Toggle color attributes in the viewport and restore the previous shading when switched off"
   },
   "Tooltips/operators/mesh_maya": {
    "Maya Booleans: select the first object, then the others; the first meets all the others together": "Maya Booleans: select the first object, then the others; the first meets all the others together",
