@@ -16,6 +16,7 @@ no module writes Blender's preferences or files outside the extension's folders,
 ``unregister()`` takes back everything ``register()`` added — there is nothing to restore on disable or Remove.
 """
 
+from . import settings_carry_tnt  # tnt
 from . import i18n, preferences, translations, settings_io, switch, welcome, operators, ui, command_line, marking, first_start, update_summary, keymap
 
 # Always registered: the translations, the preferences (with the translation files box), settings export / import,
@@ -30,6 +31,7 @@ MODE = (operators, ui, command_line, marking, first_start, update_summary, keyma
 def register():
     for mod in CORE:
         mod.register()
+    settings_carry_tnt.restore()  # tnt: settings back after Remove / a new Blender version, before Maya mode starts
     if switch.is_on():
         # A failed Maya mode start (rolled back by ``register_mode``) must not take the add-on down with it: CORE
         # stays, so the user still has the Maya / Blender switch and can disable the kit (#199).
@@ -46,6 +48,7 @@ def unregister():
     except (ReferenceError, RuntimeError):
         pass                      # keyconfigs already freed (Blender quitting)
     preferences.save_backup()     # before any module runs: Blender may delete the preferences after this
+    settings_carry_tnt.save()     # tnt: a copy outside the extension's folders, which Remove deletes
     switch.unregister_mode()      # whatever Maya mode modules are registered (none after a failed start)
     for mod in reversed(CORE):
         mod.unregister()
