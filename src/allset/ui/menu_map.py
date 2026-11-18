@@ -521,6 +521,7 @@ MAP = {
     "Key/IK/FK Keys/Set IK/FK Key": "allset.ik_fk_key",
     "Key/IK/FK Keys/Enable IK Solver": ("prop", "window_manager.allset_ik_solver", {}),   # Maya check item
     "Key/IK/FK Keys/Move IK to FK": "allset.move_ik_to_fk",
+    "Key/IK/FK Keys/Connect to IK/FK": "allset.connect_ik_fk",
     "Key/Scale Keys": "allset.opt_scale_keys",
     # --- Playback ---
     "Playback/Playblast": ("v3d", "allset.playblast", {}),
@@ -960,14 +961,17 @@ MAP.update({
     "Playback/Enable Stepped Preview": ("prop", "scene.allset_stepped_preview", {}),
     # the same actions as the Maya bookmark hotkeys (keymap/mapping.py, operators/bookmarks.py)
     "Visualize/Time Slider Bookmarks/Create": "allset.bookmark_create",
-    "Visualize/Time Slider Bookmarks/Next Bookmark": ("screen.marker_jump", {"next": True}),
-    "Visualize/Time Slider Bookmarks/Previous Bookmark": ("screen.marker_jump", {"next": False}),
+    "Visualize/Time Slider Bookmarks/Next Bookmark": "allset.bookmark_go",
+    "Visualize/Time Slider Bookmarks/Previous Bookmark": ("allset.bookmark_go", {"previous": True}),
     "Visualize/Time Slider Bookmarks/Frame Bookmark": ("allset.bookmark_frame", {"which": 'CURRENT'}),
     "Visualize/Time Slider Bookmarks/Frame Previous Bookmark": ("allset.bookmark_frame", {"which": 'PREVIOUS'}),
     "Visualize/Time Slider Bookmarks/Frame Next Bookmark": ("allset.bookmark_frame", {"which": 'NEXT'}),
     "Visualize/Time Slider Bookmarks/Unframe": "allset.playback_range_anim",
     "Visualize/Time Slider Bookmarks/Delete": "allset.bookmark_delete",
     "Visualize/Time Slider Bookmarks/Delete All Bookmarks": ("allset.bookmark_delete", {"all": True}),
+    "Visualize/Time Slider Bookmarks/Edit": "allset.bookmark_edit",
+    "Visualize/Time Slider Bookmarks/Show Bookmarks": ("prop", "addon_prefs.show_time_slider_bookmarks", {}),
+    "Visualize/Time Slider Bookmarks/Bookmark Manager": "allset.bookmark_manager",
     # Audio: sounds are Video Sequencer sound strips
     "Audio/Import Audio...": "allset.import_audio",
     "Audio/Import Audio Clip to Time Editor...": "allset.import_audio",
@@ -1154,6 +1158,10 @@ MAP.update({
     "Skeleton/Joint Labelling/Hide All Labels": ("allset.joint_label_show_all", {"show": False}),
     "Skeleton/Joint Labelling/Rename Joints From Labels": "allset.rename_joints_from_labels",
     "Skeleton/Joint Labelling/Label Based on Joint Names": "allset.label_from_joint_names",
+    # Maya check items (operators/ik_fk_control.py); Snap is greyed out while IK/FK control is on
+    "Skeleton/Enable IK Handle Snap": ("prop", "window_manager.allset_ik_handle_snap",
+                                       {"off_while": "window_manager.allset_ik_fk_control"}),
+    "Skeleton/Enable IK/FK Control": ("prop", "window_manager.allset_ik_fk_control", {}),
     "Skeleton/Enable Selected IK Handles": ("allset.ik_handle_enable", {"enable": True}),
     "Skeleton/Disable Selected IK Handles": ("allset.ik_handle_enable", {"enable": False}),
     # Maya deformerWeights XML (operators/deformer_weights.py)

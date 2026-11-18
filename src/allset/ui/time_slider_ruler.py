@@ -5,6 +5,7 @@ marks. Shares the row bands (``_rows``) and the cached triangle batches (``_tris
 ``time_slider``.
 """
 
+from .draw_replay import call
 from .time_slider_view import playback_range
 
 
@@ -28,7 +29,7 @@ RULER_CURRENT_LABEL = (1.0, 1.0, 1.0, 1.0)
 # (top row, bottom row) of the 32 px ruler. With Time Slider bookmarks
 # (kit: timeline markers, operators/bookmarks.py) the ruler gets a strip on top and moves labels / ticks down:
 # strip #454545 rows 0-8, each bookmark's colour at 80 % over
-# it in rows 0-4 with a solid 1 px left edge over the strip height.
+# it in rows 0-4 with a solid 1 px line at both ends over the strip height.
 ROWS = {"label": (1, 8), "tick": (13, 27), "current_label": (16, 23), "band": (29, 31)}
 ROWS_BOOKMARKS = {"label": (11, 18), "tick": (23, 27), "current_label": (19, 26), "band": (29, 31),
                   "strip": (0, 8), "bookmark": (0, 4)}
@@ -41,7 +42,6 @@ def _themed(color, field):
     return theme_follow.follow(color, "dopesheet_editor", field)
 
 
-BOOKMARK_RGB = (204 / 255, 92 / 255, 92 / 255)   # bookmark colour (Maya picks one per bookmark)
 TICK_PX = 2.0
 # Eight-pixel label row in the 32 px ruler, converted to BLF size.
 RULER_FONT_SIZE = 8.0 / 0.72
@@ -161,12 +161,12 @@ def _draw_ruler(context, region):
         for x0, y0, x1, y1 in rs:
             tris += [(x0, y0), (x1, y0), (x1, y1), (x0, y0), (x1, y1), (x0, y1)]
         if tris:
-            shader.uniform_float("color", colour)
-            _tris_batch(shader, tris).draw(shader)
+            call(shader.uniform_float, "color", colour)
+            call(_tris_batch(shader, tris).draw, shader)
     from ..operators import bookmarks
-    marks = bookmarks.markers(scene)
+    marks = bookmarks.shown(context)
     rows = ROWS_BOOKMARKS if marks else ROWS
-    gpu.state.blend_set('ALPHA')
+    call(gpu.state.blend_set, 'ALPHA')
     rects([(0, 0, w, h)], _themed(RULER_BG, "back"))
     b0, b1 = _rows("band", h, rows, s)
     rects([(0, b0, w, b1)], _themed(RULER_BAND, "back"))
@@ -174,14 +174,13 @@ def _draw_ruler(context, region):
         s0, s1 = _rows("strip", h, rows, s)
         rects([(0, s0, w, s1)], _themed(BOOKMARK_STRIP, "back"))
         m0, m1 = _rows("bookmark", h, rows, s)
-        bars, edges = [], []
-        for m in marks:
+        for m in marks:      # each bookmark in its own colour, later starts over earlier ones
             a, b = bookmarks.bookmark_range(scene, m)
             x0, x1 = round(x_of(a - 0.5)), round(x_of(b + 0.5))
-            bars.append((x0, m0, x1, m1))
-            edges.append((x0, s0, x0 + max(1.0, round(s)), s1))
-        rects(bars, (*BOOKMARK_RGB, 0.8))
-        rects(edges, (*BOOKMARK_RGB, 1.0))
+            rgb = bookmarks.color(m)
+            rects([(x0, m0, x1, m1)], (*rgb, 0.8))
+            edge = max(1.0, round(s))      # a line down the strip at both ends, like Maya
+            rects([(x0, s0, x0 + edge, s1), (x1 - edge, s0, x1, s1)], (*rgb, 1.0))
     tw = max(1.0, round(TICK_PX * s))
     t0, t1 = _rows("tick", h, rows, s)
     lefts = {f: round(x_of(f - 0.5)) for f in frames}
@@ -192,17 +191,17 @@ def _draw_ruler(context, region):
     # labels: 2 px + a fifth of a frame right of the tick
     l0, _l1 = _rows("label", h, rows, s)
     # The same UI-scaled font is used for the current-frame number.
-    blf.size(0, label_font_size(h, s))
+    call(blf.size, 0, label_font_size(h, s))
     off = 2 * s + 0.2 * pxf
-    blf.color(0, *_themed(RULER_LABEL, "text"))
+    call(blf.color, 0, *_themed(RULER_LABEL, "text"))
     for f, x in lefts.items():
-        blf.position(0, x + off, l0, 0)
-        blf.draw(0, str(f))
+        call(blf.position, 0, x + off, l0, 0)
+        call(blf.draw, 0, str(f))
     c0, _c1 = _rows("current_label", h, rows, s)
-    blf.color(0, *_themed(RULER_CURRENT_LABEL, "text"))
-    blf.position(0, round(cx0) + off, c0, 0)
-    blf.draw(0, str(cur))
-    gpu.state.blend_set('NONE')
+    call(blf.color, 0, *_themed(RULER_CURRENT_LABEL, "text"))
+    call(blf.position, 0, round(cx0) + off, c0, 0)
+    call(blf.draw, 0, str(cur))
+    call(gpu.state.blend_set, 'NONE')
 
 
 def blue_pencil_marks(region, frames, y0, scale):
@@ -229,12 +228,12 @@ def _draw_blue_pencil(context, region):
     from gpu_extras.batch import batch_for_shader
     from ..operators import bookmarks
     s = context.preferences.system.ui_scale or 1.0
-    rows = ROWS_BOOKMARKS if bookmarks.markers(context.scene) else ROWS
+    rows = ROWS_BOOKMARKS if bookmarks.shown(context) else ROWS
     y0 = _rows("tick", region.height, rows, s)[0]
     k = min(region.height / MAYA_RULER_H, s)
     tris = blue_pencil_marks(region, frames, y0, k)
     if not tris:
         return
     shader = gpu.shader.from_builtin('UNIFORM_COLOR')
-    shader.uniform_float("color", bp.FRAME_RGB)
-    batch_for_shader(shader, 'TRIS', {"pos": tris}).draw(shader)
+    call(shader.uniform_float, "color", bp.FRAME_RGB)
+    call(batch_for_shader(shader, 'TRIS', {"pos": tris}).draw, shader)

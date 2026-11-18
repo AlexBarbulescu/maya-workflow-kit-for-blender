@@ -158,6 +158,19 @@ def patch_time_range(kd):
     _add(kd, "Time Scrub", "allset.time_range_drag", make_event("LEFTMOUSE"), first=True, shadows=shadows)
     _add(kd, "Time Scrub", "allset.time_range_all", make_event("LEFTMOUSE", value="DOUBLE_CLICK"), first=True,
          shadows=shadows)
+    # the bookmark strip (Maya layout): a click on a bookmark doesn't move the time, Ctrl + double-click highlights
+    # its range; the mouse over a bookmark shows its name and range (gone once the mouse leaves the Time Slider)
+    for mods in ({}, {"shift": True}, {"ctrl": True}):
+        _add(kd, "Time Scrub", "allset.time_slider_bookmark_click", make_event("LEFTMOUSE", **mods), first=True,
+             shadows=shadows)
+    _add(kd, "Time Scrub", "allset.time_slider_bookmark_click", make_event("LEFTMOUSE", value="DOUBLE_CLICK",
+                                                                           ctrl=True),
+         {"double": True}, first=True, shadows=shadows)
+    # Ctrl + drag on a bookmark moves it or one of its ends (in front of the Ctrl click item; a second press = the
+    # Ctrl + double-click passes on to it)
+    _add(kd, "Time Scrub", "allset.time_slider_bookmark_drag", make_event("LEFTMOUSE", ctrl=True), first=True,
+         shadows=shadows)
+    _add(kd, "Time Scrub", "allset.time_slider_bookmark_hover", make_event("MOUSEMOVE", "ANY", any=True), first=True)
 
 
 # --- 44. Graph Editor key batch ---------------------------------------------------------------
@@ -322,3 +335,32 @@ def patch_graph_handles(kd):
         _add(kd, "Graph Editor", "allset.graph_handle_box", make_event("LEFTMOUSE", "CLICK_DRAG", shift=shift,
                                                                        ctrl=ctrl),
              {"mode": mode}, first=True, shadows=("Graph Editor",))
+
+
+# --- Graph Editor Region Keys tool, Pre-Select Highlight, Prefer Selected Curves ----------------------------------
+# The mouse moves are watched for the curve under the mouse; a marquee is read when it ends (the Region Keys tool
+# keeps its region, Prefer Selected Curves drops the other curves' keys); with Prefer Selected Curves a press near a
+# key of a curve with selected keys picks it (Graph Editor rules: Ctrl = plain click, Shift toggles, Ctrl+Shift adds).
+# All pass through when they don't apply. The watchers go in front of every Graph Editor item; the click goes in
+# front of the Graph Editor's click select but behind the kit's tangent handle, Scale Keys box and Shift press items
+# (``patch_graph_prefer_click`` runs early in PATCHES).
+
+def patch_graph_tools(kd):
+    _add(kd, "Graph Editor", "allset.graph_hover", make_event("MOUSEMOVE", "ANY", any=True), first=True)
+    # a drag in the curve view (left-button drag start, middle-button press, any modifiers) drops the highlight
+    _add(kd, "Graph Editor", "allset.graph_hover_drop", make_event("LEFTMOUSE", "CLICK_DRAG", any=True), first=True,
+         shadows=("Graph Editor",))
+    _add(kd, "Graph Editor", "allset.graph_hover_drop", make_event("MIDDLEMOUSE", any=True), first=True,
+         shadows=("Graph Editor",))
+    # the Time Slider's bookmark name goes once the mouse is anywhere outside the Time Slider (Window: every area);
+    # the pre-selection highlight stays, like Maya
+    _add(kd, "Window", "allset.hover_leave", make_event("MOUSEMOVE", "ANY", any=True))
+    _add(kd, "Graph Editor", "allset.graph_marquee_watch", make_event("LEFTMOUSE", "CLICK_DRAG", any=True),
+         first=True, shadows=("Graph Editor",))
+
+
+def patch_graph_prefer_click(kd):
+    for shift, ctrl, mode in ((False, False, 'SET'), (False, True, 'SET'), (True, False, 'TOGGLE'),
+                              (True, True, 'ADD')):
+        _add(kd, "Graph Editor", "allset.graph_prefer_click", make_event("LEFTMOUSE", shift=shift, ctrl=ctrl),
+             {"mode": mode}, first=True, shadows=("Graph Editor", "Screen", "View2D"))

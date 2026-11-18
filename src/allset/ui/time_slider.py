@@ -34,6 +34,8 @@ import re
 import bpy
 
 from .. import compat
+from . import draw_replay
+from .draw_replay import call
 from bpy.app.handlers import persistent
 # the split-out parts, also read through this module by other UI and the tests
 from .time_slider_view import (_OWNER, _check_view, _deferred_fit, _fitted, _is_timeline, _schedule,  # noqa: F401
@@ -47,6 +49,7 @@ from .time_slider_mouse import (ALLSET_OT_time_scrub, ALLSET_OT_time_range_all, 
 from .time_slider_menu import (ALLSET_MT_time_slider, ALLSET_MT_time_slider_looping,  # noqa: F401
                                ALLSET_MT_time_slider_tangents, ALLSET_OT_time_slider_menu,
                                ALLSET_OT_time_slider_unavailable, TIME_SLIDER_MENUS)
+from . import time_slider_bookmarks
 from .time_slider_ruler import (MAYA_RULER_H, ROWS, ROWS_BOOKMARKS, RULER_BG, RULER_CURRENT,  # noqa: F401
                                 RULER_FONT_SIZE, RULER_LABEL, STEP_DEVIATIONS, STEP_MATCHES, TICK_HALF_PAD, _TRIS,
                                 _draw_blue_pencil, _draw_ruler, _rows, _themed, _tris_batch, blue_pencil_marks,
@@ -98,6 +101,21 @@ def _draw_range():
         bpy.app.timers.register(hide_redo_panels, first_interval=0.0)
     region = context.region
     _check_view(context, region)
+    key = ("time slider", region.as_pointer())
+    sig = (region.width, region.height, context.preferences.system.ui_scale)
+    moving = draw_replay.again(key, sig)     # a window moves: the Time Slider as drawn last
+    if not moving:
+        with draw_replay.recording(key, sig):
+            _draw_slider(context, region, wm)
+    if has_slider_panel(context.space_data):
+        if moving:
+            # the mouse holds a window's frame, off the Time Slider: the bookmark name goes, like Maya
+            time_slider_bookmarks.forget(context.area)
+        else:
+            time_slider_bookmarks.draw_tip(context, region)    # follows the mouse: drawn anew every time
+
+
+def _draw_slider(context, region, wm):
     maya = has_slider_panel(context.space_data)
     if maya:
         _draw_ruler(context, region)
@@ -112,9 +130,9 @@ def _draw_range():
     h = region.height
     shader = gpu.shader.from_builtin('UNIFORM_COLOR')
     batch = batch_for_shader(shader, 'TRIS', {"pos": ((x0, 0), (x1, 0), (x1, h), (x0, 0), (x1, h), (x0, h))})
-    gpu.state.blend_set('ALPHA')
-    shader.uniform_float("color", RANGE_COLOR)
-    batch.draw(shader)
+    call(gpu.state.blend_set, 'ALPHA')
+    call(shader.uniform_float, "color", RANGE_COLOR)
+    call(batch.draw, shader)
     # Maya's arrows on a highlighted range: ◀ / ▶ in the end zones (scale), ◀▶ in the middle (move)
     edge = RANGE_EDGE_PX * (context.preferences.system.ui_scale or 1.0)
     k = min(edge * 0.6, h * 0.25)
@@ -130,9 +148,9 @@ def _draw_range():
     arrow(cx - k * 0.55, 1)
     arrow(cx + k * 0.55, -1)
     batch = batch_for_shader(shader, 'TRIS', {"pos": tris})
-    shader.uniform_float("color", RANGE_ARROW_COLOR)
-    batch.draw(shader)
-    gpu.state.blend_set('NONE')
+    call(shader.uniform_float, "color", RANGE_ARROW_COLOR)
+    call(batch.draw, shader)
+    call(gpu.state.blend_set, 'NONE')
 
 
 # --- key ticks -----------------------------------------------------------------------------
@@ -481,7 +499,7 @@ def _draw_keys(context, region, maya=False):
     h = region.height
     if maya:
         from ..operators import bookmarks
-        if bookmarks.markers(context.scene):     # Maya: keys stay under the bookmark strip
+        if bookmarks.shown(context):     # Maya: keys stay under the bookmark strip
             h = _rows("strip", h, ROWS_BOOKMARKS, context.preferences.system.ui_scale or 1.0)[0]
     shader = gpu.shader.from_builtin('UNIFORM_COLOR')
     current = context.scene.frame_current
@@ -505,8 +523,8 @@ def _draw_keys(context, region, maya=False):
                 x1 = max(x0 + w, int(right))
             tris += [(x0, 0), (x1, 0), (x1, h), (x0, 0), (x1, h), (x0, h)]
         if tris:
-            shader.uniform_float("color", colour)
-            _tris_batch(shader, tris).draw(shader)
+            call(shader.uniform_float, "color", colour)
+            call(_tris_batch(shader, tris).draw, shader)
 
 
 @persistent
@@ -522,7 +540,7 @@ def _on_load(_dummy=None):
 
 classes = (ALLSET_MT_anim_preferences, ALLSET_PT_time_slider, ALLSET_OT_time_scrub, ALLSET_OT_time_range_all,
            ALLSET_OT_time_range_drag, ALLSET_OT_time_slider_menu, ALLSET_OT_time_view_lock,
-           ALLSET_OT_time_slider_unavailable, *TIME_SLIDER_MENUS)
+           ALLSET_OT_time_slider_unavailable, *TIME_SLIDER_MENUS, *time_slider_bookmarks.classes)
 
 
 # Maya's undo never moves the current time (a time change isn't an undo step there); Blender's memfile undo restores
@@ -595,6 +613,7 @@ def unregister():
     if bpy.app.timers.is_registered(restore_frame):
         bpy.app.timers.unregister(restore_frame)
     _KEEP.clear()
+    time_slider_bookmarks.clear()
     _HELD.clear()
     _KEYS.clear()
     _PARTS.clear()

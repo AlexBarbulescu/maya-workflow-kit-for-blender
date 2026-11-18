@@ -173,8 +173,8 @@ def test_graph_editor_lock_keys():
 def test_bookmark_keys_and_ranges():
     _one("Screen", 'T', "allset.bookmark_create", alt=True)
     _one("Screen", 'T', "allset.bookmark_create", {"quick": True}, alt=True, shift=True)
-    _one("Screen", 'QUOTE', "screen.marker_jump", {"next": True})
-    _one("Screen", 'SEMI_COLON', "screen.marker_jump", {"next": False})
+    _one("Screen", 'QUOTE', "allset.bookmark_go", {})
+    _one("Screen", 'SEMI_COLON', "allset.bookmark_go", {"previous": True})
     _one("Screen", 'BACK_SLASH', "allset.bookmark_frame", {"which": 'CURRENT'}, shift=True)
     _one("Screen", 'QUOTE', "allset.bookmark_frame", {"which": 'NEXT'}, shift=True)
     _one("Screen", 'SEMI_COLON', "allset.bookmark_frame", {"which": 'PREVIOUS'}, shift=True)
@@ -193,12 +193,12 @@ def test_bookmark_keys_and_ranges():
     assert names == ["bookmark1", "bookmark2"], names
     m1, m2 = bookmarks.markers(scene)
     assert bookmarks.bookmark_range(scene, m1) == (10, 30)
-    assert bookmarks.bookmark_range(scene, m2) == (50, 120)      # no range: up to the scene end
+    assert bookmarks.bookmark_range(scene, m2) == (50, 50)       # no range: the current frame, like Maya
     scene.frame_current = 20
     assert bpy.ops.allset.bookmark_frame(which='CURRENT') == {'FINISHED'}
     assert scene.use_preview_range and (scene.frame_preview_start, scene.frame_preview_end) == (10, 30)
     assert bpy.ops.allset.bookmark_frame(which='NEXT') == {'FINISHED'}
-    assert (scene.frame_preview_start, scene.frame_preview_end) == (50, 120) and scene.frame_current == 50
+    assert (scene.frame_preview_start, scene.frame_preview_end) == (50, 50) and scene.frame_current == 50
     assert bpy.ops.allset.bookmark_frame(which='PREVIOUS') == {'FINISHED'}
     assert scene.frame_current == 10
     scene.use_preview_range = False

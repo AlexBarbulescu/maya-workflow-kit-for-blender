@@ -44,11 +44,11 @@ from .maya_joints_shapes import (AXIS_COLORS, bbone_lines, bone_lines, _box_line
                                  shape_lines, _shape_matrix, SHAPE_TYPES, _shown, _SIN, sphere_lines, STICK_TYPES,
                                  UNSELECTED)  # noqa: F401
 from .maya_joints_arrays import (_BONE_INDEX, _bone_index, _bone_rows, _BONE_SEGMENTS, _box_array, _COLOURS,
-                                 _control_placement, _control_points, _distinct_points, _euler_xyz, _FORMATS, _join,
-                                 _join_view, joined_segments, _joint_rgba, _joint_selection, JointList, _Lines, _owner,
-                                 _paint, _part_arrays, _pose_raw, _pose_read, _RING, _RING_INDEX, _segments,
-                                 shape_moves, _sphere_index, _sphere_owner, _STILL_MODIFIERS,
-                                 _vertex_buffer)  # noqa: F401
+                                 _control_placement, _control_points, _distinct_points, _euler_xyz,
+                                 _FORMATS, _join, _join_view, joined_segments, _joint_rgba, _joint_selection,
+                                 JointList, _Lines, _owner, _paint, _part_arrays, placed_points, _pose_raw,
+                                 _pose_read, _RING, _RING_INDEX, _segments, shape_moves, _sphere_index, _sphere_owner,
+                                 _STILL_MODIFIERS, _vertex_buffer)  # noqa: F401
 from .maya_joints_cache import (_ALL_EDITS, _Build, _build_key, _BUILDS, changed, _DATA_USERS, _drop_widget,
                                 _edit_signature, edit_stamp, _EDITS, _forget_build, _GEN, _JOINED, _LEVELS, light_stamp,
                                 _lines_hold, _mark, _moved_bones, _moved_skeletons, _note, _PARTS, _PICK, _register,
@@ -85,13 +85,13 @@ def skeleton(ob, scene):
     """{name: Joint} of armature object ``ob`` in world space: the joints not hidden by their own flags, with their
     display layer state (a joint a layer hides is kept for its parent's bone, ``joint_segments`` draws nothing for
     it)."""
-    from ..operators import joints
+    from ..operators import joint_display, joints
     from ..operators.joint_edit import local_frame
     from . import layer_joints
     layered = layer_joints.state(ob)
     mw = ob.matrix_world
     m3 = mw.to_3x3()
-    s = max(mw.to_scale())
+    s = joint_display.skeleton_scale(ob)
     scale = _radius_scale(scene)
     out = {}
     if ob.mode == 'EDIT':
@@ -477,11 +477,16 @@ def _widget_segments(shape, depsgraph):
 
 
 def _widget_plan(jl, depsgraph):
-    """The controls' shape lines joined in their own space: (points, shape per point, points per shape, the shapes
-    that change with the frame [(shape, start, count)], widget generation, int32 line index into the points of every
-    shape's segments in order). A shape that can't change with the frame keeps each of its points once; one that can
-    keeps its segments' end points. Joined once per joint list and kept while no shape's own geometry changed; the
-    shapes that change with the frame are read again in place."""
+    """The controls' shape lines joined in their own space: (points, control per point, points per control (in
+    control order), the shapes that change with the frame [(shape, start, count)], widget generation, int32 line index
+    into the points of every shape's segments, runs [(start, stop, controls, points each, one shared shape)]). The
+    controls' points follow one another by their point count (``placed_points`` places each run of equal counts at
+    once), control by control; a shape that can't change with the frame and that ``SHARED_SHAPE`` or more controls
+    show gets a run of its own, stored point by point (its first point in every control of the run, then its second
+    ...). A shape that can't change with the frame keeps each of its points once; one that can keeps its segments' end
+    points. Joined
+    once per joint list and kept while no shape's own geometry changed; the shapes that change with the frame are read
+    again in place."""
     import numpy as np
     plan = jl.widgets
     if plan is not None and plan[4] != _WIDGET_GEN[0]:
@@ -495,22 +500,54 @@ def _widget_plan(jl, depsgraph):
                 break
             p[start:start + count] = segs
     if plan is None:
-        pts, index, moving, start = [], [], [], 0
+        shapes, users = [], {}
         for shape in jl.ctrl_shapes:
             s, m = _widget_segments(shape, depsgraph)
-            if m:
-                moving.append((shape, start, len(s)))
-                at = np.arange(len(s), dtype=np.intc)
+            shapes.append((shape, s, None) if m else (shape, *_distinct_points(s)))   # None: read every frame
+            if not m:
+                users[shape.session_uid] = users.get(shape.session_uid, 0) + 1
+        counts = np.fromiter((len(t[1]) for t in shapes), np.intp, len(shapes))
+        group = {uid: g for g, uid in enumerate(sorted(u for u, c in users.items() if c >= SHARED_SHAPE), 1)}
+        shared = np.fromiter((0 if at is None else group.get(shape.session_uid, 0) for shape, _s, at in shapes),
+                             np.intp, len(shapes))
+        order = np.lexsort((shared, counts))
+        groups = []                                  # [points each, shared shape group, [controls]]
+        for k in order.tolist():
+            c, g = int(counts[k]), int(shared[k])
+            if not c:
+                continue
+            if groups and groups[-1][0] == c and groups[-1][1] == g:
+                groups[-1][2].append(k)
             else:
-                s, at = _distinct_points(s)
-            pts.append(s)
-            index.append(at + start)
-            start += len(s)
-        counts = np.fromiter((len(s) for s in pts), np.intp, len(pts))
-        p = np.concatenate(pts) if counts.sum() else np.zeros((0, 3))
+                groups.append([c, g, [k]])
+        pts, index, owners, moving, runs, start = [], [], [], [], [], 0
+        for c, g, ks in groups:
+            ks = np.array(ks, np.intp)
+            n = len(ks)
+            if g:                                    # one shape: stored point by point (point i of every control)
+                _shape, s, at = shapes[ks[0]]
+                pts.append(np.repeat(s, n, axis=0))
+                owners.append(np.tile(ks, c))
+                index.append((at[None, :] * n + np.arange(n, dtype=np.intc)[:, None]).reshape(-1) + start)
+            else:                                    # control by control
+                for j, k in enumerate(ks.tolist()):
+                    shape, s, at = shapes[k]
+                    if at is None:
+                        moving.append((shape, start + j * c, c))
+                        at = np.arange(c, dtype=np.intc)
+                    pts.append(s)
+                    index.append(at + (start + j * c))
+                owners.append(np.repeat(ks, c))
+            runs.append((start, start + n * c, ks, c, bool(g)))
+            start += n * c
+        p = np.concatenate(pts).astype(np.float32) if start else np.zeros((0, 3), np.float32)   # the shapes' own precision
         index = np.concatenate(index).astype(np.intc) if index else np.zeros(0, np.intc)
-        plan = jl.widgets = (p, np.repeat(np.arange(len(pts)), counts), counts, moving, _WIDGET_GEN[0], index)
+        owner = np.concatenate(owners) if owners else np.zeros(0, np.intp)
+        plan = jl.widgets = (p, owner, counts, moving, _WIDGET_GEN[0], index, runs)
     return plan
+
+
+SHARED_SHAPE = 8      # controls showing one unchanging shape that get a run of their own (``_widget_plan``)
 
 
 def _control_lines(ob, jl, w, allm, depsgraph, props=None):
@@ -520,7 +557,7 @@ def _control_lines(ob, jl, w, allm, depsgraph, props=None):
     as ``_pose_raw`` read them) are read every time. The controls a display layer hides keep their points but have
     no lines."""
     import numpy as np
-    p, owner, _counts, _moving, _gen, index = _widget_plan(jl, depsgraph)
+    p, owner, _counts, _moving, _gen, index, runs = _widget_plan(jl, depsgraph)
     if not len(p):
         return None
     pbs = ob.pose.bones
@@ -535,14 +572,14 @@ def _control_lines(ob, jl, w, allm, depsgraph, props=None):
         pbs.foreach_get("use_custom_shape_bone_size", use)
         props.append(use)
     lin, off = _control_placement(jl, w, allm, props, n)
-    pts = np.einsum('kij,kj->ki', lin[owner], p) + off[owner]
+    pts = placed_points(p, lin, off, runs, owner)
     got = jl.owners.get("ctrl")
     if got is None or got[0] is not owner:
         if not jl.shown.all():                       # controls a display layer hides draw nothing
             pairs = index.reshape(-1, 2)
             index = np.ascontiguousarray(pairs[jl.shown[jl.ctrl][owner][pairs[:, 0]]].reshape(-1))
         got = jl.owners["ctrl"] = (owner, jl.ctrl[owner], index)
-    return pts.astype(np.float32), got[1], got[2]
+    return pts, got[1], got[2]
 
 
 def _own_lines(ob, jl, w, allm, kind):

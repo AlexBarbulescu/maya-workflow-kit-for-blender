@@ -3,6 +3,72 @@
 All notable changes to Maya Workflow Kit (earlier versions were called Allset for Maya Users and, before that, Maya Kit). Format: [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.19.0] — 2026-11-18
+
+Thank you for the reports and the help. This release brings Maya's IK/FK switching, the rest of the Time Slider
+Bookmarks, new Graph Editor and Dope Sheet tools, smoother window drags and lighter joint drawing in Maya mode, and
+fixes for #320 and #334. Thanks to @AlexBarbulescu for the Shelf Editor drag in #382, and to @AlEuf01,
+@GIBBETGAMES and @pixelkeyblade18 for reports that showed what to fix.
+
+### Added
+- **IK/FK switching**: Skeleton > Enable IK/FK Control and Enable IK Handle Snap work like Maya. With Snap on, turning
+  a joint of an IK chain takes the IK handle along to the end joint (and keeps it there at Ik Blend 0); with IK/FK
+  control off, a keyed handle keeps its joints from turning; Snap is greyed out while IK/FK control is on.
+- IK chain joints hold the IK solution in their rotate channels like Maya: the Channel Box shows the solved rotation,
+  and Ik Blend 1 → 0 keeps the IK pose instead of jumping back to old FK values.
+- Key > IK/FK Keys > **Connect to IK/FK**: the selected objects get an Ik Blend that follows the IK handle; selecting
+  such an object works for Set IK/FK Key (its translate is keyed too), Enable IK Solver and Move IK to FK.
+- A turned joint of an IK chain stays turned like Maya (Enable IK/FK Control on, or Enable IK Handle Snap off, and
+  with snap too) until the chain is solved again: the handle moves or turns, its Ik Blend, Pole Vector, Twist or
+  Solver Enable changes, the time changes while the handle has keys, or the scene is opened again. Selecting, moving
+  the skeleton or turning other joints keeps the turned pose.
+- With Enable IK Handle Snap at Ik Blend 1, turning a joint of an RP chain turns the handle's Pole Vector with the
+  start joint like Maya, so moving the handle afterwards keeps the arm in the plane it was turned into.
+- **Time Slider Bookmarks**: Visualize > Time Slider Bookmarks > Edit, Show Bookmarks and Bookmark Manager work like
+  Maya. Edit changes the name, colour, start and end of the bookmark at the current time; Show Bookmarks hides them
+  on the Time Slider; the Bookmark Manager window lists every bookmark to rename, recolour, retime, update from the
+  selected range, frame or delete, frames all of them and adds new ones.
+- Each Time Slider bookmark has its own colour on the Time Slider (a random one of Maya's colours, or the one picked
+  in the Create dialog) and keeps its range and colour when renamed.
+- On the Time Slider, like Maya: the mouse over a bookmark shows its name and range; a right-click on the bookmark
+  strip opens the bookmark menu, whose actions work on the bookmark under the mouse; a click on a bookmark leaves the
+  time where it is; Ctrl + double-click highlights the bookmark's range.
+- Time Slider bookmarks: Ctrl + drag a bookmark to move it, or near its start or end to move that end; the time goes
+  to the frame under the mouse, like Maya.
+- Time Slider bookmarks: the mouse over a bookmark draws its two end lines down through the Time Slider in its colour,
+  and each bookmark shows a line at both ends, like Maya.
+- Graph Editor: Edit > Transformation Tools > **Region Keys Tool** (and its toolbar button): a marquee leaves its
+  region as a box; drag a side or corner to scale the keys inside, drag inside it to move them, like Maya.
+- Graph Editor: Select > **Pre-Select Highlight** draws the curve under the mouse brighter before you click it (off
+  by default, like Maya).
+- Graph Editor: Select > **Prefer Selected Curves**: while some curves have selected keys or tangents, clicks and
+  marquees pick the keys of those curves first (off by default, like Maya).
+- Dope Sheet: Channels > **Offset Keys** moves the selected keys by a number of frames (option box: offset to a
+  frame, time range), like Maya.
+- Shelf Editor: with the new preference Shelf Editor Drag (off by default), each Shelf Contents row has a grip:
+  click it, move the mouse up or down and click again to put the button there (Esc puts it back). Thanks to Alex
+  Barbulescu (#382).
+
+### Changed
+- A bookmark made without a selected range covers the current frame only, the time moves to its end, and Frame
+  Next / Frame Previous Bookmark wrap round, like Maya.
+- Next Bookmark / Previous Bookmark wrap round like Maya: after the last bookmark Next goes back to the first one.
+- Graph Editor Pre-Select Highlight, like Maya: the highlight stays when the mouse leaves the curve view and goes as
+  soon as a drag starts there (moving keys, a marquee, panning); the mouse must be on the curve line, not just near it.
+- Dragging or resizing a window in Maya mode is smoother (#334): the Channel Box dock and the Time Slider's Range
+  Slider no longer read back the screen at every step, and the shelf, the Outliner, the dock's tabs, the Time Slider
+  and the Graph Editor draw what they drew before instead of working it out again.
+- Joints with controls draw faster while playing: controls are placed in runs and their custom shape values are
+  worked out once (#344).
+
+### Fixed
+- Joints keep their Radius size when the armature object is scaled (#320).
+- RP handles with Twist and IK chains of three or more bones write the solved rotation into the joints right after
+  the handle moves.
+- Layout fit: with windows on displays of different scaling, each window is fitted at its own scaling (#334).
+- Moving UVs in the UV Editor while the 3D View shows the UV selection (the UV component) can no longer crash
+  Blender; playback with a selection no longer rebuilds the wires of objects that don't move.
+
 ## [0.18.0] — 2026-11-17
 
 Fixes and Maya behaviours for the issues reported since 0.17.0 (#344, #363, #367, #369, #370, #371, #373, #374,

@@ -4747,9 +4747,7 @@
    "Add menu (Shift+A)": "Add menu (Shift+A)",
    "Alembic / Mesh Sequence Cache": "Alembic / Mesh Sequence Cache",
    "Alembic import": "Alembic import",
-   "Always on": "Always on",
    "Area light": "Area light",
-   "Armature edit / pose mode": "Armature edit / pose mode",
    "Asset Browser": "Asset Browser",
    "Asset Browser / library overrides": "Asset Browser / library overrides",
    "Baked caches": "Baked caches",
@@ -4758,7 +4756,6 @@
    "Blender X-rays the whole view (X-Ray), not only the components being edited.": "Blender X-rays the whole view (X-Ray), not only the components being edited.",
    "Blender always draws anti-aliased wires (a preference: Viewport > Quality > Anti-Aliasing).": "Blender always draws anti-aliased wires (a preference: Viewport > Quality > Anti-Aliasing).",
    "Blender always keeps vertex, edge or face picking on: switch with F9 / F10 / F11.": "Blender always keeps vertex, edge or face picking on: switch with F9 / F10 / F11.",
-   "Blender always lets you rotate joints in an IK chain: the rotation shows where the handle's Ik Blend is 0 (Key > IK/FK Keys).": "Blender always lets you rotate joints in an IK chain: the rotation shows where the handle's Ik Blend is 0 (Key > IK/FK Keys).",
    "Blender always lights both sides of a face in the viewport (Backface Culling hides back faces).": "Blender always lights both sides of a face in the viewport (Backface Culling hides back faces).",
    "Blender always plays a baked cache: Delete Cache to simulate again.": "Blender always plays a baked cache: Delete Cache to simulate again.",
    "Blender assets are data-blocks marked as assets (Asset Browser), not containers.": "Blender assets are data-blocks marked as assets (Asset Browser), not containers.",
@@ -4792,7 +4789,6 @@
    "Blender hair is a Curves object groomed in Sculpt mode: on the selected mesh the kit adds an empty hair object (or picks its hair) and switches to it; paint follicles with the Add brush.": "Blender hair is a Curves object groomed in Sculpt mode: on the selected mesh the kit adds an empty hair object (or picks its hair) and switches to it; paint follicles with the Add brush.",
    "Blender has no ATOM files or After Effects Live Link: move animation with Append / Link or FBX / Alembic export.": "Blender has no ATOM files or After Effects Live Link: move animation with Append / Link or FBX / Alembic export.",
    "Blender has no Autodesk account, product research or analytics services; Blender's Help menu has the manual and bug reports.": "Blender has no Autodesk account, product research or analytics services; Blender's Help menu has the manual and bug reports.",
-   "Blender has no Connect to IK/FK: drive the handle's Ik Blend from a control with Key > Set Driven Key or a driver.": "Blender has no Connect to IK/FK: drive the handle's Ik Blend from a control with Key > Set Driven Key or a driver.",
    "Blender has no GPU cache node: reload an imported Alembic from its Cache File properties.": "Blender has no GPU cache node: reload an imported Alembic from its Cache File properties.",
    "Blender has no HumanIK / Quick Rig: the bundled Rigify add-on builds a rig from a meta-rig fitted to the mesh (Generate Rig).": "Blender has no HumanIK / Quick Rig: the bundled Rigify add-on builds a rig from a meta-rig fitted to the mesh (Generate Rig).",
    "Blender has no HumanIK character controls: rig with armatures (Skeleton menu).": "Blender has no HumanIK character controls: rig with armatures (Skeleton menu).",
@@ -4927,7 +4923,6 @@
    "Blender's views always light the scene (studio, flat or scene lights): Use Flat Lighting shows the plain colours.": "Blender's views always light the scene (studio, flat or scene lights): Use Flat Lighting shows the plain colours.",
    "Blender's views filter by object type only (mesh, curve, light, camera, empty ...): this Maya node type has no type of its own, so it shows with its object type.": "Blender's views filter by object type only (mesh, curve, light, camera, empty ...): this Maya node type has no type of its own, so it shows with its object type.",
    "Blender's views have no points-only display mode: Wireframe is the nearest (Object Properties > Viewport Display > Display As shows one object as Bounds / Wire).": "Blender's views have no points-only display mode: Wireframe is the nearest (Object Properties > Viewport Display > Display As shows one object as Bounds / Wire).",
-   "Blender: IK handles are IK constraints (switch with Influence), joints are bone heads edited in armature edit mode.": "Blender: IK handles are IK constraints (switch with Influence), joints are bone heads edited in armature edit mode.",
    "Blender: invisible faces = delete or hide faces, reorder vertices = Mesh > Sort Elements, project a curve = Knife Project.": "Blender: invisible faces = delete or hide faces, reorder vertices = Mesh > Sort Elements, project a curve = Knife Project.",
    "Blender: paint reduce / transfer weights = vertex groups on Decimate / Data Transfer modifiers.": "Blender: paint reduce / transfer weights = vertex groups on Decimate / Data Transfer modifiers.",
    "Bone collections": "Bone collections",
@@ -4978,7 +4973,6 @@
    "Hook modifier": "Hook modifier",
    "Hook with falloff": "Hook with falloff",
    "Ik Blend + joint keys": "Ik Blend + joint keys",
-   "Ik Blend property": "Ik Blend property",
    "Indices overlay": "Indices overlay",
    "Interactive Bind Skin": "Interactive Bind Skin",
    "Interactive Bind Skin Tool": "Interactive Bind Skin Tool",
@@ -5287,15 +5281,29 @@
    "Use the selected meshes as in-between shapes": "Use the selected meshes as in-between shapes"
   },
   "Labels/operators/bookmarks": {
+   "Act at the given frame instead of the current time": "Act at the given frame instead of the current time",
+   "All": "All",
+   "Color": "Color",
+   "Colour of this Time Slider bookmark": "Colour of this Time Slider bookmark",
    "Create Bookmark": "Create Bookmark",
    "Current": "Current",
    "Delete Bookmark": "Delete Bookmark",
+   "Edit Bookmark": "Edit Bookmark",
+   "End": "End",
    "Every bookmark (Maya Delete All Bookmarks)": "Every bookmark (Maya Delete All Bookmarks)",
    "Frame Bookmark": "Frame Bookmark",
+   "Last frame of this Time Slider bookmark": "Last frame of this Time Slider bookmark",
    "Name": "Name",
    "Next": "Next",
+   "Next / Previous Bookmark": "Next / Previous Bookmark",
    "No dialog (Maya Quick Create)": "No dialog (Maya Quick Create)",
-   "Previous": "Previous"
+   "Previous": "Previous",
+   "Start": "Start",
+   "The bookmark (default: the current one)": "The bookmark (default: the current one)",
+   "The frame to act at": "The frame to act at",
+   "The previous bookmark instead of the next one": "The previous bookmark instead of the next one",
+   "This bookmark (Bookmark Manager row)": "This bookmark (Bookmark Manager row)",
+   "Update Bookmark with Selection": "Update Bookmark with Selection"
   },
   "Labels/operators/by_type": {
    "Select All by Type": "Select All by Type",
@@ -5916,6 +5924,11 @@
    "Set": "Set",
    "Toggle": "Toggle"
   },
+  "Labels/operators/graph_hover": {
+   "Graph Editor Hover": "Graph Editor Hover",
+   "Graph Editor Hover Drop": "Graph Editor Hover Drop",
+   "Hover Leave": "Hover Leave"
+  },
   "Labels/operators/graph_key_menu": {
    "Add Inbetween": "Add Inbetween",
    "Clamp": "Clamp",
@@ -5997,6 +6010,10 @@
    "Tool": "Tool",
    "What a middle-mouse drag does to the selected keys in the Graph Editor": "What a middle-mouse drag does to the selected keys in the Graph Editor"
   },
+  "Labels/operators/graph_region": {
+   "Graph Editor Marquee": "Graph Editor Marquee",
+   "Select Key": "Select Key"
+  },
   "Labels/operators/graph_retime": {
    "Retime Tool": "Retime Tool"
   },
@@ -6042,10 +6059,17 @@
    "Toggle Pivot Edit": "Toggle Pivot Edit"
   },
   "Labels/operators/ik_fk": {
+   "Connect to IK/FK": "Connect to IK/FK",
    "Enable IK Solver": "Enable IK Solver",
    "Move IK to FK": "Move IK to FK",
    "Set IK/FK Key": "Set IK/FK Key",
    "Switch the selected IK handles between IK (Ik Blend 1) and FK (Ik Blend 0) keeping the pose (Maya Key > IK/FK Keys > Enable IK Solver)": "Switch the selected IK handles between IK (Ik Blend 1) and FK (Ik Blend 0) keeping the pose (Maya Key > IK/FK Keys > Enable IK Solver)"
+  },
+  "Labels/operators/ik_fk_control": {
+   "Enable IK Handle Snap": "Enable IK Handle Snap",
+   "Enable IK/FK Control": "Enable IK/FK Control",
+   "Let the joints of an IK chain turn even when the IK handle has keys; the handle stays where it is (Maya Skeleton > Enable IK/FK Control)": "Let the joints of an IK chain turn even when the IK handle has keys; the handle stays where it is (Maya Skeleton > Enable IK/FK Control)",
+   "The IK handle follows the end joint when a joint of its chain is turned, and stays on it at Ik Blend 0 (Maya Skeleton > Enable IK Handle Snap)": "The IK handle follows the end joint when a joint of its chain is turned, and stays on it at Ik Blend 0 (Maya Skeleton > Enable IK Handle Snap)"
   },
   "Labels/operators/ik_handle": {
    "Current solver": "Current solver",
@@ -7668,6 +7692,7 @@
    "3D View headers show Maya's panel menus (View, Shading, Lighting, Show, Renderer, Panels) instead of Blender's (Blender menus stay as a submenu)": "3D View headers show Maya's panel menus (View, Shading, Lighting, Show, Renderer, Panels) instead of Blender's (Blender menus stay as a submenu)",
    "3D View toolbars show Maya's Tool Box in every mode: Select, Lasso, Paint Select, Move, Rotate, Scale, the last other tool and quick layout buttons (other tools stay on keys, menus and the shelf)": "3D View toolbars show Maya's Tool Box in every mode: Select, Lasso, Paint Select, Move, Rotate, Scale, the last other tool and quick layout buttons (other tools stay on keys, menus and the shelf)",
    "A Radius typed in the Channel Box also goes to every joint below the selected joints (off: the selected joints only, like Maya)": "A Radius typed in the Channel Box also goes to every joint below the selected joints (off: the selected joints only, like Maya)",
+   "A grip on each Shelf Contents row of the Shelf Editor: click it, move the mouse up or down and click again to put the button there": "A grip on each Shelf Contents row of the Shelf Editor: click it, move the mouse up or down and click again to put the button there",
    "A menu item's option box opens its options in a floating window that stays open, with Apply, Save Settings, Reset Settings and Close, and several can stay open together (off: a dialog that closes when the command runs)": "A menu item's option box opens its options in a floating window that stays open, with Apply, Save Settings, Reset Settings and Close, and several can stay open together (off: a dialog that closes when the command runs)",
    "A new Maya panel's Material Preview shows Blender's HDRI as its background and the look-dev spheres (off: the Maya view background)": "A new Maya panel's Material Preview shows Blender's HDRI as its background and the look-dev spheres (off: the Maya view background)",
    "A pie at the right end of the In-View Editor's title sets how fast a drag changes its values: click or drag round it, from 2 % (empty) to full speed (full) (off: no pie, the values change at full speed)": "A pie at the right end of the In-View Editor's title sets how fast a drag changes its values: click or drag round it, from 2 % (empty) to full speed (full) (off: no pie, the values change at full speed)",
@@ -7722,6 +7747,7 @@
    "Dope Sheet Auto Frame": "Dope Sheet Auto Frame",
    "Dragging the In-View Editor's title moves the editor; it then keeps that offset from its place beside the manipulator / object and follows it (off: the editor stays at its place beside its object)": "Dragging the In-View Editor's title moves the editor; it then keeps that offset from its place beside the manipulator / object and follows it (off: the editor stays at its place beside its object)",
    "Draw each buffered curve's snapshot behind it in the Graph Editor (Maya View > Show Buffer Curves)": "Draw each buffered curve's snapshot behind it in the Graph Editor (Maya View > Show Buffer Curves)",
+   "Draw the Time Slider bookmarks (timeline markers) as coloured ranges above the Time Slider ruler": "Draw the Time Slider bookmarks (timeline markers) as coloured ranges above the Time Slider ruler",
    "Draw the zero line and the lowest / highest value of the selected curves in the Graph Editor": "Draw the zero line and the lowest / highest value of the selected curves in the Graph Editor",
    "Each Maya panel's display settings (shading, overlays, Show filters) come back in the next Blender session; kept in a file in the kit's extension folder": "Each Maya panel's display settings (shading, overlays, Show filters) come back in the next Blender session; kept in a file in the kit's extension folder",
    "Echo All Commands": "Echo All Commands",
@@ -7839,7 +7865,9 @@
    "Plateau": "Plateau",
    "Playback speed of a new scene made with File > New Scene / Ctrl+N in Maya mode (like Maya's New Scene Options). The open scene and Blender's startup file are not changed": "Playback speed of a new scene made with File > New Scene / Ctrl+N in Maya mode (like Maya's New Scene Options). The open scene and Blender's startup file are not changed",
    "Polygon primitives from the Create menu and shelf are drawn in a view: drag to place and size": "Polygon primitives from the Create menu and shelf are drawn in a view: drag to place and size",
+   "Pre-Select Highlight": "Pre-Select Highlight",
    "Pre-selection Highlight": "Pre-selection Highlight",
+   "Prefer Selected Curves": "Prefer Selected Curves",
    "Prevent Negative Scale": "Prevent Negative Scale",
    "Previous Frames": "Previous Frames",
    "Project": "Project",
@@ -7862,11 +7890,13 @@
    "Selecting keys in the Graph Editor moves the current time to the earliest selected key": "Selecting keys in the Graph Editor moves the current time to the earliest selected key",
    "Selection Priority": "Selection Priority",
    "Selection Wireframe": "Selection Wireframe",
+   "Shelf Editor Drag": "Shelf Editor Drag",
    "Shift+drag a Move/Rotate/Scale manipulator duplicates the selection and transforms the copy": "Shift+drag a Move/Rotate/Scale manipulator duplicates the selection and transforms the copy",
    "Shift+drag a Move/Rotate/Scale manipulator on faces or edges extrudes them and transforms the new ones": "Shift+drag a Move/Rotate/Scale manipulator on faces or edges extrudes them and transforms the new ones",
    "Short fading messages in the view when you group, hide, toggle object/component selection (F8), soft select or Make Live, like Maya": "Short fading messages in the view when you group, hide, toggle object/component selection (F8), soft select or Make Live, like Maya",
    "Show All Menu Sets": "Show All Menu Sets",
    "Show Blender's shading modes and settings at the right of the Maya viewport toolbar": "Show Blender's shading modes and settings at the right of the Maya viewport toolbar",
+   "Show Bookmarks": "Show Bookmarks",
    "Show Both": "Show Both",
    "Show Buffer Curves": "Show Buffer Curves",
    "Show MEL Only": "Show MEL Only",
@@ -7906,6 +7936,7 @@
    "Tangent weight of new animation curves, keyed in any way (Maya Curves > Default Tangent Weight)": "Tangent weight of new animation curves, keyed in any way (Maya Curves > Default Tangent Weight)",
    "The Channel Box / Attribute Editor / Modeling Toolkit docks are drawn in Maya's lighter grey": "The Channel Box / Attribute Editor / Modeling Toolkit docks are drawn in Maya's lighter grey",
    "The Graph Editor draws and drags tangent handles like Maya: a non-weighted tangent at a fixed length on screen along its direction, a weighted one at its real end": "The Graph Editor draws and drags tangent handles like Maya: a non-weighted tangent at a fixed length on screen along its direction, a weighted one at its real end",
+   "The Graph Editor draws the curve under the mouse brighter before you click it": "The Graph Editor draws the curve under the mouse brighter before you click it",
    "The Time Slider shows only the keys of the channels selected in the Channel Box": "The Time Slider shows only the keys of the channels selected in the Channel Box",
    "The UV Editor's Move / Rotate / Scale tools show Maya-style handles: U / V arrows, a rotate ring, U / V scale boxes": "The UV Editor's Move / Rotate / Scale tools show Maya-style handles: U / V arrows, a rotate ring, U / V scale boxes",
    "The keys Maya mode uses. The Maya / Blender switch shortcut (Ctrl+Alt+Shift+M) works with both": "The keys Maya mode uses. The Maya / Blender switch shortcut (Ctrl+Alt+Shift+M) works with both",
@@ -7932,6 +7963,7 @@
    "When the selection changes, the Graph Editor also refits its time axis to the curves it shows (Maya View > Auto Frame Time)": "When the selection changes, the Graph Editor also refits its time axis to the curves it shows (Maya View > Auto Frame Time)",
    "When the selection changes, the Graph Editor refits its value axis to the curves it shows (Maya View > Auto Frame)": "When the selection changes, the Graph Editor refits its value axis to the curves it shows (Maya View > Auto Frame)",
    "Where autosaves go": "Where autosaves go",
+   "While some curves have selected keys or tangents, Graph Editor clicks and marquees pick the keys of those curves first": "While some curves have selected keys or tangents, Graph Editor clicks and marquees pick the keys of those curves first",
    "With the Scale Keys tool (r) the Graph Editor draws a box around the selected keys: drag a side to scale them in time or value, a corner for both": "With the Scale Keys tool (r) the Graph Editor draws a box around the selected keys: drag a side to scale them in time or value, a corner for both",
    "Write each curve's Maya name (pCube1.translateX) beside its last key in the Graph Editor": "Write each curve's Maya name (pCube1.translateX) beside its last key in the Graph Editor",
    "Write every command run from a menu, shelf or marking menu into the Script Editor history (as the Python call the kit runs)": "Write every command run from a menu, shelf or marking menu into the Script Editor history (as the Python call the kit runs)",
@@ -8065,6 +8097,18 @@
    "Blue Pencil Frame": "Blue Pencil Frame",
    "Frames": "Frames",
    "Next": "Next"
+  },
+  "Labels/ui/bookmark_manager": {
+   "Add": "Add",
+   "Bookmark Manager": "Bookmark Manager",
+   "Color": "Color",
+   "End": "End",
+   "First frame (empty: the selected range or the current frame)": "First frame (empty: the selected range or the current frame)",
+   "Last frame (empty: the selected range or the current frame)": "Last frame (empty: the selected range or the current frame)",
+   "Name": "Name",
+   "No bookmarks": "No bookmarks",
+   "Start": "Start",
+   "Tool": "Tool"
   },
   "Labels/ui/bridge_editor": {
    "Bridge Path Curve": "Bridge Path Curve",
@@ -9263,8 +9307,7 @@
    "Up": "Up"
   },
   "Labels/ui/shelf_editor_drag": {
-   "Drag Button": "Drag Button",
-   "Shelf Editor Drag": "Shelf Editor Drag"
+   "Drag Button": "Drag Button"
   },
   "Labels/ui/shelf_editor_icon_picker": {
    "All Icons": "All Icons",
@@ -9392,6 +9435,24 @@
   "Labels/ui/time_slider": {
    "A Shift-dragged Time Slider range is highlighted": "A Shift-dragged Time Slider range is highlighted",
    "Time Range": "Time Range"
+  },
+  "Labels/ui/time_slider_bookmarks": {
+   "A double-click": "A double-click",
+   "Bookmark Manager": "Bookmark Manager",
+   "Create": "Create",
+   "Delete": "Delete",
+   "Edit": "Edit",
+   "Frame Bookmark": "Frame Bookmark",
+   "Frame Next Bookmark": "Frame Next Bookmark",
+   "Frame Previous Bookmark": "Frame Previous Bookmark",
+   "Move Bookmark": "Move Bookmark",
+   "Next Bookmark": "Next Bookmark",
+   "Previous Bookmark": "Previous Bookmark",
+   "Time Slider Bookmark Click": "Time Slider Bookmark Click",
+   "Time Slider Bookmark Hover": "Time Slider Bookmark Hover",
+   "Time Slider Bookmarks": "Time Slider Bookmarks",
+   "Unframe": "Unframe",
+   "Update Bookmark with selection": "Update Bookmark with selection"
   },
   "Labels/ui/time_slider_header": {
    "Animation Preferences": "Animation Preferences",
@@ -9735,6 +9796,9 @@
   "Tooltips/operators/bookmarks": {
    "Create a Time Slider bookmark (a timeline marker) at the selected range or the current time": "Create a Time Slider bookmark (a timeline marker) at the selected range or the current time",
    "Delete the Time Slider bookmark at the current time, or every bookmark (Maya Delete / Delete All Bookmarks)": "Delete the Time Slider bookmark at the current time, or every bookmark (Maya Delete / Delete All Bookmarks)",
+   "Edit the Time Slider bookmark at the current time: its name, colour, start and end": "Edit the Time Slider bookmark at the current time: its name, colour, start and end",
+   "Move the current time to the start of the next or previous Time Slider bookmark (wrapping round, like Maya)": "Move the current time to the start of the next or previous Time Slider bookmark (wrapping round, like Maya)",
+   "Set a Time Slider bookmark's start and end to the selected Time Slider range (else the current frame)": "Set a Time Slider bookmark's start and end to the selected Time Slider range (else the current frame)",
    "Set the playback range to a Time Slider bookmark's range (this one, the next or the previous)": "Set the playback range to a Time Slider bookmark's range (this one, the next or the previous)"
   },
   "Tooltips/operators/by_type": {
@@ -10001,6 +10065,11 @@
    "Select and drag a tangent handle in the Graph Editor (a non-weighted tangent only turns)": "Select and drag a tangent handle in the Graph Editor (a non-weighted tangent only turns)",
    "The Graph Editor marquee also picks the tangent handle ends the kit draws (passes through to the marquee)": "The Graph Editor marquee also picks the tangent handle ends the kit draws (passes through to the marquee)"
   },
+  "Tooltips/operators/graph_hover": {
+   "Drop the Time Slider's bookmark name once the mouse is outside the Time Slider (the Graph Editor's\npre-selection highlight stays, like Maya)": "Drop the Time Slider's bookmark name once the mouse is outside the Time Slider (the Graph Editor's\npre-selection highlight stays, like Maya)",
+   "Graph Editor: a drag starts (a key move, a marquee, a pan): no pre-selection highlight until the next mouse\nmove after it, like Maya": "Graph Editor: a drag starts (a key move, a marquee, a pan): no pre-selection highlight until the next mouse\nmove after it, like Maya",
+   "Graph Editor: remember the curve under the mouse for the pre-selection highlight": "Graph Editor: remember the curve under the mouse for the pre-selection highlight"
+  },
   "Tooltips/operators/graph_key_menu": {
    "Add or remove an inbetween: the keys after the current time on the curves shown move one frame later or\nearlier (Maya Keys > Add / Remove Inbetween)": "Add or remove an inbetween: the keys after the current time on the curves shown move one frame later or\nearlier (Maya Keys > Add / Remove Inbetween)",
    "Choose what a click or drag picks in the Graph Editor (Maya Select > All / Only Curve)": "Choose what a click or drag picks in the Graph Editor (Maya Select > All / Only Curve)",
@@ -10035,6 +10104,10 @@
    "Pick what a middle-mouse drag does to the selected keys: move, turn their tangents or scale them\n(w / e / r in the Graph Editor, like Maya)": "Pick what a middle-mouse drag does to the selected keys: move, turn their tangents or scale them\n(w / e / r in the Graph Editor, like Maya)",
    "Shift+press on a selected key: remember the key selection for a Shift+drag that moves the keys": "Shift+press on a selected key: remember the key selection for a Shift+drag that moves the keys"
   },
+  "Tooltips/operators/graph_region": {
+   "Prefer Selected Curves: a Graph Editor click picks a key of the curves with selected keys first": "Prefer Selected Curves: a Graph Editor click picks a key of the curves with selected keys first",
+   "Region Keys tool / Prefer Selected Curves: read the Graph Editor's marquee when it ends (passes through)": "Region Keys tool / Prefer Selected Curves: read the Graph Editor's marquee when it ends (passes through)"
+  },
   "Tooltips/operators/graph_retime": {
    "Maya Retime Tool: double-click in the curve area to add retime markers, drag a marker's handle to scale and\nripple the keys of the displayed curves, the ✕ deletes a marker. Esc or Q/W/E/R/T ends the tool": "Maya Retime Tool: double-click in the curve area to add retime markers, drag a marker's handle to scale and\nripple the keys of the displayed curves, the ✕ deletes a marker. Esc or Q/W/E/R/T ends the tool"
   },
@@ -10062,6 +10135,7 @@
    "Toggle pivot edit mode (Maya Insert): objects = transform affects only origins; mesh edit mode =\nplace the component pivot with the 3D cursor": "Toggle pivot edit mode (Maya Insert): objects = transform affects only origins; mesh edit mode =\nplace the component pivot with the 3D cursor"
   },
   "Tooltips/operators/ik_fk": {
+   "Maya Connect to IK/FK: the selected objects get an Ik Blend that follows the IK handle (select it last)": "Maya Connect to IK/FK: the selected objects get an Ik Blend that follows the IK handle (select it last)",
    "Maya Enable IK Solver: switch the selected IK handles between IK (Ik Blend 1) and FK (Ik Blend 0) keeping\nthe pose": "Maya Enable IK Solver: switch the selected IK handles between IK (Ik Blend 1) and FK (Ik Blend 0) keeping\nthe pose",
    "Maya Move IK to FK: move the selected IK handles to the end of their FK chains": "Maya Move IK to FK: move the selected IK handles to the end of their FK chains",
    "Maya Set IK/FK Key: key the selected IK handles (Ik Blend included) and their joints' rotation": "Maya Set IK/FK Key: key the selected IK handles (Ik Blend included) and their joints' rotation"
@@ -10702,6 +10776,10 @@
   "Tooltips/ui/blue_pencil": {
    "Go to the next or previous Blue Pencil (annotation) frame (Maya Next / Previous Blue Pencil Frame)": "Go to the next or previous Blue Pencil (annotation) frame (Maya Next / Previous Blue Pencil Frame)"
   },
+  "Tooltips/ui/bookmark_manager": {
+   "Add a Time Slider bookmark from this line: its colour and name, Start / End (empty = the selected Time Slider\nrange, else the current frame)": "Add a Time Slider bookmark from this line: its colour and name, Start / End (empty = the selected Time Slider\nrange, else the current frame)",
+   "Open the Bookmark Manager: every Time Slider bookmark to rename, recolour, retime, frame or delete": "Open the Bookmark Manager: every Time Slider bookmark to rename, recolour, retime, frame or delete"
+  },
   "Tooltips/ui/bridge_editor": {
    "Click to add, drag to move, X to delete, 1-4 to interpolate, Enter to apply, Esc to cancel": "Click to add, drag to move, X to delete, 1-4 to interpolate, Enter to apply, Esc to cancel",
    "Reevaluate this recorded Bridge with the current section and twist model": "Reevaluate this recorded Bridge with the current section and twist model"
@@ -11098,7 +11176,7 @@
    "Apply edited Shelf button properties without changing unrelated button data.": "Apply edited Shelf button properties without changing unrelated button data."
   },
   "Tooltips/ui/shelf_editor_drag": {
-   "Press and hold, move the mouse up/down, release to drop the button there": "Press and hold, move the mouse up/down, release to drop the button there"
+   "Click, move the mouse up or down and click again to drop the button there (Esc puts it back)": "Click, move the mouse up or down and click again to drop the button there (Esc puts it back)"
   },
   "Tooltips/ui/shelf_editor_icon_picker": {
    "Change the page in the currently open Shelf icon picker.": "Change the page in the currently open Shelf icon picker.",
@@ -11145,6 +11223,12 @@
    "Open an Outliner window that lists only the scene's lights (Blender has no Light Editor)": "Open an Outliner window that lists only the scene's lights (Blender has no Light Editor)",
    "Toggle a Maya snap mode": "Toggle a Maya snap mode",
    "Toggle whether this kind of object can be selected (all 3D Views)": "Toggle whether this kind of object can be selected (all 3D Views)"
+  },
+  "Tooltips/ui/time_slider_bookmarks": {
+   "Maya's Time Slider bookmark menu (right-click on the bookmark strip): the actions work at the frame under the\nmouse": "Maya's Time Slider bookmark menu (right-click on the bookmark strip): the actions work at the frame under the\nmouse",
+   "Time Slider bookmark: Ctrl + drag moves it (near an end: moves that end); the time goes to the frame under\nthe mouse": "Time Slider bookmark: Ctrl + drag moves it (near an end: moves that end); the time goes to the frame under\nthe mouse",
+   "Time Slider bookmark: a click does not move the time; Ctrl + double-click highlights the bookmark's range": "Time Slider bookmark: a click does not move the time; Ctrl + double-click highlights the bookmark's range",
+   "Time Slider: remember the bookmark under the mouse to show its name and range": "Time Slider: remember the bookmark under the mouse to show its name and range"
   },
   "Tooltips/ui/time_slider_header": {
    "Animation preferences (Maya's button at the right end of the Range Slider): Blender's\ntimeline Playback, Keying, View and Marker menus": "Animation preferences (Maya's button at the right end of the Range Slider): Blender's\ntimeline Playback, Keying, View and Marker menus",

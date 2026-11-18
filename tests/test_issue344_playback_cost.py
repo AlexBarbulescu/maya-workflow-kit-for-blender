@@ -442,8 +442,10 @@ def _widget(name, points, edges):
     return ob
 
 
-def _circle(name, n=12, r=1.0):
-    pts = [(r * math.cos(2 * math.pi * i / n), r * math.sin(2 * math.pi * i / n), 0.0) for i in range(n)]
+def _circle(name, n=12, r=1.0, lift=0.0):
+    """A circle of ``n`` points; ``lift``: its points go up and down that much out of its plane."""
+    pts = [(r * math.cos(2 * math.pi * i / n), r * math.sin(2 * math.pi * i / n), lift * math.sin(4 * math.pi * i / n))
+           for i in range(n)]
     return _widget(name, pts, [(i, (i + 1) % n) for i in range(n)])
 
 
@@ -508,6 +510,57 @@ def test_controls_draw_their_shapes_like_the_per_control_lines():
             _same(_drawn(arm, True), ref, f"Pose Mode, frame {k}: selected and lead controls")
             assert np.any(np.all(np.isclose(ref[:, 6:9], mj.LEAD), axis=1)), "the lead control is drawn green"
             _same(_drawn(arm, False), _reference(arm, False), f"Pose Mode, frame {k}, orthographic")
+    finally:
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+
+def _many_controls_rig():
+    """A skeleton of 120 joints, 40 of them controls with shapes of 4, 12 and 20 points (some moved / turned / scaled)
+    and two with a shape that has shape keys (read again every frame)."""
+    _clear()
+    arm, names = _rig(count=120)
+    shapes = [_circle("ctrl4", n=4, lift=0.2), _circle("ctrl12", n=12, r=0.5, lift=0.1),
+              _circle("ctrl20", n=20, r=0.3, lift=0.1)]
+    keyed = _circle("ctrl_keyed", n=8, r=0.4)
+    keyed.shape_key_add(name="Basis")
+    key = keyed.shape_key_add(name="Wide")
+    for d in key.data:
+        d.co = d.co * 1.5
+    key.value = 0.5
+    pbs = arm.pose.bones
+    for i, pb in enumerate(pbs):
+        if i % 3 != 1:
+            continue
+        pb.custom_shape = keyed if i in (4, 49) else shapes[(i // 3) % 3]
+        if i % 2:
+            pb.custom_shape_translation = (0.02 * i, -0.1, 0.05)
+            pb.custom_shape_rotation_euler = (0.1 * i, -0.3, 0.7)
+            pb.custom_shape_scale_xyz = (1.2, 0.7, 1.0 + 0.01 * i)
+    _pose(arm, 5)
+    return arm, names
+
+
+def test_many_controls_of_several_shapes_draw_like_the_per_control_lines():
+    """With many controls whose shapes have different point counts (placed run by run, controls of one count at
+    once), every control draws its shape where the per-control geometry puts it, a shape with shape keys too, in
+    Object and Pose Mode and on later frames."""
+    arm, _names = _many_controls_rig()
+    arm.select_set(False)
+    arrays = import_module(kit.MODULE + ".ui.maya_joints_arrays")
+    jl = mj.joint_list(arm)
+    plan = mj._widget_plan(jl, bpy.context.evaluated_depsgraph_get())
+    runs = plan[6]
+    assert len(jl.ctrl) == 40 and arrays._by_runs(runs, len(jl.ctrl)), (len(jl.ctrl), len(runs))
+    assert sorted(r[3] for r in runs) == [4, 12, 16, 20], [r[3] for r in runs]   # shape keys: 8 edges, 16 ends
+    for persp in (True, False):
+        _same(_drawn(arm, persp), _reference(arm, persp), f"Object Mode, many controls, perspective {persp}")
+    bpy.context.view_layer.objects.active = arm
+    arm.select_set(True)
+    bpy.ops.object.mode_set(mode='POSE')
+    try:
+        for k in (2, 9):
+            _pose(arm, k)
+            _same(_drawn(arm, True), _reference(arm, True), f"Pose Mode, frame {k}, many controls")
     finally:
         bpy.ops.object.mode_set(mode='OBJECT')
 

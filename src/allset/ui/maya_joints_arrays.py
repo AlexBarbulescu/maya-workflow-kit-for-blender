@@ -72,22 +72,54 @@ def _pose_raw(ob, scene, jl):
     pbs = ob.pose.bones
     n = len(pbs)
     mw = ob.matrix_world
-    k = 0.5 * joint_display.joint_size(scene) * units.radius_unit(scene) * max(mw.to_scale())
+    k = 0.5 * joint_display.joint_size(scene) * units.radius_unit(scene) * joint_display.skeleton_scale(ob)
     mat = np.empty(n * 16, np.float32)
     pbs.foreach_get("matrix", mat)
-    head = np.empty(n * 3, np.float32)
-    pbs.foreach_get("head", head)
-    shape = None
-    if len(jl.ctrl):
-        shape = []
-        for prop in ("custom_shape_translation", "custom_shape_rotation_euler", "custom_shape_scale_xyz"):
-            a = np.empty(n * 3, np.float32)
-            pbs.foreach_get(prop, a)
-            shape.append(a)
-        use = np.zeros(n, bool)
-        pbs.foreach_get("use_custom_shape_bone_size", use)
-        shape.append(use)
+    head = mat.reshape(n, 16)[:, 12:15].ravel()      # a pose bone's head is its matrix's translation, bit for bit
+    shape = _shape_props(ob, pbs, n) if len(jl.ctrl) else None
     return mat, head, np.array(mw, np.float64), k, shape
+
+
+_SHAPE_PROPS = {}   # skeleton object pointer -> (edit stamps, custom shape offset / turn / scale / use bone size)
+
+
+def _shape_props_move(ob):
+    """Can the custom shape offset / turn / scale of ``ob``'s pose bones change with the frame or another object?
+    Keyed or driven, or an NLA strip plays an action on the object."""
+    from .. import compat
+    ad = ob.animation_data
+    if ad is None:
+        return False
+    if any(len(t.strips) for t in ad.nla_tracks):
+        return True
+    return any("custom_shape" in fc.data_path for fc in (*compat.id_fcurves(ob), *ad.drivers))
+
+
+def _shape_props(ob, pbs, n):
+    """[offset, turn, scale (n * 3 float32), use bone size (n bool)] of the custom shapes of every pose bone. Kept
+    while nothing updated the skeleton (any update to it reads them again) and nothing keys or drives them."""
+    import numpy as np
+    from .maya_joints_cache import _ALL_EDITS, _SKEL_EDITS, _SKEL_LIGHT
+    ptr = ob.as_pointer()
+    key = (n, _ALL_EDITS[0], _SKEL_EDITS.get(ptr, 0), _SKEL_LIGHT.get(ptr, 0))
+    got = _SHAPE_PROPS.get(ptr)
+    if got is not None and got[0] == key:
+        return got[1]
+    shape = []
+    for prop in ("custom_shape_translation", "custom_shape_rotation_euler", "custom_shape_scale_xyz"):
+        a = np.empty(n * 3, np.float32)
+        pbs.foreach_get(prop, a)
+        shape.append(a)
+    use = np.zeros(n, bool)
+    pbs.foreach_get("use_custom_shape_bone_size", use)
+    shape.append(use)
+    if len(_SHAPE_PROPS) > 64:
+        _SHAPE_PROPS.clear()
+    if _shape_props_move(ob):
+        _SHAPE_PROPS.pop(ptr, None)
+    else:
+        _SHAPE_PROPS[ptr] = (key, shape)
+    return shape
 
 
 def _pose_read(ob, scene, jl, raw=None, only=None):
@@ -112,7 +144,7 @@ def _pose_read(ob, scene, jl, raw=None, only=None):
             q = jl.turned.get(j)
             if q is not None:
                 frames[i] = frames[i] @ q
-    norms = np.linalg.norm(frames, axis=1, keepdims=True)
+    norms = np.sqrt(np.einsum('nij,nij->nj', frames, frames))[:, None, :]     # each column's length
     frames = np.divide(frames, norms, out=np.zeros_like(frames), where=norms > 0)
     return w, allm, centres, frames, (jl.raw if only is None else jl.raw[only]) * k
 
@@ -209,30 +241,105 @@ def _control_placement(jl, w, allm, props, n, which=None):
     """(linear part (C, 3, 3), offset (C, 3)) of the world matrix every control's shape is drawn with (``_shape_matrix``
     in world space; ``props``: the custom shape offset / turn / scale of the ``n`` pose bones as ``_pose_raw`` read
     them). ``which``: control indices: those controls alone (each from its own bone: the same numbers)."""
-    import numpy as np
-    ctrl_rows, ctrl_src, ctrl_len = jl.rows[jl.ctrl], jl.ctrl_src, jl.ctrl_len
+    local, offset = _shape_local(jl, props, n)
+    ctrl_src = jl.ctrl_src
     if which is not None:
-        ctrl_rows, ctrl_src, ctrl_len = ctrl_rows[which], ctrl_src[which], ctrl_len[which]
-    offset, turn, size = (a.reshape(n, 3)[ctrl_rows].astype(np.float64) for a in props[:3])
-    scale = size * np.where(props[3][ctrl_rows], ctrl_len, 1.0)[:, None]
+        ctrl_src, local, offset = ctrl_src[which], local[which], offset[which]
     src = allm[ctrl_src]
     a = w[:3, :3] @ src[:, :3, :3]
-    lin = a @ (_euler_xyz(turn) * scale[:, None, :])
+    lin = a @ local
     off = (a @ offset[:, :, None])[:, :, 0] + src[:, :3, 3] @ w[:3, :3].T + w[:3, 3]
     return lin, off
 
 
+_LOCAL = {}    # id of a joint list -> (that joint list, the shape readings, local turn x scale (C, 3, 3), offset (C, 3))
+
+
+def _shape_local(jl, props, n):
+    """(turn x scale (C, 3, 3), offset (C, 3)) of every control's custom shape in its bone's space, from ``props``
+    (``_pose_raw``). Worked out again only when ``props`` is a new reading (``_shape_props`` hands back the same
+    readings while nothing can have changed them)."""
+    import numpy as np
+    got = _LOCAL.get(id(jl))
+    if got is not None and got[0] is jl and got[1] is props:
+        return got[2], got[3]
+    ctrl_rows = jl.rows[jl.ctrl]
+    offset, turn, size = (a.reshape(n, 3)[ctrl_rows].astype(np.float64) for a in props[:3])
+    scale = size * np.where(props[3][ctrl_rows], jl.ctrl_len, 1.0)[:, None]
+    local = _euler_xyz(turn) * scale[:, None, :]
+    if len(_LOCAL) > 64:
+        _LOCAL.clear()
+    _LOCAL[id(jl)] = (jl, props, local, offset)
+    return local, offset
+
+
 def _control_points(jl, w, allm, props, plan, which):
     """(bool per control shape point, float32 points) of the controls ``which`` (indices, sorted) alone: their points
-    in ``_control_lines`` and those points worked out again (the same numbers; every control shown)."""
+    in ``_control_lines`` and those points worked out again (each control placed as among all of them: the same
+    numbers; every control shown)."""
     import numpy as np
     p, owner = plan[0], plan[1]
     chosen = np.zeros(len(jl.ctrl), bool)
     chosen[which] = True
     at = chosen[owner]
     lin, off = _control_placement(jl, w, allm, props, len(props[3]), which)
-    local = (np.cumsum(chosen) - 1)[owner[at]]          # position in ``which`` of each point's control
-    return at, (np.einsum('kij,kj->ki', lin[local], p[at]) + off[local]).astype(np.float32)
+    slot = np.cumsum(chosen) - 1                           # position in ``which`` of each chosen control
+    if not _by_runs(plan[6], len(jl.ctrl)):
+        local = slot[owner[at]]
+        return at, (np.einsum('kij,kj->ki', lin[local], p[at]) + off[local]).astype(np.float32)
+    lt, off, out = lin.transpose(0, 2, 1).astype(np.float32), off.astype(np.float32), []
+    for start, stop, ks, c, one in plan[6]:
+        mine = chosen[ks]
+        if mine.any():
+            k = slot[ks[mine]]
+            q = np.empty((len(k) * c, 3), np.float32)
+            _place_run(p[start:stop], c, one, mine, lt[k], off[k], q)
+            out.append(q)
+    return at, np.concatenate(out) if out else np.zeros((0, 3), np.float32)
+
+
+def _by_runs(runs, k):
+    """Place ``k`` controls run by run (``placed_points``): not when there are many short runs (a few controls whose
+    shapes have many different point counts), each point with its control's matrix then."""
+    return len(runs) * 8 <= k
+
+
+def placed_points(p, lin, off, runs, owner):
+    """float32 points ``p`` of the controls' shapes (``_widget_plan``, ``owner``: control per point) placed by each
+    control's linear part ``lin`` (K, 3, 3) and offset ``off`` (K, 3): each run of controls with the same point count
+    at once, one float32 matrix product per control (no 3 x 3 matrix copied per point)."""
+    import numpy as np
+    if not _by_runs(runs, len(lin)):
+        return (np.einsum('kij,kj->ki', lin[owner], p) + off[owner]).astype(np.float32)
+    lt, off = lin.transpose(0, 2, 1).astype(np.float32), off.astype(np.float32)
+    out = np.empty((len(p), 3), np.float32)
+    for start, stop, ks, c, one in runs:
+        _place_run(p[start:stop], c, one, None, lt[ks], off[ks], out[start:stop])
+    return out
+
+
+def _place_run(q, c, one, mine, lt, off, out):
+    """Place the points ``q`` (K * c, 3) of a run of K controls of ``c`` points each (``_widget_plan``), or of its
+    controls ``mine`` (bool per control), by their transposed linear parts ``lt`` and offsets ``off`` into ``out``
+    (in the run's point order): float32, each point worked out the same way whichever controls are placed with it.
+    ``one``: every control of the run shows the same shape, stored point by point (each of its points multiplied by
+    the matrix rows of every control at once, no matrix product per control)."""
+    import numpy as np
+    if not one:
+        qq = q.reshape(-1, c, 3)
+        o = out.reshape(-1, c, 3)
+        np.matmul(qq if mine is None else qq[mine], lt, out=o)
+        o += off[:, None, :]
+        return
+    s = q.reshape(c, -1, 3)[:, 0]
+    o = out.reshape(c, -1, 3)
+    tmp = np.empty_like(o)
+    np.multiply(s[:, 0, None, None], lt[None, :, 0, :], out=o)
+    np.multiply(s[:, 1, None, None], lt[None, :, 1, :], out=tmp)
+    o += tmp
+    np.multiply(s[:, 2, None, None], lt[None, :, 2, :], out=tmp)
+    o += tmp
+    o += off[None]
 
 
 def _box_array(frames, corners):

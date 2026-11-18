@@ -198,6 +198,10 @@ from . import graph_scale_box  # noqa: E402  Graph Editor Scale Keys manipulator
 classes += graph_scale_box.classes
 from . import graph_handle_drag  # noqa: E402  Graph Editor tangent handles like Maya (#296)
 classes += graph_handle_drag.classes
+from . import graph_region  # noqa: E402  Graph Editor Region Keys tool, Select > Prefer Selected Curves
+classes += graph_region.classes
+from . import graph_hover  # noqa: E402  Graph Editor Select > Pre-Select Highlight
+classes += graph_hover.classes
 from . import pan_zoom  # noqa: E402  Maya 2D Pan/Zoom: the \ key and the 2D Pan/Zoom Tool's drags
 classes += pan_zoom.classes
 from . import poly_display  # noqa: E402  Display > Polygons Normals Size / Reset Display
@@ -233,6 +237,7 @@ from . import attr_clipboard  # noqa: E402  Mesh > Clipboard Actions, Edit > Tra
 classes += attr_clipboard.classes
 from . import lod  # noqa: E402  Edit > LOD (Level of Detail)
 classes += lod.classes
+from . import ik_fk_control  # noqa: E402  Skeleton > Enable IK/FK Control / Enable IK Handle Snap
 
 from . import shape_history  # noqa: E402  tnt: persistent polySoftEdge / component deletion inputs
 classes += shape_history.classes
@@ -261,6 +266,7 @@ def register():
     poly_display.register_props()
     skin_method.register_props()
     ik_rp.register_handlers()
+    ik_fk_control.register()
     snap_align.register_props()
     pick_order.register_handlers()
     material.register_props()
@@ -316,6 +322,7 @@ def register():
     graph_menu_198.register_props()
     graph_move.register_props()
     graph_scale_box.register_handlers()
+    graph_hover.register_handlers()
     skin_tools_199.register_handlers()
     constrain_199.register_handlers()
     graph_curves_203.register_handlers()
@@ -332,9 +339,11 @@ def register():
     playback_maya.register_props()
     playback_maya.register_handlers()
     graph_sculpt.register_props()
+    bookmarks.register_props()         # Time Slider bookmark end / colour on timeline markers
 
 
 def unregister():
+    bookmarks.unregister_props()
     connect_tool.unregister_handlers()
     graph_sculpt.unregister()
     playback_maya.unregister()
@@ -344,6 +353,7 @@ def unregister():
     autosave.unregister()
     sweep_mesh.unregister()
     ik_rp.unregister_handlers()
+    ik_fk_control.unregister()
     joint_edit.unregister()
     joint_display.unregister_props()
     poly_display.unregister_props()
@@ -378,6 +388,8 @@ def unregister():
     anim_snapshot.unregister_handlers()
     select_2d.unregister_timers()
     graph_scale_box.unregister_handlers()
+    graph_hover.unregister_handlers()
+    graph_region.unregister_timers()
     graph_handle_drag.unregister_timers()
     graph_move.unregister_timers()
     graph_move.unregister_props()
