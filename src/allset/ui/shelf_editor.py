@@ -544,6 +544,7 @@ def unregister():
     shelf_editor_draft._draft_base = None
     marked_window.KINDS.pop(KIND, None)
     window_places.STRICT.discard(f"marked:{KIND}")
+    shelf_editor_drag.unregister()  # tnt: press-hold-release to reorder
     for name in _WM_PROPS:
         if hasattr(bpy.types.WindowManager, name):
             delattr(bpy.types.WindowManager, name)
