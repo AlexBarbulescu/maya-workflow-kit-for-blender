@@ -166,6 +166,10 @@ class ALLSET_OT_menu_option_box(bpy.types.Operator):
         kind = option_kind(props.item)
         if kind == "tool":
             return f"{label}: the tool and its Tool Settings"
+        if kind == "generic":
+            return f"{label} Options: confirm before running; no additional command settings"
+        if kind == "dialog":
+            return f"Open {label} options"
         return f"{label} Options: run, then its settings (Adjust Last Operation)"
 
     def execute(self, context):
@@ -176,11 +180,17 @@ class ALLSET_OT_menu_option_box(bpy.types.Operator):
         if self.from_hold and not bpy.app.background:
             _close_menu_then_open(context, self.item)
             return {'FINISHED'}
+        from ..operators.option_windows_menu_tnt import TOOL_OPTIONS, open_tool_options
+        target = menu_map.spec(self.item)[1]
+        if target in TOOL_OPTIONS:  # tnt: Move Normal options pick its tool, without transforming the mesh
+            return open_tool_options(context, target)
         if option_kind(self.item) == "generic":
             return bpy.ops.allset.option_generic('INVOKE_DEFAULT', item=self.item)
         from ..marking.modal import run_action
         try:
-            run_action(context, action, option=True, path=self.item)
+            from ..operators.option_windows_menu_tnt import INTERFACE_ACTIONS
+            interface = menu_map.spec(self.item)[1] in INTERFACE_ACTIONS  # tnt: open editors without running redo
+            run_action(context, action, option=not interface, path=self.item)
         except RuntimeError as ex:
             from ..operators import maya_errors
             maya_errors.report_nested(self, ex)
@@ -212,5 +222,5 @@ def option_kind(path):
         return "none"
     if "option_box" in rna.properties or "filepath" in rna.properties:
         return "dialog"
-    shown = [p for p in rna.properties if p.identifier != "rna_type" and not p.is_hidden]
-    return "redo" if shown else "generic"     # allset.option_generic: a window that says Blender has none
+    from ..operators.option_windows_menu_tnt import option_kind as native_kind
+    return native_kind(target, _props, rna)  # tnt: prebound selectors are not command settings

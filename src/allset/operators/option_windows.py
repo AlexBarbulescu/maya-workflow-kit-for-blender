@@ -120,6 +120,8 @@ def _extend():
     WINDOWS.extend(option_windows_edit_mesh_tnt.WINDOWS)  # tnt: Edit Mesh settings before applying
     from . import option_windows_mesh_display_tnt
     WINDOWS.extend(option_windows_mesh_display_tnt.WINDOWS)  # tnt: Mesh Display settings
+    from . import option_windows_menu_tnt
+    WINDOWS.extend(option_windows_menu_tnt.WINDOWS)  # tnt: remaining Modeling menu options before applying
 
 
 _extend()
