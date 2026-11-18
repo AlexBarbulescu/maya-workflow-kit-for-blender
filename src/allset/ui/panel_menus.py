@@ -28,6 +28,7 @@ import bpy
 from bpy.props import BoolProperty, EnumProperty, StringProperty
 
 from . import camera_bookmarks
+from . import isolate_select_tnt  # tnt: Isolate Select membership commands
 
 GREY_OP = "allset.menu_unavailable"
 
@@ -289,13 +290,14 @@ _generated = [
     _menu("ALLSET_MT_panel_shading", "Shading", SHADING, "Maya panel Shading menu"),
     _menu("ALLSET_MT_panel_lighting", "Lighting", LIGHTING, "Maya panel Lighting menu"),
     _menu("ALLSET_MT_panel_show", "Show", SHOW, "Maya panel Show menu"),
-    _menu("ALLSET_MT_panel_isolate", "Isolate Select", ISOLATE, "Maya Isolate Select"),
+    isolate_select_tnt.ALLSET_MT_panel_isolate,  # tnt: the membership rows require an isolated view
     _menu("ALLSET_MT_panel_renderer", "Renderer", RENDERER, "Maya panel Renderer menu"),
     _menu("ALLSET_MT_panel_panels", "Panels", PANELS, "Maya panel Panels menu"),
     _menu("ALLSET_MT_panel_layouts", "Layouts", LAYOUTS, "Maya panel layouts"),
 ]
 
 classes = (ALLSET_OT_panel_set, ALLSET_OT_panel_run, ALLSET_OT_panel_tear_off, ALLSET_OT_panel_look_through, ALLSET_OT_panel_new_persp,
+           isolate_select_tnt.ALLSET_OT_isolate_members,  # tnt: per-viewport membership
            ALLSET_OT_panel_new_ortho, ALLSET_MT_panel_new_ortho, ALLSET_MT_panel_ortho_new,
            ALLSET_MT_panel_perspective, ALLSET_MT_panel_orthographic, ALLSET_MT_panel_panel,
            ALLSET_MT_panel_blender, ALLSET_MT_panel_bar, *_generated)

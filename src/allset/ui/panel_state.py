@@ -376,7 +376,7 @@ def apply(context, key):
         if space.local_view is None and not any(ob.select_get() for ob in context.view_layer.objects if ob):
             return False
         with context.temp_override(area=area, region=main_region(area)):
-            bpy.ops.allset.isolate()        # isolating a group shows its children
+            return 'FINISHED' in bpy.ops.allset.isolate()  # tnt: propagate a failed toggle
     elif key in ("EXPOSURE", "GAMMA", "CM_ENABLE"):
         _toggle_colour(context.scene, key)
     elif key == "BOOKMARK":

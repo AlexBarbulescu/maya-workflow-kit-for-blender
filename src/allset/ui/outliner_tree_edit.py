@@ -265,22 +265,32 @@ def selected_items(context):
     return items
 
 
+def _reveal_index(rows, items):
+    """Index of the last selected node that has a row under the current filters."""
+    lead_rank = len(items) - 1
+    ranks = {('B', ob.session_uid, bone) if bone else ('O', ob.session_uid): rank
+             for rank, (ob, bone) in enumerate(items)}
+    best, index = -1, None
+    for i, row in enumerate(rows):
+        rank = ranks.get(row.key, -1)
+        if row.kind == 'JOINT' and row.top:
+            rank = max(rank, ranks.get(('O', row.key[1]), -1))
+        if rank == lead_rank and rank >= 0:
+            return i
+        if rank > best:
+            best, index = rank, i
+    return index
+
+
 def reveal(context, area, region, space, items):
-    """Open the rows above ``items`` [(object, bone)] and scroll the Outliner to the lead (the last one) when it is
-    out of view. Returns the lead's row index or None."""
-    keys = []
-    for ob, bone in items:
-        keys += ancestor_keys(ob, bone)
-    if keys:
-        tree.set_expanded(keys, True)
+    """Open selected ancestors and scroll to the lead or the last selection that has a row."""
     if not items:
         return None
-    ob, bone = items[-1]
+    keys = ancestors_of(items)
+    if keys:
+        tree.set_expanded(keys, True)
     rows = tree.rows_for(context, space)
-    k = next((i for i, r in enumerate(rows) if r.ob == ob.name and (
-        (bone is not None and r.kind == 'JOINT' and r.sub == bone) or
-        (bone is None and r.kind == 'OBJECT') or
-        (bone is None and r.kind == 'JOINT' and r.top))), None)
+    k = _reveal_index(rows, items)  # tnt: a filtered lead must not block the rest of the selection
     if k is None:
         return None
     u = tree.unit(context.preferences)

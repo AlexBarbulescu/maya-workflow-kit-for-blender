@@ -3460,7 +3460,10 @@
    "nRigids": "nRigids"
   },
   "Panel menus/Show/Isolate Select": {
+   "Add Selected Objects": "Add Selected Objects",
    "Isolate Select": "Isolate Select",
+   "Load Selected Objects": "Load Selected Objects",
+   "Remove Selected Objects": "Remove Selected Objects",
    "Show": "Show",
    "View Selected": "View Selected"
   },
@@ -8652,6 +8655,13 @@
    "Drag in a view to place and size the polygon primitive picked from the Create menu or shelf, drag again for its height (Maya Interactive Creation)": "Drag in a view to place and size the polygon primitive picked from the Create menu or shelf, drag again for its height (Maya Interactive Creation)",
    "Interactive Creation": "Interactive Creation"
   },
+  "Labels/ui/isolate_select_tnt": {
+   "Add": "Add",
+   "Edit Isolate Select": "Edit Isolate Select",
+   "Isolate Select": "Isolate Select",
+   "Load": "Load",
+   "Remove": "Remove"
+  },
   "Labels/ui/layer_editor": {
    "Add Selected Objects": "Add Selected Objects",
    "Assign Selected": "Assign Selected",
@@ -9307,7 +9317,8 @@
    "Up": "Up"
   },
   "Labels/ui/shelf_editor_drag": {
-   "Drag Button": "Drag Button"
+   "Drag Button": "Drag Button",
+   "Shelf Editor Drag": "Shelf Editor Drag"
   },
   "Labels/ui/shelf_editor_icon_picker": {
    "All Icons": "All Icons",
@@ -10954,6 +10965,10 @@
   "Tooltips/ui/input_line": {
    "Toggle construction history on / off (Maya Status Line): off = new primitives, extrusions and bevels keep no\nhistory node": "Toggle construction history on / off (Maya Status Line): off = new primitives, extrusions and bevels keep no\nhistory node"
   },
+  "Tooltips/ui/isolate_select_tnt": {
+   "Edit which objects and descendants are shown in this isolated viewport": "Edit which objects and descendants are shown in this isolated viewport",
+   "Isolate this viewport or edit which objects it shows": "Isolate this viewport or edit which objects it shows"
+  },
   "Tooltips/ui/layer_editor": {
    "Add (or remove) the selected objects to the active display layer": "Add (or remove) the selected objects to the active display layer",
    "Create a display layer (optionally with the selected objects)": "Create a display layer (optionally with the selected objects)",
@@ -11176,7 +11191,7 @@
    "Apply edited Shelf button properties without changing unrelated button data.": "Apply edited Shelf button properties without changing unrelated button data."
   },
   "Tooltips/ui/shelf_editor_drag": {
-   "Click, move the mouse up or down and click again to drop the button there (Esc puts it back)": "Click, move the mouse up or down and click again to drop the button there (Esc puts it back)"
+   "Press and hold, move the mouse up/down, release to drop the button there": "Press and hold, move the mouse up/down, release to drop the button there"
   },
   "Tooltips/ui/shelf_editor_icon_picker": {
    "Change the page in the currently open Shelf icon picker.": "Change the page in the currently open Shelf icon picker.",

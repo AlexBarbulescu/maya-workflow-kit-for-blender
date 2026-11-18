@@ -105,6 +105,16 @@ def test_reveal_opens_the_rows_above():
                                                   (j4, 1)], [(r.label, r.depth) for r in rows]
 
 
+def test_reveal_prefers_lead_and_falls_back_to_a_visible_selection():
+    cube, sk, names = _rig()
+    items = [(cube, None), (sk, None)]
+    rows = _rows()
+    assert rows[edit._reveal_index(rows, items)].label == names[0]
+    rows = _rows(search=cube.name)
+    assert rows[edit._reveal_index(rows, items)].label == cube.name
+    assert edit._reveal_index(rows, [(sk, None)]) is None
+
+
 def test_dim_highlight_above_the_selection():
     cube, sk, names = _rig()
     j1, j2, j3, j4 = names

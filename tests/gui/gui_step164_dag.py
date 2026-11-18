@@ -159,4 +159,67 @@ def s_shown():
     check(f"h again shows pCube1 ({c1.visible_get()})", c1.visible_get())
 
 
+def edit_isolate(action, selected):
+    area, region = view3d()
+    objects = bpy.context.view_layer.objects
+    for ob in objects:
+        ob.select_set(ob.name == C[selected])
+    objects.active = objects[C[selected]]
+    with bpy.context.temp_override(window=win(), area=area, region=region):
+        result = bpy.ops.allset.isolate_members(action=action)
+        check(f"{action} updates the isolated viewport", 'FINISHED' in result)
+    check(f"{action} keeps the selected object", objects.active.select_get())
+    objects.active.select_set(False)
+    objects[C["g"]].select_set(True)
+    objects.active = objects[C["g"]]
+
+
+@step
+def s_start_isolate():
+    key('ONE', ctrl=True)
+
+
+@step
+def s_add_isolate():
+    edit_isolate('ADD', 'c2')
+
+
+step(redraw)
+
+
+def check_isolate_members(step_name, expected):
+    import numpy as np
+    px = shot(f"gui_step164_edit_{step_name}.png")
+    for name in ('c1', 'c2'):
+        ob = bpy.data.objects[C[name]]
+        drawn = float(np.abs(patch(px, ob) - patch(C["before"], ob)).max()) < 0.05
+        check(f"{step_name}: {ob.name} drawn = {name in expected}", drawn == (name in expected))
+
+
+@step
+def s_load_isolate():
+    check_isolate_members('ADD', ('c1', 'c2'))
+    edit_isolate('LOAD', 'c2')
+
+
+step(redraw)
+
+
+@step
+def s_remove_isolate():
+    check_isolate_members('LOAD', ('c2',))
+    edit_isolate('REMOVE', 'c2')
+
+
+step(redraw)
+
+
+@step
+def s_finish_isolate():
+    check_isolate_members('REMOVE', ())
+    area, _region = view3d()
+    check("Removing the last object leaves the panel isolated", area.spaces.active.local_view is not None)
+    key('ONE', ctrl=True)
+
+
 run()

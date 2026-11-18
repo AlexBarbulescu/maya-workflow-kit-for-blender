@@ -162,7 +162,11 @@ SHOW = [
 ]
 
 ISOLATE = [
-    _run("View Selected", "allset.isolate"),          # with the children
+    ("set", "ISOLATE", "View Selected"),
+    # tnt: edit the current panel's isolated subset
+    _run("Load Selected Objects", "allset.isolate_members", action='LOAD'),
+    _run("Add Selected Objects", "allset.isolate_members", action='ADD'),
+    _run("Remove Selected Objects", "allset.isolate_members", action='REMOVE'),
 ]
 
 RENDERER = [
