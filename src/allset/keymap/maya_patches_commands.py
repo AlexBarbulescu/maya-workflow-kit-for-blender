@@ -180,18 +180,24 @@ def patch_undo_visibility(kd):
     kd.remove("Object Mode", "object.hide_view_set", type="H", shift=True)
     kd.remove("Object Mode", "object.hide_view_clear", type="H", alt=True)
     for key, mods, action in VISIBILITY_KEYS:
-        _add(kd, "Object Mode", "allset.visibility", make_event(key, **mods), {"action": action})
+        if action != "HIDE_UNSELECTED":  # tnt: Alt+H is shared by every viewport mode
+            _add(kd, "Object Mode", "allset.visibility", make_event(key, **mods), {"action": action})
     # Outliner: the same keys (Maya hides from the Outliner with them). IC Ctrl+H = outliner.hide (the view-layer
     # flag, which Shift+H / Ctrl+Shift+H can't bring back), Alt+H = outliner.unhide_all.
     kd.remove("Outliner", "outliner.hide", type="H", ctrl=True)
     kd.remove("Outliner", "outliner.unhide_all", type="H", alt=True)
     for key, mods, action in VISIBILITY_KEYS:
         _add(kd, "Outliner", "allset.visibility", make_event(key, **mods), {"action": action})
-    # Mesh components: hidden components can't be selected in Blender, so the "show"
-    # keys reveal everything (and select it). IC Shift+H / Alt+H = hide unselected / reveal.
+    # tnt: mode-specific IC reveal bindings would take Alt+H before the viewport sees it.
+    for km in ("Mesh", "Curve", "Pose", "Armature", "Metaball", "Particle", "Sculpt",
+               "Paint Face Mask (Weight, Vertex, Texture)", "Paint Vertex Selection (Weight, Vertex)",
+               "Grease Pencil Draw Mode", "Grease Pencil Paint Mode", "Grease Pencil Edit Mode",
+               "Grease Pencil Weight Paint"):
+        if km in kd.keymap_names():
+            kd.remove(km, type="H", alt=True, optional=True)
+    _add(kd, "3D View", "allset.visibility", make_event("H", alt=True), {"action": "HIDE_UNSELECTED"})
+    # Hidden mesh components can't be selected in Blender, so the "show" keys reveal everything.
     kd.remove("Mesh", "mesh.hide", type="H", shift=True)
-    kd.remove("Mesh", "mesh.reveal", type="H", alt=True)
-    _add(kd, "Mesh", "mesh.hide", make_event("H", alt=True), {"unselected": True})
     for mods in ({"shift": True}, {"ctrl": True, "shift": True}, {"ctrl": True, "alt": True}):
         _add(kd, "Mesh", "mesh.reveal", make_event("H", **mods))
 

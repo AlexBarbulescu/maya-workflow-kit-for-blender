@@ -210,8 +210,7 @@ ENTRIES = {
         note="숨긴 객체를 '선택 유지' 표시로 기억, 다시 h = 보이고 선택 (오브젝트 모드)"),
     "HideSelectedObjects": _e("KIT", (OBJ, "allset.visibility", {"action": "HIDE"}),
                               note="컴포넌트: Mesh mesh.hide (IC)"),
-    "HideUnselectedObjects": _e("KIT", (OBJ, "allset.visibility", {"action": "HIDE_UNSELECTED"}),
-                                note="컴포넌트: mesh.hide(unselected)"),
+    "HideUnselectedObjects": _e("KIT", (V3D, "allset.visibility", {"action": "HIDE_UNSELECTED"})),  # tnt
     "ShowSelectedObjects": _e("KIT", (OBJ, "allset.visibility", {"action": "SHOW_SELECTED"}),
                               note="h 로 숨긴 선택 + 숨겨진 활성 객체; 컴포넌트: mesh.reveal"),
     "ShowLastHidden": _e("KIT", (OBJ, "allset.visibility", {"action": "SHOW_LAST"}),

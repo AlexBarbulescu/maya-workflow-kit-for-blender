@@ -7635,6 +7635,7 @@
    "Independent": "Independent",
    "Maya Visibility": "Maya Visibility",
    "Saved": "Saved",
+   "This visibility action requires Object Mode": "This visibility action requires Object Mode",
    "Type": "Type"
   },
   "Labels/operators/weight_paint": {

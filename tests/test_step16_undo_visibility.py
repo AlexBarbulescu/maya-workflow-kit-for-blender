@@ -43,9 +43,12 @@ def test_visibility_keys():
     for km in ("Object Mode", "Outliner"):         # Outliner: Maya hides there with the same keys
         for (shift, ctrl, alt), action in want.items():
             got = _kmis(km, "H", shift=shift, ctrl=ctrl, alt=alt)
-            assert [(k.idname, k.properties.action) for k in got] == [("allset.visibility", action)],                 (km, shift, ctrl, alt, [k.idname for k in got])
-    alt_h = _kmis("Mesh", "H", alt=True)
-    assert [k.idname for k in alt_h] == ["mesh.hide"] and alt_h[0].properties.unselected
+            expected = [] if km == "Object Mode" and alt else [("allset.visibility", action)]
+            assert [(k.idname, k.properties.action) for k in got] == expected, (km, shift, ctrl, alt)
+    alt_h = _kmis("3D View", "H", alt=True)
+    assert [(k.idname, k.properties.action) for k in alt_h] == [("allset.visibility", "HIDE_UNSELECTED")]
+    for km in ("Mesh", "Pose", "Sculpt", "Paint Face Mask (Weight, Vertex, Texture)"):
+        assert not _kmis(km, "H", alt=True), km
     for mods in ({"shift": True}, {"ctrl": True, "shift": True}, {"ctrl": True, "alt": True}):
         assert [k.idname for k in _kmis("Mesh", "H", **mods)] == ["mesh.reveal"], mods
 
@@ -168,6 +171,26 @@ def test_hide_show_last_and_selected():
     bpy.context.view_layer.objects.active = a   # e.g. picked in the Outliner
     _vis('SHOW_SELECTED')
     assert not a.hide_viewport and a.select_get()
+
+
+def test_hide_unselected_and_show_all_in_mesh_edit_mode():
+    other, = _scene(("other",))
+    bpy.ops.mesh.primitive_cube_add()
+    cube = bpy.context.active_object
+    bpy.ops.object.mode_set(mode='EDIT')
+    try:
+        bpy.ops.mesh.select_all(action='DESELECT')
+        for mode in ('VERT', 'EDGE', 'FACE'):
+            bpy.ops.mesh.select_mode(type=mode)
+            select_mode = tuple(bpy.context.tool_settings.mesh_select_mode)
+            _vis('HIDE_UNSELECTED')
+            assert other.hide_viewport and not cube.hide_viewport
+            assert bpy.ops.allset.menu_item(item="Display/Show/All") == {'FINISHED'}
+            assert not other.hide_viewport and not other.select_get()
+            assert bpy.context.mode == 'EDIT_MESH' and bpy.context.active_object == cube
+            assert tuple(bpy.context.tool_settings.mesh_select_mode) == select_mode
+    finally:
+        bpy.ops.object.mode_set(mode='OBJECT')
 
 
 def test_show_selected_uses_kept():

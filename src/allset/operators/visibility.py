@@ -242,6 +242,8 @@ def apply(context, action, dependent=None, kind='NONE'):
     if action == 'HIDE':
         return _hide(selected, objs)
     if action == 'HIDE_UNSELECTED':
+        if context.mode != 'OBJECT':  # tnt: keep objects being edited or painted even without a selection
+            selected.extend(ob for ob in objs if ob.mode != 'OBJECT' and ob not in selected)
         # the selection's own hierarchy stays (its children aren't "unselected" objects, and hiding a
         # selected object's parent would hide the selection: Maya draws a node only under visible parents)
         from .dag import hierarchy
@@ -289,9 +291,12 @@ class ALLSET_OT_visibility(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.view_layer is not None and context.mode == 'OBJECT'
+        return context.view_layer is not None
 
     def execute(self, context):
+        if context.mode != 'OBJECT' and self.action not in {'HIDE_UNSELECTED', 'SHOW_ALL'}:  # tnt
+            self.report({'WARNING'}, i18n.tip("This visibility action requires Object Mode"))
+            return {'CANCELLED'}
         vl = context.view_layer
         had_selection = any(ob.visible_get() and ob.select_get() for ob in vl.objects)
         changed = apply(context, self.action,
