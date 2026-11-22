@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Maya manipulator, pivot and snapping keys: X / C / V / J snap holds, B soft select, A tap, D / Insert pivot,
-Shift+drag Smart Duplicate, MMB = last handle, Ctrl+LMB / Shift+MMB axis picks, edge slide, In-View drag. Run by
-``maya_patches.apply`` in ``PATCHES`` order; shared state: ``maya_patches_base``. ``IC:<line>`` = a line of
+Shift+drag Smart Duplicate, MMB = last handle, Ctrl+LMB / Shift+MMB axis picks, edge slide / along normals,
+In-View drag. Run by ``maya_patches.apply`` in ``PATCHES`` order; shared state: ``maya_patches_base``. ``IC:<line>`` = a line of
 ``$S\\presets\\keyconfig\\keymap_data\\industry_compatible_data.py``.
 """
 
@@ -123,8 +123,10 @@ def patch_active_handle(kd):
 
 
 # --- 41. Manipulator Ctrl+LMB, Shift+MMB = closest axis ---------------------------------------------
-# Ctrl+LMB sits first in the gizmo keymaps (only over a highlighted kit manipulator handle): Move handles pass the
-# press on to their own snapped drag (the centre also frees the active handle), a Scale axis scales the other two. Shift+MMB goes in the Move / Scale tool keymaps (3D View has no Shift+MMB item; IC
+# Ctrl+LMB sits first in the gizmo keymaps (only over a highlighted kit manipulator handle): a Move axis moves in the
+# plane of the other two (Ctrl+Drag Snaps preference: the press goes on to the axis' own snapped drag), plane and
+# centre handles pass the press on to their snapped drag (the centre also frees the active handle), a Scale axis
+# scales the other two. Shift+MMB goes in the Move / Scale tool keymaps (3D View has no Shift+MMB item; IC
 # pans with Alt+MMB): a short modal reads the first movement, picks the axis and starts the transform (a CLICK_DRAG
 # item never got the simulated MMB drag).
 
@@ -146,11 +148,30 @@ def patch_in_view_mmb(kd):
     _add(kd, "Mesh", "allset.inview_drag", make_event("MIDDLEMOUSE"), {"row": -1}, shadows=("3D View",))
 
 
-# --- Edge slide with the Move tool (#262) ----------------------------------------------------------------------
+# --- Edge slide / along normals with the Move tool (#262, #391, #394); local rotate / scale (#430) ------------
 # Maya: Ctrl+Shift+middle-drag with the Move tool slides the selected components along their edges (the Transform
-# Constraint setting drives the handles and the plain MMB drag). Outside mesh edit mode the operator's poll fails
-# and the event goes on.
+# Constraint setting drives the handles and the plain MMB drag), Ctrl+middle-drag moves them along their normals.
+# Outside mesh edit mode the operator's poll fails and the event goes on.
 
 def patch_component_slide(kd):
     _add(kd, "3D View Tool: Move", "allset.component_slide", make_event("MIDDLEMOUSE", "PRESS", shift=True, ctrl=True),
          {"mode": 'EDGE'})
+    # Maya: Ctrl+Shift+drag on a Move manipulator handle slides too (first in the gizmo keymaps; passes the press on
+    # outside mesh edit mode, so Ctrl+Shift+drag on a handle elsewhere stays as it was)
+    for km in GIZMO_KEYMAPS:
+        _add(kd, km, "allset.manip_slide", make_event("LEFTMOUSE", "PRESS", shift=True, ctrl=True), first=True)
+        # ... and shows a "slide" label under the mouse while Ctrl+Shift is held over a handle (always passes on)
+        for key in ("LEFT_CTRL", "RIGHT_CTRL", "LEFT_SHIFT", "RIGHT_SHIFT"):
+            _add(kd, km, "allset.manip_slide_hint", make_event(key, "ANY", any=True))
+    # ... also when the mouse comes onto a handle with Ctrl+Shift already held (always passes on)
+    _add(kd, "3D View", "allset.manip_slide_hint_move", make_event("MOUSEMOVE", "ANY", any=True),
+         shadows=("3D View Generic", "Weight Paint"))
+    # Maya: Ctrl+middle-drag with the Move tool moves the selected components along their normals
+    _add(kd, "3D View Tool: Move", "allset.component_slide", make_event("MIDDLEMOUSE", "PRESS", ctrl=True),
+         {"mode": 'NORMAL'})
+    # Maya: Ctrl+middle-drag with the Rotate tool turns each selected component group about its own normal (local X),
+    # with the Scale tool scales it across its normal (local YZ); outside mesh edit mode the poll fails, the event goes on
+    _add(kd, "3D View Tool: Rotate", "allset.component_local", make_event("MIDDLEMOUSE", "PRESS", ctrl=True),
+         {"mode": 'ROTATE'})
+    _add(kd, "3D View Tool: Scale", "allset.component_local", make_event("MIDDLEMOUSE", "PRESS", ctrl=True),
+         {"mode": 'SCALE'})

@@ -399,7 +399,7 @@ MAP = {
     f"{UV}/Image/Display": ("allset.uv_display", {"mode": 'IMAGE'}),
     f"{UV}/Modify/Randomize Shells": "allset.uv_randomize",     # operators/uv_toolkit_ops.py
     f"{UV}/Modify/Optimize": "uv.minimize_stretch",
-    f"{UV}/Modify/Straighten Shell": "uv.follow_active_quads",
+    f"{UV}/Modify/Straighten Shell": "allset.uv_straighten_shell",       # operators/uv_toolkit_ops.py (#393)
     f"{UV}/Modify/Straighten UVs": "allset.uv_straighten_uvs",
     f"{UV}/Modify/Unfold": "allset.uv_unfold",
     # Maya-style UV commands (operators/uv_modify.py)
@@ -687,6 +687,7 @@ MAP.update({
     f"{SH}/Create/Add Target": "allset.shape_add_target",
     f"{SH}/Create/Add Selection as Target": "allset.shape_add_selection",
     f"{SH}/Shapes/Duplicate Target": "allset.shape_duplicate",
+    f"{SH}/Shapes/Rebuild Target": "allset.shape_rebuild",
     f"{SH}/Shapes/Flip Target": "allset.shape_flip",
     f"{SH}/Shapes/Mirror Target": ("allset.shape_mirror", {"direction": "POSITIVE"}),
     f"{SH}/Shapes/Key": "allset.shape_key",

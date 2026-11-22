@@ -39,6 +39,7 @@ from bpy.props import StringProperty
 from .. import results
 from .. import update_summary
 from . import skin
+from .skin_cluster import off_the_cage, show_pose_in_components
 from .skin_weight_access import _skin_armature, influence_names, NO_SKIN, skinned_meshes, _Weights  # noqa: F401
 from .skin_normalize_weights import (ALLSET_OT_skin_normalize_mode, _build_sum_group, ensure_sum_modifier, is_part,
                                      _link, MAYA_VALUE, NORMALIZE_LABELS, normalize_state, remove_sum_modifier,
@@ -157,11 +158,15 @@ class ALLSET_OT_move_skin_weights(bpy.types.Operator):
 
 @bpy.app.handlers.persistent
 def _sync_sum_modifiers(scene, depsgraph):
-    """Keep weight-sum modifiers summing the skin's current influences; drop them when the skin is gone."""
+    """Keep weight-sum modifiers summing the skin's current influences; drop them when the skin is gone. A skinned mesh
+    in component mode shows its components on the posed mesh (Maya), whoever bound it."""
     for upd in update_summary.updates(depsgraph, _sync_sum_modifiers):
         ob = upd.id.original if isinstance(upd.id, bpy.types.Object) else None
         if ob is None or ob.type != 'MESH' or not ob.modifiers:
             continue
+        if ob.mode == 'EDIT' and any(off_the_cage(m) for m in ob.modifiers):
+            update_summary.wrote()
+            show_pose_in_components(ob)
         md = sum_modifier(ob)
         if md is None:
             continue

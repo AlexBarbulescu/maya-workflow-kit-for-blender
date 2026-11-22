@@ -172,6 +172,11 @@ AUTO_EDIT = "allset_joint_move_edit"      # Edit mode entered because of the Mov
 POSE_PIN = "allset_joint_pose_pin"        # F8 chose Pose while the Move tool is on
 
 
+def moving_skinned(context):
+    arm = context.active_object
+    return context.mode == 'EDIT_ARMATURE' and arm is not None and bool(arm.get(MOVE_SKINNED))
+
+
 def move_tool_active(context):
     try:
         tools = context.workspace.tools
@@ -767,6 +772,7 @@ def _pick_groups(groups, lead):
 def leave(context, clear_selection=False):
     if clear_selection:
         clear(context)
+    # Move Skinned Joints stays on, like Maya's tool after a click elsewhere: the next joint pick edits joints again.
     if context.mode != 'OBJECT' and context.active_object is not None:
         bpy.ops.object.mode_set(mode='OBJECT')
 

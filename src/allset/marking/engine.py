@@ -24,6 +24,20 @@ from .hotbox_engine import (MENU_DRAG, RELEASE_GRACE, TAP_TIME, UP_TIME, HoldKey
                             is_tap, menu_drag, restart_too_soon)
 
 
+def _segment_meets(rect, dx, dy):
+    """The segment from (0, 0) to (dx, dy) runs through the rectangle (x0, y0, x1, y1): a segment that only grazes
+    a corner does not count (the point itself on the box is ``_inside``)."""
+    lo, hi = 0.0, 1.0
+    for d, a, b in ((dx, rect[0], rect[2]), (dy, rect[1], rect[3])):
+        if abs(d) < 1e-12:
+            if not a < 0.0 < b:
+                return False
+            continue
+        t0, t1 = sorted((a / d, b / d))
+        lo, hi = max(lo, t0), min(hi, t1)
+    return hi - lo > 1e-9
+
+
 class Session:
     """One marking-menu interaction.
 
@@ -60,6 +74,9 @@ class Session:
         self.result = None
         self.max_dist = 0.0
         self._dwell = None            # (level, time) since the pointer rests on the centre that level opened from
+        self._rest = None             # (radial submenu item, time, (x, y)): the pointer resting on it (opens it)
+        # when the menu was first drawn (a rest before that counts from then)
+        self._shown_at = None if self.params.quick_gestures else t0 + self.params.show_delay
         self.time = t0                # of the last pointer event
         # Quick Gestures option: the last pointer move, whether the menu was drawn (stays), whether a hidden mark
         # entered a radial submenu (it stays hidden till the release), the route's menus [(centre, name)] and the
@@ -92,6 +109,7 @@ class Session:
             return False
         if not self._shown and t - self._last_move >= self.params.show_delay:
             self._shown = True
+            self._shown_at = self._last_move + self.params.show_delay
         return self._shown
 
     def _rel(self, x, y):
@@ -120,6 +138,7 @@ class Session:
         self.openers.append(item if cascade else None)
         self.via.append(item)
         self.hover = (None, False)
+        self._rest = None
         if self.params.quick_gestures:
             if self.mode == "PRESS" and not self._shown and not cascade:
                 self._fast_marking = True
@@ -130,10 +149,11 @@ class Session:
         del self.stack[level + 1:]
         del self.openers[level + 1:]
         del self.via[level + 1:]
+        self._rest = None
         if self.params.quick_gestures:
             self._gesture.reset(self.stack[-1][1], self.time)
 
-    def _leave_sub(self, x, y):
+    def _leave_sub(self, x, y, items=True):
         """Back out of an in-place radial submenu: with nothing of it under the pointer and the pointer back
         inside the ring of the menu it opened from, it closes and that menu is there again, like Maya's. Its own
         items are looked at first, so a submenu item lying toward the parent keeps it open and the way back is an
@@ -143,9 +163,11 @@ class Session:
         if len(self.stack) < 2 or self.openers[-1] is not None:
             return False
         p = self.params
-        (_parent, (px, py)), (_sub, (sx, sy)) = self.stack[-2], self.stack[-1]
+        (_parent, (px, py)), (sub, (sx, sy)) = self.stack[-2], self.stack[-1]
         if math.hypot(x - px, y - py) >= min(p.radius, math.hypot(sx - px, sy - py)) - p.dead:
             return False
+        if items and sub.hit(x - sx, y - sy, wedges=True)[0] is not None:
+            return False     # an item of the submenu lies that way (its box, or an item in that 45° sector)
         self._pop_to(len(self.stack) - 2)
         return True
 
@@ -186,10 +208,42 @@ class Session:
         return self.stack[self._dwell[0] - 1][1], min(1.0, (t - self._dwell[1]) / self.params.return_dwell)
 
     def tick(self, t):
-        """Timer: a rest on a parent centre closes the submenu without a mouse move. True while one runs."""
+        """Timer: a rest on a radial submenu item opens it, a rest on a parent centre closes the submenu, without a
+        mouse move. True when the menu changed or a return rest runs."""
+        opened = self._open_rested(t)
         if self._dwell is None or not self.params.submenu_guides:
-            return False
+            return opened
         self.move(*self.pos, t)
+        return True
+
+    @staticmethod
+    def _may_open(item, dx, dy):
+        """The pointer is where a rest opens the highlighted radial ``item``'s submenu, like Maya: its box lies on the
+        straight line from the menu centre to the pointer (on the box, or beyond it seen from the centre - also
+        beside the list under the ring - but not short of it or off its far corner)."""
+        return _inside(item.rect, dx, dy) or _segment_meets(item.rect, dx, dy)
+
+    def _keep_rest(self, item, x, y, t):
+        """Note the pointer resting on radial submenu ``item`` (None: on nothing that opens); a move farther than
+        ``rest_slop`` from where the rest began starts it again."""
+        if item is None:
+            self._rest = None
+        elif (self._rest is None or self._rest[0] is not item
+              or math.hypot(x - self._rest[2][0], y - self._rest[2][1]) > self.params.rest_slop):
+            self._rest = (item, t, (x, y))
+
+    def _open_rested(self, t):
+        """Open the submenu of the radial item the pointer has rested on for ``open_dwell`` s while the menu is drawn
+        (a rest that began before the menu was drawn counts from then), centred where the pointer is, like Maya."""
+        if self._rest is None or self.result is not None:
+            return False
+        item, since, _at = self._rest
+        if self.hover[0] is not item or item not in self.layout.items or not self.visible(t):
+            return False
+        start = max(since, self._shown_at if self._shown_at is not None else t)
+        if t - start < self.params.open_dwell:
+            return False
+        self._push(item, self.pos)
         return True
 
     def _hit_stack(self, x, y):
@@ -199,6 +253,8 @@ class Session:
         top = len(self.stack) - 1
         lay, (cx, cy) = self.stack[top]
         item, opt = lay.hit(x - cx, y - cy)
+        if item is None and self.hover[0] in lay.radial.values() and lay.below_list(x - cx, y - cy):
+            item, opt = self.hover[0], False   # Maya: a radial item stays highlighted beside / below the list
         level = top
         while item is None and self.openers[level] is not None:
             level -= 1
@@ -254,7 +310,7 @@ class Session:
             level, item, opt = len(self.stack) - 1, lay.radial.get(heading) if heading else None, False
         else:
             level, item, opt = self._hit_stack(x, y)
-        while item is None and self._leave_sub(x, y):
+        while (item is None or not quick) and self._leave_sub(x, y, items=not quick):
             level, item, opt = self._hit_stack(x, y)
         if self.params.submenu_guides and self._dwell_back(x, y, t):
             level, item, opt = self._hit_stack(x, y)
@@ -270,34 +326,54 @@ class Session:
         if self._closed is not None and item is not self._closed:
             self._closed = None   # the pointer left the item whose submenu Esc closed: it may open again
         if item is None or item.sub is None or not item.enabled or item is self._closed:
+            self._rest = None
             return
-        # Dragging onto a submenu opens it in place (also the second stroke of a
-        # zig-zag mark): radial once the pointer reaches the ring, list on hover.
-        # A radial one only from its own sector: Maya-wide N / S boxes reach into the diagonal
-        # sectors, and a quick NE / NW gesture crossing them must not open the N submenu.
-        if item.kind == "radial" and math.hypot(dx, dy) >= self.params.radius \
-                and (heading if quick else direction(dx, dy, self.params.dead)) == item.key:
-            self._push(item, (x, y))
-        elif item.kind == "list" and _inside(item.rect, dx, dy):
+        if item.kind == "radial":
+            if quick:
+                # a hidden mark enters a radial submenu once it reaches the ring in that item's sector (also the
+                # second stroke of a zig-zag mark)
+                if math.hypot(dx, dy) >= self.params.radius and heading == item.key:
+                    self._push(item, (x, y))
+                return
+            # Maya: a rest on it opens it (tick), a stroke that keeps moving goes over it
+            self._keep_rest(item if self._may_open(item, dx, dy) else None, x, y, t)
+            return
+        self._rest = None
+        if item.kind == "list" and _inside(item.rect, dx, dy):
+            # a list row's submenu opens on hover, beside the row (a Qt menu cascade)
             self._push(item, (self.center[0] + item.rect[2], self.center[1] + item.rect[3]), cascade=True)
 
-    def release(self, x, y, t):
-        """The button that opened the menu was released."""
+    def release(self, x, y, t, held=None):
+        """The button that opened the menu was released. ``held``: how long the button was down for the quick-click
+        test, when the caller knows it better than ``t - t0`` (the press and the release handled together after a
+        slow frame: ``t0`` is dated back into that frame, the click was still quick)."""
         if self.mode != "PRESS":
             return self.result
         self.move(x, y, t)
+        held = t - self.t0 if held is None else held
         item, opt = self.hover
-        if len(self.stack) == 1 and self.max_dist < self.params.dead and t - self.t0 < self.params.click_time \
+        if len(self.stack) == 1 and t - self.t0 < self.params.mark_time and (
+                (item is not None and item.kind == "list")
+                or (item is None and self.layout.below_list(*self._rel(x, y)))):
+            item, opt = self.layout.nearest_radial(*self._rel(x, y)), False   # a mark: its direction, not the row
+        if len(self.stack) == 1 and self.max_dist < self.params.dead and held < self.params.click_time \
                 and item is None:
             # quick click: the menu stays up
-            self.mode = "CLICK"
+            self._click_mode(t)
             return None
+        if len(self.stack) == 1 and t - self.t0 < self.params.quick_none_time and not self.params.quick_gestures:
+            return self._cancel()     # released right after the press: nothing runs, like Maya
         if item is not None and item.sub is None:
             return self._finish(item, opt)
-        if item is not None and item.sub is not None:
-            self.mode = "CLICK"   # released on a submenu: keep it open to pick from
+        if item is not None and item.sub is not None and item.kind != "radial":
+            self._click_mode(t)   # released on a list row's submenu: keep it open to pick from
             return None
+        # nothing there, or a radial submenu that didn't open (no rest on it): nothing runs, the menu closes (Maya)
         return self._cancel()
+
+    def _click_mode(self, t):
+        self.mode = "CLICK"       # drawn from now on
+        self._shown_at = t if self._shown_at is None else min(self._shown_at, t)
 
     def click(self, x, y, t):
         """A button press while in click mode."""

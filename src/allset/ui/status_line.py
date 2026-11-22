@@ -20,7 +20,7 @@ import bpy
 from bpy.props import EnumProperty, StringProperty
 
 from . import draw_safe, input_line, menu_sets, own_draw, status_icons
-from .. import i18n
+from .. import i18n, safe_reg
 # the split-out parts, also read through this module by other UI and the tests
 from .status_line_buttons import (ALLSET_MT_symmetry, ALLSET_OT_ipr_toggle, ALLSET_OT_light_editor,  # noqa: F401
                                   ALLSET_OT_render_settings, ALLSET_OT_select_mask, ALLSET_OT_select_mode,
@@ -425,7 +425,10 @@ def _set_workspace(self, value):
 
 def draw_tool_header(self, context):
     """Status Line at the start of the main 3D View's tool header row."""
-    from .. import preferences
+    from .. import preferences, switch
+    if not switch._registered[0]:
+        # left in the header's draw list by another add-on's own header swap after Maya mode went off (#423)
+        return
     try:
         if not preferences.get(context).show_status_line:
             return
@@ -442,6 +445,7 @@ def draw_tool_header(self, context):
     self.layout.separator(type='LINE')
 
 
+@own_draw.kit_draw("TOPBAR_HT_upper_bar")
 def draw_upper_bar(self, context):
     """The top bar's own draw while the kit is on (as space_topbar.py TOPBAR_HT_upper_bar.draw, with the kit's
     left / right): Blender's ``draw_left`` / ``draw_right`` methods stay untouched."""
@@ -478,7 +482,7 @@ def register():
         items=_workspaces, get=_get_workspace, set=_set_workspace, options={'SKIP_SAVE'})
     patch_topbar()
     bpy.types.VIEW3D_HT_tool_header.prepend(draw_tool_header)
-    bpy.types.VIEW3D_PT_active_tool.append(draw_tool_symmetry)
+    safe_reg.blender_class("VIEW3D_PT_active_tool").append(draw_tool_symmetry)
     bpy.app.handlers.load_pre.append(_masks_before_load)
     bpy.app.handlers.load_post.append(_masks_after_load)
     for name, fn in _SNAP_UNDO_HANDLERS:
@@ -498,7 +502,7 @@ def unregister():
         if fn in handlers:
             handlers.remove(fn)
     _carried.clear()
-    bpy.types.VIEW3D_PT_active_tool.remove(draw_tool_symmetry)
+    safe_reg.blender_class("VIEW3D_PT_active_tool").remove(draw_tool_symmetry)
     bpy.types.VIEW3D_HT_tool_header.remove(draw_tool_header)
     unpatch_topbar()
     del bpy.types.WindowManager.allset_workspace

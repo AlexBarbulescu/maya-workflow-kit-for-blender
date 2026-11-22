@@ -99,9 +99,9 @@ def test_release_in_dead_zone():
 def test_flick_before_menu_is_drawn():
     s = _session(mm.RMB_MESH)
     assert not s.visible(0.05)
-    s.move(*_at("S", 30), 0.04)
-    res = s.release(*_at("S", 45), 0.08)
-    assert not s.visible(0.08) and res[0] == "RUN" and res[1].label == "Face"
+    s.move(*_at("S", 30), 0.06)
+    res = s.release(*_at("S", 45), 0.105)
+    assert not s.visible(0.105) and res[0] == "RUN" and res[1].label == "Face"
     assert s.visible(P.show_delay + 0.01) or s.result
 
 
@@ -111,17 +111,20 @@ def test_submenu_in_place_and_zigzag():
     assert s.hover[0].label == "Merge/Collapse Edges"
     x, y = _at("N", R + 5)
     s.move(x, y, 0.2)
-    assert len(s.stack) == 2 and s.center == (x, y), "submenu opens where the pointer is"
+    assert len(s.stack) == 1, "a stroke that keeps going passes over it (Maya)"
+    s.tick(0.2 + P.open_dwell + 0.01)
+    assert len(s.stack) == 2 and s.center == (x, y), "a rest opens the submenu where the pointer is"
     # Second stroke east = Collapse Edge (Merge/Collapse submenu E).
-    res = s.release(x + 60, y, 0.3)
+    res = s.release(x + 60, y, 0.4)
     assert res[0] == "RUN" and res[1].label == "Collapse Edge", res
-    # Same as one quick zig-zag mark (never drawn).
+    # A quick zig-zag mark without a rest at the turn (never drawn) doesn't enter the submenu, like Maya
     s = _session(mm.SHIFT_EDGE)
     s.move(*_at("NE", 40), 0.02)
     x, y = _at("NE", R + 2)
     s.move(x, y, 0.04)
-    res = s.release(x - 50, y, 0.07)
-    assert res[1].label == "Spin Backward", res
+    s.tick(0.05)
+    s.move(x - 50, y, 0.06)
+    assert len(s.stack) == 1
 
 
 def test_option_box_and_list_hits():

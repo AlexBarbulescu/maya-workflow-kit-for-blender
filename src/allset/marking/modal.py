@@ -25,6 +25,52 @@ BUTTONS = (("RIGHTMOUSE", "RMB", ""), ("LEFTMOUSE", "LMB", ""), ("MIDDLEMOUSE", 
 MOUSE_BUTTONS = {"LEFTMOUSE", "RIGHTMOUSE", "MIDDLEMOUSE"}
 _TIMER = 0.05
 
+# Press clock: Blender gives Python no time for the press event, and a press that comes during a slow frame is
+# handled only after it, so counting from the handling makes a real flick look too quick (``quick_none_time``).
+# A light heartbeat notes when the event loop last ran. A press handled while the beats are late (the loop busy
+# since the last beat) is taken to have come at that last beat; one handled right after a gap in the beats (a slow
+# frame the heartbeat already came out of) at the beat before the gap.
+BEAT = 0.02
+STALE = 0.5                  # no beat for this long: the heartbeat is not running
+_beats = [0.0, 0.0]          # the two latest heartbeat times
+
+
+def _beat():
+    _beats[0], _beats[1] = _beats[1], time.monotonic()
+    return BEAT
+
+
+def press_time(now, beats=None):
+    """When the press being handled at ``now`` most likely came (see the press clock above)."""
+    prev, last = beats if beats is not None else _beats
+    if not last or now - last > STALE:
+        return now           # the heartbeat is not running
+    if now - last > 2 * BEAT:
+        return last          # the loop was busy since the last beat: the press came in that time
+    if 2 * BEAT < last - prev <= STALE:
+        return min(now, prev)    # a slow frame just before: the press came in it
+    # (a longer gap: the heartbeat had just started or was not running then, so it says nothing about the press)
+    return now               # the loop ran on time: handled at once
+
+
+def held_time(now, handled, beat_then, beats=None):
+    """How long the button was down for a release handled at ``now`` whose press was handled at ``handled``, the
+    latest beat then being ``beat_then``: with no beat since, both came in during one slow frame and were handled
+    together, so the press lasted about the time between handling them (not since the press dated back into that
+    frame); else None (counted from the press time)."""
+    last = (beats if beats is not None else _beats)[1]
+    return now - handled if last == beat_then else None
+
+
+def register_clock():
+    if not bpy.app.timers.is_registered(_beat):
+        bpy.app.timers.register(_beat, first_interval=BEAT, persistent=True)
+
+
+def unregister_clock():
+    if bpy.app.timers.is_registered(_beat):
+        bpy.app.timers.unregister(_beat)
+
 
 def _prefs(context):
     from .. import preferences
@@ -242,7 +288,9 @@ class ALLSET_OT_mm_engine(bpy.types.Operator):
         # run after entering component mode with everything selected (_finish).
         self._from_object = self.menu == CONVERT_FROM_OBJECT and context.mode == 'OBJECT'
         enabled = (lambda a: a is not None and not mm.is_unavailable(a)) if self._from_object else poll_action
-        self._session = engine.Session(menu, origin, time.monotonic(),
+        handled = time.monotonic()
+        self._handled = (handled, _beats[1])
+        self._session = engine.Session(menu, origin, press_time(handled),
                                        draw.measure, _params(), enabled, bounds, edges)
         self._region = region
         self._shown = False
@@ -309,7 +357,7 @@ class ALLSET_OT_mm_engine(bpy.types.Operator):
                 draw.redraw()
                 self._show_notice()
             elif event.type == self.button and event.value == 'RELEASE':
-                res = s.release(x, y, now)
+                res = s.release(x, y, now, held_time(now, *self._handled))
                 draw.redraw()
             elif event.type in MOUSE_BUTTONS and event.value == 'PRESS' and s.mode == "CLICK":
                 res = s.click(x, y, now)

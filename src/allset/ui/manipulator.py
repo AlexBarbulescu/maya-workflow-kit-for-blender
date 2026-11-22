@@ -30,6 +30,7 @@ register / unregister, and re-exports the names the rest of the kit reads from i
 import bpy
 from bpy.types import Gizmo, GizmoGroup
 from mathutils import Matrix, Vector
+from .. import safe_reg
 from ..operators import group
 
 # the split-out parts, also read through this module by operators, other UI and the tests
@@ -425,7 +426,28 @@ class ALLSET_GGT_xform(GizmoGroup):
         props.orient_matrix_type = 'GLOBAL'
         props.orient_matrix = Matrix.Identity(3) if otype in builtin else frame
 
+    def _slide_label(self, context):
+        """The slide label follows the handle highlight: off when the mouse leaves the handle, on when it comes onto a
+        Move handle with Ctrl+Shift already held (component mode, the pivot not edited)."""
+        from ..operators import manip
+        region = context.region
+        if region is None:
+            return
+        ptr = region.as_pointer()
+        if manip.SLIDE_HINT["drag"]:
+            return                              # a slide drag: the label stays until it ends
+        highlighted = any(gz.is_highlight and getattr(gz, "handle_role", None) for gz in self.gizmos)
+        if manip.SLIDE_HINT["region"] == ptr:
+            if not highlighted:
+                manip.slide_hint_clear()        # the mouse left the handle
+        elif (highlighted and manip.MOUSE["held"] and manip.MOUSE["region"] == ptr and context.mode == 'EDIT_MESH'
+              and tool_kind(context) == 'TRANSLATE' and self._built_for != ('TRANSLATE', True)
+              and not any(gz.is_modal for gz in self.gizmos)
+              and not manip.slide_hint_stale(context)):
+            manip.slide_hint_show(region, manip.MOUSE["pos"])
+
     def draw_prepare(self, context):
+        self._slide_label(context)
         kind = tool_kind(context)
         if kind is None:
             return
@@ -507,11 +529,41 @@ class ALLSET_GGT_xform(GizmoGroup):
 
 classes = (ALLSET_GT_maya_handle, ALLSET_GT_maya_ring, ALLSET_GGT_xform)
 
+SLIDE_LABEL = "slide"
+_slide_draw = []
+
+
+def _draw_slide_label():
+    """The "slide" label under the mouse while Ctrl+Shift is held over a Move handle in component mode (Maya's
+    slide cursor)."""
+    from ..operators import manip
+    region = bpy.context.region
+    if not manip.SLIDE_HINT["region"] or region is None or manip.SLIDE_HINT["region"] != region.as_pointer():
+        return
+    if bpy.context.mode != 'EDIT_MESH' or (not manip.SLIDE_HINT["drag"] and manip.slide_hint_stale(bpy.context)):
+        manip.SLIDE_HINT["region"] = 0      # a drag, a slide or a marking menu took over
+        return
+    import blf
+    s = bpy.context.preferences.system.ui_scale
+    x, y = manip.SLIDE_HINT["pos"]
+    font = 0
+    blf.size(font, 11 * s)
+    w, h = blf.dimensions(font, SLIDE_LABEL)
+    tx, ty = x + 6 * s - w / 2, y - 22 * s - h
+    blf.enable(font, blf.SHADOW)
+    blf.shadow(font, 3, 0.0, 0.0, 0.0, 1.0)
+    blf.shadow_offset(font, 1, -1)
+    blf.color(font, 1.0, 1.0, 1.0, 1.0)
+    blf.position(font, tx, ty, 0)
+    blf.draw(font, SLIDE_LABEL)
+    blf.disable(font, blf.SHADOW)
+
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.VIEW3D_PT_active_tool.append(draw_tool_settings)
+    _slide_draw.append(bpy.types.SpaceView3D.draw_handler_add(_draw_slide_label, (), 'WINDOW', 'POST_PIXEL'))
+    safe_reg.blender_class("VIEW3D_PT_active_tool").append(draw_tool_settings)
     patch_tools()
     bpy.app.timers.register(_ensure_timer, first_interval=0.1, persistent=True)
     if _on_load_post not in bpy.app.handlers.load_post:
@@ -521,6 +573,11 @@ def register():
 def unregister():
     SIZE[0] = 1.0
     PIVOT_RING_CACHE.clear()
+    while _slide_draw:
+        bpy.types.SpaceView3D.draw_handler_remove(_slide_draw.pop(), 'WINDOW')
+    from ..operators import manip
+    manip.SLIDE_HINT["region"] = 0
+    manip.SLIDE_HINT["drag"] = False
     if _on_load_post in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(_on_load_post)
     if bpy.app.timers.is_registered(_ensure_timer):
@@ -530,6 +587,6 @@ def unregister():
         ensure_tools(False)
     except (ReferenceError, AttributeError):
         pass
-    bpy.types.VIEW3D_PT_active_tool.remove(draw_tool_settings)
+    safe_reg.blender_class("VIEW3D_PT_active_tool").remove(draw_tool_settings)
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

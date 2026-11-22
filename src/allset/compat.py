@@ -17,6 +17,8 @@ SUPPORTED = ((5, 2), (5, 3))            # the supported minors
 STRICT_VERSIONS = SUPPORTED             # keymap patches must all apply to these minors' IC data
 IS_TARGET = VERSION == TARGET
 IS_STRICT = VERSION in STRICT_VERSIONS
+# A Scene value typed into a button in mesh edit mode gets its own undo step from 5.3 on (5.2 skips that step)
+UI_UNDO_FOR_SCENE_IN_EDIT = VERSION >= (5, 3)
 
 
 # --- Help links ------------------------------------------------------------------------------------------------------
@@ -309,6 +311,20 @@ def read_region_row(fb, region, y):
         return fb.read_color(0, y, region.width, 1, 4, 0, 'UBYTE')
     except ValueError:
         return None
+
+
+def flat_buffer(buf):
+    """``buf`` (a ``gpu.types.Buffer``) as one dimension, so ``numpy.frombuffer`` takes it: 5.0 exports a buffer
+    of more than one dimension as not C-contiguous (BufferError). The bytes stay as they are; any other buffer
+    (no ``dimensions``) is returned unchanged."""
+    dims = getattr(buf, "dimensions", None)
+    if dims is None or isinstance(dims, int):
+        return buf
+    n = 1
+    for d in dims:
+        n *= d
+    buf.dimensions = n
+    return buf
 
 
 # --- Materials ------------------------------------------------------------------------------

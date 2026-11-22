@@ -600,9 +600,10 @@ class ALLSET_OT_manip_mmb(bpy.types.Operator):
 
 
 # --- Ctrl+LMB on a handle, Shift+MMB = automatic axis -------------------------
-# Move tool: a drag started with Ctrl held on an axis arrow / plane / the centre moves that handle's way with
-# grid snapping (the same as pressing Ctrl after the drag started), Ctrl+click on the centre frees the active
-# handle; Scale tool: Ctrl+LMB on an axis scales the other two axes; Shift+MMB drag moves along the axis closest
+# Move tool: Ctrl+drag on an axis arrow moves in the plane of the other two axes and makes that plane the active
+# handle, like Maya (the Ctrl+Drag Snaps preference: along the axis with grid snapping); a drag started with Ctrl
+# held on a plane / the centre moves that handle's way with grid snapping, Ctrl+click on the centre frees the
+# active handle; Scale tool: Ctrl+LMB on an axis scales the other two axes; Shift+MMB drag moves along the axis closest
 # to the drag direction.
 
 def plane_of(axis):
@@ -639,9 +640,19 @@ def _highlighted(context):
     return next((gz for gz in group.gizmos if gz.is_highlight and hasattr(gz, "handle_role")), None)
 
 
+def _ctrl_snaps(context):
+    """The Ctrl+Drag on a Move Axis Snaps preference."""
+    from .. import preferences
+    try:
+        return bool(preferences.get(context).manip_ctrl_snap)
+    except AttributeError:
+        return False
+
+
 class ALLSET_OT_manip_ctrl(bpy.types.Operator):
-    """Ctrl+LMB on the manipulator: a Move handle drag moves along that handle with grid snapping, Ctrl+click on
-    the Move centre frees the active handle, a Scale axis handle scales the other two axes"""
+    """Ctrl+LMB on the manipulator: a Move axis moves in the plane of the other two axes (with the Ctrl+Drag Snaps
+    preference: along the axis with grid snapping), a Move plane / centre drag snaps, Ctrl+click on the Move centre
+    frees the active handle, a Scale axis handle scales the other two axes"""
     bl_idname = "allset.manip_ctrl"
     bl_label = "Manipulator Ctrl Handle"
     bl_options = {'INTERNAL'}
@@ -660,7 +671,21 @@ class ALLSET_OT_manip_ctrl(bpy.types.Operator):
             reset_handle(kind)
             context.area.tag_redraw()
             snap_align.apply_active(context)
+            self._plane = None
             self._editing = getattr(context.gizmo_group, "_built_for", None) == ('TRANSLATE', True)
+            self._press = (event.mouse_x, event.mouse_y)
+            context.window_manager.modal_handler_add(self)
+            return {'RUNNING_MODAL'}
+        editing = getattr(context.gizmo_group, "_built_for", None) == ('TRANSLATE', True)
+        if (kind == 'TRANSLATE' and role == 'AXIS' and axis in ('X', 'Y', 'Z') and not editing
+                and not _ctrl_snaps(context)):
+            # Maya: the plane of the other two axes becomes the active handle (a click does only that) and a drag
+            # past the threshold moves in it, without grid snapping while Ctrl stays held
+            otype = manipulator.slot_type(context.scene, kind)
+            HANDLES[kind] = {"constraint_axis": plane_of(axis), "orient_type": otype}
+            context.area.tag_redraw()
+            snap_align.apply_active(context)
+            self._plane, self._editing = (plane_of(axis), otype), False
             self._press = (event.mouse_x, event.mouse_y)
             context.window_manager.modal_handler_add(self)
             return {'RUNNING_MODAL'}
@@ -692,6 +717,8 @@ class ALLSET_OT_manip_ctrl(bpy.types.Operator):
         limit = context.preferences.inputs.drag_threshold_mouse * context.preferences.system.ui_scale
         if max(abs(event.mouse_x - self._press[0]), abs(event.mouse_y - self._press[1])) < limit:
             return {'RUNNING_MODAL'}
+        if self._plane is not None:
+            return self._plane_move(context)
         # the centre's own drag (ui/manipulator.py _bind_ops), started while Ctrl is held: snapped
         try:
             if self._editing:
@@ -702,6 +729,193 @@ class ALLSET_OT_manip_ctrl(bpy.types.Operator):
         except RuntimeError:
             return {'CANCELLED'}
         return {'FINISHED'}
+
+    def _plane_move(self, context):
+        """The Ctrl+axis drag: the plane of the other two axes, or the Transform Constraint slide on that plane."""
+        from ..ui import manipulator
+        from . import xform_constraint
+        axes, otype = self._plane
+        try:
+            if xform_constraint.active(context):
+                builtin = {'GLOBAL', 'LOCAL', 'NORMAL', 'GIMBAL', 'VIEW', 'CURSOR', 'PARENT'}
+                frame = manipulator.pivot_frame(context, 'TRANSLATE')[1]
+                kwargs = {"constraint_axis": axes, "orient_type": otype if otype in builtin else 'GLOBAL'}
+                if otype not in builtin and frame is not None:
+                    kwargs["orient_matrix"] = frame
+                bpy.ops.allset.component_slide('INVOKE_DEFAULT', **kwargs)
+            else:
+                from . import live_translate
+                without_ctrl_snap(context, lambda: live_translate.start(
+                    context, {"constraint_axis": axes, "orient_type": otype, "release_confirm": True}))
+        except RuntimeError:
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+SNAP_INVERT_KEYS = {'LEFT_CTRL', 'RIGHT_CTRL'}
+
+
+def without_ctrl_snap(context, start):
+    """Run ``start()`` (a transform invoke) so that the Ctrl held at its start doesn't turn grid snapping on: Blender's
+    transform reads the modifier keys held when it starts against its modal keymap's press items, so the Ctrl snap
+    inversion items are off just for that call (in memory, back on at once). Pressing Ctrl again during the drag
+    snaps, as in every move."""
+    km = context.window_manager.keyconfigs.user.keymaps.get("Transform Modal Map")
+    items = [k for k in km.keymap_items if k.active and k.propvalue == 'SNAP_INV_ON' and k.type in SNAP_INVERT_KEYS
+             and k.value == 'PRESS'] if km is not None else []
+    for k in items:
+        k.active = False
+    try:
+        return start()
+    finally:
+        for k in items:
+            k.active = True
+
+
+def _slide_applies(context):
+    """A Ctrl+Shift+drag here slides: mesh edit mode, a kit Move handle under the mouse, the pivot not edited."""
+    from ..ui import manipulator
+    if context.mode != 'EDIT_MESH' or _highlighted(context) is None:
+        return False
+    if manipulator.tool_kind(context) != 'TRANSLATE':
+        return False
+    return getattr(context.gizmo_group, "_built_for", None) != ('TRANSLATE', True)
+
+
+# Maya shows a "slide" cursor while Ctrl+Shift is held over a Move handle in component mode: the 3D View region
+# (as_pointer) the label is drawn in and its mouse position; region 0 = no label; "drag": a slide drag runs (the
+# label stays on and follows the mouse until it ends, like Maya's cursor)
+SLIDE_HINT = {"region": 0, "pos": (0, 0), "drag": False}
+# the last mouse move in a 3D View region: region (as_pointer), position, Ctrl and Shift both held
+MOUSE = {"region": 0, "pos": (0, 0), "held": False}
+
+
+def slide_hint_show(region, pos):
+    SLIDE_HINT["region"] = region.as_pointer()
+    SLIDE_HINT["pos"] = pos
+    region.tag_redraw()
+
+
+def slide_hint_stale(context):
+    """A drag, a slide or a marking menu runs (the kit's session-long click listeners don't count)."""
+    from .. import live_refs, modal_listeners
+    window = getattr(context, "window", None)
+    if window is None:
+        return False
+    try:
+        return any(op.bl_idname not in modal_listeners.NAMES for op in live_refs.running_modals(window))
+    except (AttributeError, ReferenceError):
+        return False
+
+
+def slide_hint_clear():
+    SLIDE_HINT["drag"] = False
+    if SLIDE_HINT["region"]:
+        SLIDE_HINT["region"] = 0
+        _redraw_view3d()
+
+
+def _redraw_view3d():
+    wm = getattr(bpy.context, "window_manager", None)
+    for window in getattr(wm, "windows", ()):
+        for area in window.screen.areas:
+            if area.type == 'VIEW_3D':
+                area.tag_redraw()
+
+
+class ALLSET_OT_manip_slide_hint(bpy.types.Operator):
+    """Ctrl / Shift pressed or let go over a Move manipulator handle: show the slide label while both are held"""
+    bl_idname = "allset.manip_slide_hint"
+    bl_label = "Manipulator Slide Label"
+    bl_options = {'INTERNAL'}
+
+    def invoke(self, context, event):
+        on = event.ctrl and event.shift and _slide_applies(context)
+        MOUSE["held"] = event.ctrl and event.shift      # a key let go: the handle highlight must not bring it back
+        region = context.region
+        if on and region is not None:
+            slide_hint_show(region, (event.mouse_region_x, event.mouse_region_y))
+        else:
+            slide_hint_clear()
+        return {'PASS_THROUGH'}
+
+
+class ALLSET_OT_manip_slide_hint_move(bpy.types.Operator):
+    """Mouse move in the 3D View: remember where the mouse is and whether Ctrl+Shift is held, so the slide label
+    shows when the mouse comes onto a Move handle with both keys already held, and follows the mouse"""
+    bl_idname = "allset.manip_slide_hint_move"
+    bl_label = "Manipulator Slide Label Mouse"
+    bl_options = {'INTERNAL'}
+
+    def invoke(self, context, event):
+        region = context.region
+        if region is None:
+            return {'PASS_THROUGH'}
+        held = event.ctrl and event.shift
+        pos = (event.mouse_region_x, event.mouse_region_y)
+        MOUSE["region"], MOUSE["pos"], MOUSE["held"] = region.as_pointer(), pos, held
+        if SLIDE_HINT["region"] == MOUSE["region"]:
+            if held:
+                SLIDE_HINT["pos"] = pos
+                region.tag_redraw()
+            else:
+                slide_hint_clear()
+        return {'PASS_THROUGH'}
+
+
+class ALLSET_OT_manip_slide(bpy.types.Operator):
+    """Ctrl+Shift+drag on a Move manipulator handle in mesh edit mode: slide the selected components along their
+    edges (Maya)"""
+    bl_idname = "allset.manip_slide"
+    bl_label = "Manipulator Slide"
+    bl_options = {'INTERNAL'}
+
+    def invoke(self, context, event):
+        if not _slide_applies(context):
+            return {'PASS_THROUGH'}
+        slide_hint_clear()
+        try:
+            res = bpy.ops.allset.component_slide('INVOKE_DEFAULT', mode='EDGE')
+        except RuntimeError:
+            return {'PASS_THROUGH'}
+        if not res & {'RUNNING_MODAL', 'FINISHED'}:
+            return {'PASS_THROUGH'}
+        region = context.region
+        if region is None or not self._sliding(context):
+            return {'FINISHED'}
+        # the slide label stays under the mouse for the whole drag, like Maya's slide cursor: this handler, added
+        # after the slide's, sees each event first and passes it on
+        slide_hint_show(region, (event.mouse_region_x, event.mouse_region_y))
+        SLIDE_HINT["drag"] = True
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    @staticmethod
+    def _sliding(context):
+        from .. import live_refs
+        return any(op.bl_idname.lower().replace("_ot_", ".") in SLIDE_OPS
+                   for op in live_refs.running_modals(context.window))
+
+    def modal(self, context, event):
+        # the slide takes the Ctrl / Shift key events: note here whether both are still held, so the handle
+        # highlight doesn't bring the label back after the drag when they were let go during it
+        MOUSE["held"] = event.ctrl and event.shift
+        if event.type in {'LEFTMOUSE', 'ESC', 'RIGHTMOUSE', 'RET', 'NUMPAD_ENTER'} or not self._sliding(context):
+            slide_hint_clear()        # the drag ends with this event (or has ended)
+            return {'FINISHED', 'PASS_THROUGH'}
+        if event.type == 'MOUSEMOVE' and context.region is not None:
+            pos = (event.mouse_region_x, event.mouse_region_y)
+            SLIDE_HINT["pos"] = pos
+            MOUSE["region"], MOUSE["pos"], MOUSE["held"] = context.region.as_pointer(), pos, event.ctrl and event.shift
+            context.region.tag_redraw()
+        return {'PASS_THROUGH'}
+
+    def cancel(self, _context):
+        slide_hint_clear()
+
+
+# the transform modes a Ctrl+Shift+drag on a Move handle runs
+SLIDE_OPS = ("transform.edge_slide", "transform.vert_slide", "transform.transform")
 
 
 AUTO_PX = 6          # movement that decides the Shift+MMB axis (x UI scale)
@@ -838,4 +1052,5 @@ def option_state(option):
 
 
 classes = (ALLSET_OT_manip_duplicate, ALLSET_OT_manip_release, ALLSET_OT_manip_option, ALLSET_OT_manip_size,
-           ALLSET_OT_manip_press, ALLSET_OT_manip_mmb, ALLSET_OT_manip_ctrl, ALLSET_OT_manip_mmb_auto)
+           ALLSET_OT_manip_press, ALLSET_OT_manip_mmb, ALLSET_OT_manip_ctrl, ALLSET_OT_manip_mmb_auto,
+           ALLSET_OT_manip_slide, ALLSET_OT_manip_slide_hint, ALLSET_OT_manip_slide_hint_move)

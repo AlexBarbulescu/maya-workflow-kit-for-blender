@@ -21,7 +21,8 @@ class Params:
     # N / S box centres and E / W near sides ``radius`` from the press point, diagonal boxes with their corner at
     # (±d, ±d), d = radius·cos 45°; boxes 21 px high, text + 2 × 25 px wide (+ 5 with an option box).
     radius = 55.0          # centre -> radial item anchor
-    dead = 12.0            # no direction inside this (= Blender pie_menu_threshold)
+    dead = 12.0            # no direction inside this (= Blender pie_menu_threshold): click mode, back-out, marks
+    pick_dead = 10.0       # this near the centre or nearer nothing is highlighted or picked
     item_h = 22.0          # list rows
     pad = 8.0              # text padding inside a list row / hotbox label
     opt_w = 16.0           # option box square
@@ -32,6 +33,17 @@ class Params:
     ring_list_gap = 21.0   # ring bottom -> list top
     show_delay = 0.15      # s before the menu is drawn: faster strokes are "marks"
     click_time = 0.25      # s: a shorter press-release in the dead zone = click mode
+    # A quick release is a mark, like Maya: the radial item of its direction, never a list row it ends on (a submenu
+    # item that did not open: nothing runs). The kit counts a release sooner than ``mark_time`` s after the press.
+    mark_time = 0.11
+    # A release right after the press runs nothing at all, like Maya, also on a radial leaf item (a quick click in the
+    # centre still keeps the menu up; not with the Quick Gestures option). The kit's window: ``quick_none_time`` s.
+    quick_none_time = 0.10
+    # A radial item's submenu opens when the pointer rests on it (its box, or beyond the box seen from the centre)
+    # while the menu is drawn, like Maya: a stroke that keeps moving goes over it, so the list under the ring and the
+    # other side of the ring stay reachable. The kit's rest: ``open_dwell`` s, moving less than ``rest_slop`` px.
+    open_dwell = 0.1
+    rest_slop = 2.0
     # Options (add-on preferences, both off by default; marking/modal.py copies them in):
     # quick_gestures (mm_quick_gestures): the menu stays hidden while the pointer keeps moving and shows after a
     # pause of ``show_delay`` (then stays); a radial submenu entered by a hidden mark stays hidden too; a hidden mark
@@ -45,9 +57,10 @@ class Params:
     anchor_r = 33.0
     return_dwell = 0.7
 
-    SIZES = ("radius", "dead", "item_h", "pad", "opt_w", "list_gap", "ring_h", "ring_pad", "ring_opt",
-             "ring_list_gap", "anchor_r")
-    FLAGS = ("show_delay", "click_time", "return_dwell", "quick_gestures", "submenu_guides")
+    SIZES = ("radius", "dead", "pick_dead", "item_h", "pad", "opt_w", "list_gap", "ring_h", "ring_pad", "ring_opt",
+             "ring_list_gap", "anchor_r", "rest_slop")
+    FLAGS = ("show_delay", "click_time", "mark_time", "quick_none_time", "return_dwell", "quick_gestures",
+             "submenu_guides", "open_dwell")
 
     def scaled(self, k):
         p = Params()
@@ -186,11 +199,15 @@ class Layout:
         return (rect[2] - s, rect[1] + (rect[3] - rect[1] - s) / 2,
                 rect[2], rect[1] + (rect[3] - rect[1] + s) / 2)
 
-    def hit(self, dx, dy, rects_only=False):
+    def hit(self, dx, dy, rects_only=False, wedges=False):
         """(item, on_option_box) under a point relative to the centre, or (None, False).
 
-        Rectangles win (list rows, option boxes, radial boxes); otherwise the
-        direction picks the radial item of that sector (not with ``rects_only``).
+        Rectangles win (list rows, option boxes, radial boxes); otherwise, outside the dead zone, the radial item
+        whose box centre lies in the direction nearest to the pointer's, like Maya: the sectors follow the boxes
+        (a wide diagonal box takes more of the side next to it) and every direction has an item, also in a menu
+        with few; below the top of the list under the ring, nothing off its rows (``Session`` keeps a radial item
+        highlighted there when the pointer comes to it from that item). Not with ``rects_only``;
+        ``wedges``: the item of the pointer's 45° sector, None for an empty one.
         """
         for it in self.items:
             if it.opt_rect and _inside(it.opt_rect, dx, dy):
@@ -199,7 +216,32 @@ class Layout:
                 return it, False
         if rects_only:
             return None, False
-        d = direction(dx, dy, self.params.dead)
-        if d and d in self.radial:
-            return self.radial[d], False
-        return None, False
+        if wedges:
+            d = direction(dx, dy, self.params.dead)
+            return (self.radial[d], False) if d in self.radial else (None, False)
+        if self.below_list(dx, dy):
+            return None, False     # below the top of the list only its rows count, like Maya
+        return self.nearest_radial(dx, dy), False
+
+    def below_list(self, dx, dy):
+        """(dx, dy) lies below the top of the list hanging under the ring, across the whole menu's width (not
+        when there is no ring or the list was moved beside it to fit the area)."""
+        rows = [it.rect[3] for it in self.items if it.kind == "list"]
+        ring = [it.rect[1] for it in self.items if it.kind == "radial"]
+        return bool(rows and ring) and max(rows) <= min(ring) and dy < max(rows)
+
+    def nearest_radial(self, dx, dy):
+        """The radial item whose box centre direction is nearest to (dx, dy) (ties: the first in N, NE, E, ...
+        order), or None within ``pick_dead`` of the centre or with no radial items."""
+        if math.hypot(dx, dy) <= self.params.pick_dead:
+            return None
+        a = math.atan2(dy, dx)
+        best, best_d = None, None
+        for it in self.items:
+            if it.kind != "radial":
+                continue
+            r = it.rect
+            d = abs((math.atan2((r[1] + r[3]) / 2, (r[0] + r[2]) / 2) - a + math.pi) % (2 * math.pi) - math.pi)
+            if best_d is None or d < best_d - 1e-9:
+                best, best_d = it, d
+        return best

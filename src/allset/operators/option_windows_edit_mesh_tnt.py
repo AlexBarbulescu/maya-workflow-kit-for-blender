@@ -11,8 +11,8 @@ WINDOWS = [
         lambda c, v: _components(c, "allset.subdivide", 'FACE', divisions=v["divisions"], smoothness=v["smoothness"]),
         paths=("Edit Mesh/Add Divisions",)),
     Window("average_vertices", "Average Vertices Options", "Average Vertices", None, [
-        F("repeat", "Smoothing amount:", "int", 10, lo=1, hi=30)],
-        lambda c, v: _components(c, "mesh.vertices_smooth", 'VERT', repeat=v["repeat"]),
+        F("iterations", "Iterations:", "int", 10, lo=0, hi=100)],
+        lambda c, v: _components(c, "allset.average_vertices", 'VERT', iterations=v.get("iterations", 10)),  # old saved settings: "repeat"
         paths=("Edit Mesh/Average Vertices",)),
     Window("poke_faces", "Poke Options", "Poke", None, [F("offset", "Normal offset:", "length", 0.0)],
         lambda c, v: _components(c, "mesh.poke", 'FACE', offset=v["offset"] * _k(c), use_relative_offset=False),

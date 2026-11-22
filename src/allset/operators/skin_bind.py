@@ -10,7 +10,7 @@ from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty, St
 
 from .. import results
 from .skin_cluster import (NORMALIZE, NORMALIZE_PROP, PAINT_SEEN, _cb, armature_modifier, colorize, influences,
-                           skinned_mesh)
+                           show_pose_in_components, skinned_mesh)
 
 
 # --- Bind / Unbind Skin -------------------------------------------------------------------------
@@ -198,6 +198,7 @@ def bind_skin(context, arm, meshes, max_influences=5, only_bones=None, normalize
             mesh[rig_maya.DROPOFF_PROP] = {vg.name: float(dropoff) for vg in influences(mesh)}
         from . import skin_method
         skin_method.set_method(mesh, skinning)       # Classic linear / Dual quaternion / Weight blended
+        show_pose_in_components(mesh)
     context.view_layer.update()
     for mesh in meshes:
         unpose_mesh(arm, mesh)
@@ -469,7 +470,9 @@ class ALLSET_OT_move_skinned_joints(bpy.types.Operator):
         if not ob.visible_get():
             self.report({'WARNING'}, f"{ob.name} is hidden: show the skeleton first")
             return {'CANCELLED'}
-        on = move_skinned_joints(context, ob, not ob.get(joint_selection.MOVE_SKINNED))
+        # Like choosing Maya's tool again: on unless its joints are being edited now (then off = Pose); a click
+        # elsewhere left Edit Mode with the tool still on, and running it again goes back to editing the joints.
+        on = move_skinned_joints(context, ob, not (ob.get(joint_selection.MOVE_SKINNED) and ob.mode == 'EDIT'))
         results.result(self, "Move Skinned Joints " + ("on: move the joints, run it again to pose" if on else "off"))
         return {'FINISHED'}
 

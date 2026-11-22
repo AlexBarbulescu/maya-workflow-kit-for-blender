@@ -26,6 +26,7 @@ from . import smart_extrude
 from . import smart_bevel  # Edit Mesh > Smart Bevel (Maya 2027, polySmartBevel)
 from . import component_scale
 from . import xform_constraint
+from . import component_local  # Ctrl+middle-drag with the Rotate / Scale tool (#430)
 from . import live
 from . import live_translate
 from . import point_keys  # S on selected points keys their positions
@@ -38,7 +39,7 @@ from . import universal_manip  # Universal Manipulator drags (#318)
 classes = (*display.classes, *group.classes, *hold.classes, *taphold.classes,
            *pivot_pick.classes,
            *pivot_rotate.classes,
-           *pivot_translate.classes, *smart_extrude.classes, *smart_bevel.classes, *component_scale.classes, *xform_constraint.classes, *live.classes, *live_translate.classes,
+           *pivot_translate.classes, *smart_extrude.classes, *smart_bevel.classes, *component_scale.classes, *xform_constraint.classes, *component_local.classes, *live.classes, *live_translate.classes,
            *pickwalk.classes, *view.classes, *freeze.classes, *parenting.classes,
            *duplicate.classes, *history.classes, *create.classes, *visibility.classes,
            *component.classes, *manip.classes, *material.classes,
@@ -68,6 +69,10 @@ classes += curve_draw.classes
 from . import dag  # noqa: E402  Maya DAG rules for parents (hide / delete / export / isolate)
 
 classes += dag.classes
+
+from . import isolate_parts  # noqa: E402  Isolate Select with components (only their faces)
+
+classes += isolate_parts.classes
 
 from . import by_type  # noqa: E402  Select All by Type for the kit's IK handles / clusters / particles
 
@@ -192,6 +197,8 @@ classes += manip_scale.classes
 classes += universal_manip.classes
 from . import dome_light  # noqa: E402  #201: Create > Lights > Dome Light = the World environment
 classes += dome_light.classes
+from . import image_plane  # noqa: E402  #398: the panel toolbar's Image Plane button
+classes += image_plane.classes
 from . import graph_move  # noqa: E402  #192: Graph Editor Shift axis lock + time snap to whole frames
 classes += graph_move.classes
 from . import graph_frame  # noqa: E402  Graph Editor F / A frame Maya's rectangle
@@ -239,6 +246,8 @@ from . import attr_clipboard  # noqa: E402  Mesh > Clipboard Actions, Edit > Tra
 classes += attr_clipboard.classes
 from . import lod  # noqa: E402  Edit > LOD (Level of Detail)
 classes += lod.classes
+from . import nurbs_select, turntable  # noqa: E402  Select > NURBS CVs / Surface Border, Visualize > Turntable (#108)
+classes += nurbs_select.classes + turntable.classes
 from . import ik_fk_control  # noqa: E402  Skeleton > Enable IK/FK Control / Enable IK Handle Snap
 
 from . import shape_history  # noqa: E402  tnt: persistent polySoftEdge / component deletion inputs
@@ -314,6 +323,7 @@ def register():
     undo_pairs.register()
     auto_key.register_handlers()
     dag.register_handlers()
+    isolate_parts.register()
     modify_maya.register_props()
     anim_snapshot.register_handlers()
     repeat_maya.register_handlers()
@@ -396,6 +406,7 @@ def unregister():
     graph_move.unregister_timers()
     graph_move.unregister_props()
     modify_maya.unregister_props()
+    isolate_parts.unregister()
     dag.unregister_handlers()
     curve_draw.unregister_handlers()
     joint_preview.unregister_handlers()

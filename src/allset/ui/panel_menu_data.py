@@ -53,6 +53,8 @@ VIEW = [
     _run("Camera Attribute Editor...", "allset.camera_attribute_editor"),
     ("menu", "Camera Tools", "ALLSET_MT_panel_camera_tools"),
     _sep(),
+    ("menu", "Image Plane", "ALLSET_MT_panel_image_plane"),    # Maya View > Image Plane (operators/image_plane.py)
+    _sep(),
     _grey("View Sequence Time"),
     _sep(),
     ("prop", "preferences", "show_viewport_shading", "Viewport Shading Controls"),
@@ -63,6 +65,33 @@ VIEW = [
 # (X = X, Y = Y, Z = Z).
 VIEW_AXIS = [_view("X", 'RIGHT'), _view("Y", 'BACK'), _view("Z", 'TOP'),
              _view("-X", 'LEFT'), _view("-Y", 'FRONT'), _view("-Z", 'BOTTOM')]
+
+# View > Image Plane: import an image / a movie onto this view's camera, its image planes in the Attribute Editor
+# (the list of the camera's planes is built when the submenu opens: ui/panel_image_plane.py)
+IMAGE_PLANE = [
+    _run("Import Image...", "allset.image_plane", import_image=True),
+    _run("Import Movie...", "allset.image_plane", import_image=True, movie=True),
+    ("menu", "Image Plane Attributes", "ALLSET_MT_panel_image_plane_attributes"),
+]
+
+# Right-click on the panel toolbar's Image Plane button (the Delete row names the camera's first image plane)
+PT_IMAGE_PLANE = [
+    _run("Import Image...", "allset.image_plane", import_image=True),
+    _sep(),
+    ("menu", "Display Mode", "ALLSET_MT_pt_image_plane_display"),
+    _sep(),
+    _run("Delete:", "allset.image_plane_delete"),
+]
+
+# Display Mode of the camera's first image plane: Blender draws an image empty with its colours and alpha or not at all
+PT_IMAGE_PLANE_DISPLAY = [
+    _run("None", "allset.image_plane_display", mode='NONE'),
+    _grey("Outline"),
+    _grey("RGB"),
+    _run("RGBA", "allset.image_plane_display", mode='RGBA'),
+    _grey("Luminance"),
+    _grey("Alpha"),
+]
 
 CAMERA_TOOLS = [
     # Maya's camera tools (ui/camera_tools.py: LMB drag tumbles / tracks / dollies until another tool)
@@ -123,11 +152,11 @@ LIGHTING = [
 SHOW_TYPES = (
     ("Controllers", None), ("NURBS Curves", "!SHOW_NURBS_CURVES"), ("NURBS Surfaces", "surf"),
     ("NURBS CVs", None), ("NURBS Hulls", None), ("Polygons", "mesh"), ("Subdiv Surfaces", None),
-    ("Planes", None), ("Lights", "light"), ("Cameras", "camera"), ("Image Planes", "!SHOW_IMAGE_PLANES"),
+    ("Planes", None), ("Lights", "!SHOW_LIGHTS"), ("Cameras", "!SHOW_CAMERAS"), ("Image Planes", "!SHOW_IMAGE_PLANES"),
     ("Joints", "armature"), ("IK Handles", "!SHOW_IK_HANDLES"), ("Deformers", "lattice"), ("Dynamics", None),
     ("Particle Instancers", None), ("Fluids", "volume"), ("Hair Systems", "curves"),
     ("Follicles", None), ("nCloths", None), ("nParticles", None), ("nRigids", None),
-    ("Dynamic Constraints", None), ("Locators (Empties)", "empty"), ("Dimensions", None),
+    ("Dynamic Constraints", None), ("Locators (Empties)", "!SHOW_LOCATORS"), ("Dimensions", None),  # tnt: label
     ("Pivots", "@show_object_origins"), ("Handles", None), ("Texture Placements", None),
     ("Strokes", None), ("Motion Trails", "@show_motion_paths"), ("Plugin Shapes", None),
     ("Clip Ghosts", None), ("Grease Pencil", "grease_pencil"),
@@ -162,11 +191,10 @@ SHOW = [
 ]
 
 ISOLATE = [
-    ("set", "ISOLATE", "View Selected"),
-    # tnt: edit the current panel's isolated subset
-    _run("Load Selected Objects", "allset.isolate_members", action='LOAD'),
-    _run("Add Selected Objects", "allset.isolate_members", action='ADD'),
-    _run("Remove Selected Objects", "allset.isolate_members", action='REMOVE'),
+    ("set", "ISOLATE", "View Selected"),  # tnt: checkbox
+    _run("Load Selected Objects", "allset.isolate_members", action='LOAD'),  # tnt: replace the isolated subset
+    _run("Add Selected Objects", "allset.isolate_edit", action='ADD'),
+    _run("Remove Selected Objects", "allset.isolate_edit", action='REMOVE'),
 ]
 
 RENDERER = [
@@ -226,7 +254,7 @@ TOOLBAR = (
      ("cam_lock", "set", "CAMERA_LOCK", "Lock Camera"),
      ("cam_attr", "run", ("allset.camera_attribute_editor", {}), "Camera Attributes"),
      ("bookmark", "set", "BOOKMARK", "Bookmarks"),          # a new camera bookmark (ui/camera_bookmarks.py)
-     ("image_plane", "run", ("allset.create", {"kind": 'IMAGE_PLANE'}), "Image Plane"),
+     ("image_plane", "run", ("allset.image_plane", {}), "Image Plane"),   # import an image / show or hide it
      ("pan_zoom", "set", "PAN_ZOOM", "2D Pan/Zoom"),        # the view's 2D pan / zoom off / on
      ("grease", "run", ("wm.tool_set_by_id", {"name": "builtin.annotate"}), "Grease Pencil (Blender: Annotate tool)")),
     (("grid", "set", "GRID", "Grid"),
@@ -260,6 +288,9 @@ MENUS = {
     "ALLSET_MT_panel_view": ("View", VIEW),
     "ALLSET_MT_panel_view_axis": ("View/View Along Axis", VIEW_AXIS),
     "ALLSET_MT_panel_camera_tools": ("View/Camera Tools", CAMERA_TOOLS),
+    "ALLSET_MT_panel_image_plane": ("View/Image Plane", IMAGE_PLANE),
+    "ALLSET_MT_pt_image_plane": ("Image Plane button", PT_IMAGE_PLANE),
+    "ALLSET_MT_pt_image_plane_display": ("Image Plane button/Display Mode", PT_IMAGE_PLANE_DISPLAY),
     "ALLSET_MT_panel_shading": ("Shading", SHADING),
     "ALLSET_MT_panel_lighting": ("Lighting", LIGHTING),
     "ALLSET_MT_panel_show": ("Show", SHOW),

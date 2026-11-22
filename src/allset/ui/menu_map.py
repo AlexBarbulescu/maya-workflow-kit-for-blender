@@ -105,7 +105,8 @@ def _kit_pref(prop):
 _WINDOW_EDITORS = {
     "General Editors/Attribute Editor": _dock('ATTRIBUTE_EDITOR'),
     "General Editors/Channel Box / Layer Editor": _dock('CHANNEL_BOX'),
-    "General Editors/Tool Settings": ("allset.editor_toggle", {"editor": 'TOOL_SETTINGS'}),
+    # shows the Tool Settings (a floating window comes to the front), never hides it, like Maya's item
+    "General Editors/Tool Settings": ("allset.editor_toggle", {"editor": 'TOOL_SETTINGS', "show": True}),
     "General Editors/Attribute Spread Sheet": _editor('SPREADSHEET'),
     "General Editors/Display Layer Editor": ("v3d", "allset.dock_show", {"dock": 'CHANNEL_BOX', "le_tab": 'DISPLAY'}),
     "General Editors/Script Editor": "allset.script_editor",
@@ -386,7 +387,7 @@ MAP = {
     "Edit Mesh/Merge": "allset.merge",          # always merges two vertices
     "Edit Mesh/Merge to Center": ("mesh.merge", {"type": 'CENTER'}),
     "Edit Mesh/Symmetrize": "allset.symmetrize",   # pick the seam edge first
-    "Edit Mesh/Average Vertices": ("mesh.vertices_smooth", {"repeat": 10}),  # tnt: same default in both modes
+    "Edit Mesh/Average Vertices": "allset.average_vertices",    # polyAverageVertex, Iterations editable
     "Edit Mesh/Chamfer Vertices": ("v3d", "mesh.bevel", {"affect": 'VERTICES'}),
     "Edit Mesh/Delete Edge/Vertex": "mesh.dissolve_mode",
     "Edit Mesh/Flip Triangle Edge": "mesh.edge_rotate",
@@ -556,6 +557,7 @@ MAP = {
     "Playback/Render Settings": "allset.render_settings",
     # --- Visualize ---
     "Visualize/Motion Trail Editor": "allset.motion_trail_editor",
+    "Visualize/Create Turntable...": "allset.create_turntable",     # operators/turntable.py (#108)
     # snapshots + ghosting
     "Visualize/Create Animation Snapshot": "allset.animation_snapshot",
     "Visualize/Update Snapshot": "allset.update_snapshot",
@@ -708,6 +710,13 @@ MAP.update({
     "Select/All CVs": ("curve.select_all", {"action": 'SELECT'}),
     "Select/First CV": "curve.de_select_first",
     "Select/Last CV": "curve.de_select_last",
+    # NURBS CV mask, Surface Border, CV Selection Boundary (operators/nurbs_select.py, #108)
+    "Select/Components#2/Control Vertex": "allset.nurbs_component",
+    "Select/Components#3/Control Vertex": "allset.nurbs_component",
+    "Select/Surface Border": "allset.select_surface_border",
+    "Select/CV Selection Boundary": "allset.select_cv_boundary",
+    "Edit/Delete All by Type/Sounds": "allset.delete_sounds",       # like Audio > Delete Sounds
+    "Windows/Home": "wm.splash",                                   # Blender's start screen: recent files, new
     "Select/All by Type/Image Planes": ("object.select_by_type", {"type": 'EMPTY'}),
     # Modify
     "Modify/Transformation Tools/Proportional Modification Tool": _PROPORTIONAL,
@@ -1060,6 +1069,8 @@ OBJECT_MODE = {
     # (Maya 2026); Automatic / Contour Stretch / Planar do that in their own operator.
     "UV/Cylindrical": ('ALL', 'FACE'),
     "UV/Spherical": ('ALL', 'FACE'),
+    "UV/Camera-based": ('ALL', 'FACE'),                  # #392: mapped from the 3D View
+    "UV Editor/Create/Camera-based": ('ALL', 'FACE'),
 }
 
 # Edit / Select / Modify items run in component (mesh edit) mode the way Maya runs them there (#39 /

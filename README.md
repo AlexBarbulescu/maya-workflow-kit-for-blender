@@ -239,7 +239,7 @@ Some Maya behaviour needs Blender's C++ code; the kit does not fork Blender, so 
 - **No theme.** Maya's grey UI and green lead selection come from a theme you install yourself
   ([Recommended setup](#recommended-setup)); extensions.blender.org add-ons may not change themes.
 - **Docking stays inside Blender's areas.** Maya's side tabs and OS-level docking of panels are not imitated.
-- Not every Maya menu item has a Blender counterpart; those items are greyed with a note. Today 1,069 of the 1,911
+- Not every Maya menu item has a Blender counterpart; those items are greyed with a note. Today 1,076 of the 1,911
   main menu items run a kit or Blender command and the other 842 are greyed with a note (none without one). Editor
   menu bars: UV Editor 85 %, Graph Editor 82 %, Dope Sheet 78 %, Shape Editor 77 %, Script Editor 76 %, Reference
   Editor 71 %, Hypershade 58 %. What is done and what comes next is tracked in the roadmap issue
@@ -268,7 +268,7 @@ Maya Workflow Kit is not on extensions.blender.org yet. Once it is, install it f
 
 ### Option 2 — Install the zip from disk
 
-1. Get `maya-workflow-kit-<version>.zip` (current version: 0.19.0) from
+1. Get `maya-workflow-kit-<version>.zip` (current version: 0.20.1) from
    [GitHub Releases](https://github.com/5hyuns/maya-workflow-kit-for-blender/releases) — or build it as in option 3.
 2. In Blender: *Edit > Preferences > Get Extensions > ▾ (top-right menu) > Install from Disk…* and pick the zip — or
    drag the zip onto the Blender window.

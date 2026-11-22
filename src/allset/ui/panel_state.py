@@ -76,6 +76,11 @@ TIPS = {
     "SHOW_NURBS_CURVES": "NURBS curves: curve objects in this view, and rig controls drawn as bone shapes "
                          "(their bones are shown or hidden in every view)",
     "SHOW_IK_HANDLES": "IK handles (the empties IK constraints follow: shown or hidden in every view)",
+    "SHOW_LIGHTS": "Lights: their shapes in this view. Hidden lights still light the view while cameras and "
+                   "locators are hidden too (Blender hides those shapes together); with cameras or locators shown "
+                   "they stop lighting it",
+    "SHOW_CAMERAS": "Cameras in this view",
+    "SHOW_LOCATORS": "Locators (empties) in this view",
     "SHADE_WIRE": "Wireframe",
     "SHADE_SMOOTH": "Smooth shade all",
     "DEFAULT_MATERIAL": "Use default material",
@@ -106,6 +111,29 @@ def show_ik_handles(context, on):
                 ob[SHOW_HIDDEN] = True
         except RuntimeError:       # not in the view layer
             pass
+
+
+# Blender draws light, camera and locator shapes as Extras: a view can hide the light shapes but keep their light
+# (overlay Extras off) only while those other types are hidden too; the light filter hides the lights and their light.
+_EXTRA_TYPES = ("camera", "empty", "speaker", "light_probe")
+_TYPE_KEYS = {"SHOW_CAMERAS": "camera", "SHOW_LOCATORS": "empty"}
+
+
+def lights_shown(space):
+    return bool(space.show_object_viewport_light and space.overlay.show_extras)
+
+
+def set_lights(space, on):
+    """Show > Lights in ``space``: shapes shown, or hidden the way that keeps their light when it can."""
+    if on:
+        space.show_object_viewport_light = True
+        space.overlay.show_extras = True
+    elif any(getattr(space, f"show_object_viewport_{t}") for t in _EXTRA_TYPES):
+        space.show_object_viewport_light = False
+        space.overlay.show_extras = True
+    else:
+        space.show_object_viewport_light = True
+        space.overlay.show_extras = False
 
 
 def state(context, key):
@@ -163,10 +191,13 @@ def state(context, key):
         return maya_grid.visible(space)
     if key == "SHOW_IMAGE_PLANES":
         from ..operators import global_keys4
-        planes = global_keys4.image_planes(context.scene)
-        return not planes or any(getattr(o, f) for o in planes for f in global_keys4.IMAGE_FLAGS)
+        return global_keys4.image_planes_drawn(context.scene)
     if key == "SHOW_NURBS_CURVES":
         return space.show_object_viewport_curve
+    if key == "SHOW_LIGHTS":
+        return lights_shown(space)
+    if key in _TYPE_KEYS:
+        return getattr(space, f"show_object_viewport_{_TYPE_KEYS[key]}")
     if key == "SELECTION_HILITE":
         from . import selection_wire
         return selection_wire.highlighting(context)
@@ -309,9 +340,17 @@ def apply(context, key):
         from . import curve_controls
         space.show_object_viewport_curve = not space.show_object_viewport_curve
         curve_controls.sync(space, context.scene)
+    elif key == "SHOW_LIGHTS":
+        set_lights(space, not lights_shown(space))
+    elif key in _TYPE_KEYS:
+        lights = lights_shown(space)
+        name = f"show_object_viewport_{_TYPE_KEYS[key]}"
+        setattr(space, name, not getattr(space, name))
+        set_lights(space, lights)
     elif key in ("SHOW_ALL", "SHOW_NONE"):
         for t in ALL_TYPES:
             setattr(space, f"show_object_viewport_{t}", key == "SHOW_ALL")
+        set_lights(space, key == "SHOW_ALL")
         from . import curve_controls
         curve_controls.sync(space, context.scene)
     elif key == "APPLY_ALL":

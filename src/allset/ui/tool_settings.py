@@ -18,7 +18,7 @@ import math
 
 import bpy
 
-from .. import results
+from .. import results, safe_reg
 from ..operators.edge_loops import INSERT_TOOL, OFFSET_TOOL, SLIDE_TOOL
 from ..operators.mesh_tools import CREASE_TOOL, TARGET_WELD_TOOL
 from ..operators.poly_draw import APPEND_TOOL, CREATE_TOOL
@@ -101,7 +101,7 @@ def reset_maya_options(context, kind):
         from .. import preferences
         prefs = preferences.get(context)
         prefs.transform_constraint = 'NONE'
-        for name in ("smart_duplicate", "smart_extrude"):
+        for name in ("smart_duplicate", "smart_extrude", "manip_ctrl_snap"):
             setattr(prefs, name, prefs.bl_rna.properties[name].default)
 
 
@@ -125,6 +125,9 @@ def reset_tool(context):
     from ..operators import multi_cut
     if tool.idname == multi_cut.TOOL:       # Multi-Cut keeps its Maya options on the scene
         multi_cut.reset_settings(multi_cut.mesh_tools.settings(context))
+    from ..operators import connect_tool, edge_loops
+    if tool.idname == connect_tool.TOOL:    # so does the Connect Tool
+        edge_loops.reset_settings(edge_loops.settings(context), 'CONNECT')
     return tool.idname, n
 
 
@@ -410,6 +413,9 @@ def draw_settings(layout, context, kind):
     else:
         # Blender's increment is the grid step: 1 Maya unit in the Maya Workflow Kit template.
         _labelled(layout, "").label(text="Step: one grid unit", icon='SNAP_INCREMENT')
+        from .. import preferences
+        # off: Ctrl+drag on an axis moves in the other two axes, like Maya
+        _labelled(layout, "").prop(preferences.get(context), "manip_ctrl_snap")
     _labelled(layout, "Preserve Children:").prop(ts, "use_transform_skip_children", text="")
     _labelled(layout, "Preserve UVs:").prop(ts, "use_transform_correct_face_attributes", text="")
     _grey(_labelled(layout, "Tweak Mode:"), "Tweak Mode", text=" ", check=False)
@@ -805,7 +811,7 @@ classes = (ALLSET_OT_reset_tool, ALLSET_OT_ts_option, ALLSET_PT_tool_settings)
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.VIEW3D_PT_active_tool.prepend(draw_reset_row)
+    safe_reg.blender_class("VIEW3D_PT_active_tool").prepend(draw_reset_row)
     from . import notices
     notices.PANEL_NOTICES.update(TS_NOTICES)
 
@@ -814,6 +820,6 @@ def unregister():
     from . import notices
     for key in TS_NOTICES:
         notices.PANEL_NOTICES.pop(key, None)
-    bpy.types.VIEW3D_PT_active_tool.remove(draw_reset_row)
+    safe_reg.blender_class("VIEW3D_PT_active_tool").remove(draw_reset_row)
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

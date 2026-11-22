@@ -3,6 +3,191 @@
 All notable changes to Maya Workflow Kit (earlier versions were called Allset for Maya Users and, before that, Maya Kit). Format: [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.20.1] — 2026-11-21
+
+Thank you for the quick reports after 0.20.0. This update fixes FBX rigs, floating panels and working next to other
+workflow add-ons, makes Multi-Cut follow Symmetry, adds the Connect Tool's Segments and Maya's Curve options for
+Extrude, and lets Isolate Select show only the faces you picked. The Rotate and Scale tools turn or scale each
+component group about its own normal with Ctrl+middle-drag, Keep Blender Keys brings back Tab and Alt+E next to the
+Maya keys, and more Maya menu items run. Thanks to @cnzim for the Move Skinned Joints fix, and to @Darkkanji,
+@lucafrancescoorlandi, @invaderzod, @suenwaichit, @cookies908, @NevilArt, @ganesh2004jadhav-boop and @Scorpy-laz for reports that
+showed what to fix, and to @scoegrams for the Keep Blender Keys idea.
+
+### Added
+- Edit Mesh > Extrude option box: Maya's Curve rows (Curve: None / Selected / Generated, Taper, Twist; Taper and
+  Twist greyed with Curve: None). Curve: Generated makes a straight path curve along the faces' normal and extrudes
+  along it, so a straight extrusion can taper and twist; the window's Taper, Twist, Thickness and Divisions now reach
+  an extrusion along a selected curve too (#418).
+- Connect Tool: a Segments, Slide or Pinch value typed into the tool's options re-does the connection the tool just
+  made, like Maya. The Modeling Toolkit's Connect button enters the Connect Tool and shows its Connect Options
+  (Slide / Segments / Pinch, Reset Settings, Keyboard/Mouse Shortcuts), and the Tools button of the active tool shows
+  pressed. Reset Tool in the Tool Settings resets the Connect Tool's options too. (#421)
+- Isolate Select with components: Ctrl+1 (or Show > Isolate Select > View Selected) with faces selected shows only
+  those faces, with vertices or edges selected the faces around them, like Maya; an edited mesh with nothing selected
+  leaves the view. Show > Isolate Select gets Add Selected Objects / Remove Selected Objects, which add or take out
+  objects, or faces with components selected. Leaving Isolate Select shows the faces again and keeps the faces you
+  hid yourself hidden; undo keeps the isolation as it is. Blender hides faces per mesh, so the other 3D Views hide
+  them too while one view isolates them, and Object Mode shows the whole mesh. (#427)
+- Add-on preferences: Keep Blender Keys (off by default) keeps two Blender keys next to the Maya keys in the 3D View:
+  Tab switches between Object Mode and Edit Mode (the operator search stays on Ctrl+F) and Alt+E toggles Local View
+  (instead of Alt+E Clear Rotation). Each can be turned off on its own. Keys Maya mode already uses (Ctrl+Tab, Q, W,
+  E, R, the period key, F, Space) stay Maya keys, the Quad Draw tool keeps its Tab, and the other editors keep their
+  Tab. Thanks to @scoegrams for the idea and the key list. (#226)
+- More Maya menu items run (#108): Visualize > Create Turntable (a copy of the view's camera turns once around the
+  selection on a group pivoted at its centre, and the view looks through it; the option box sets the frames and the
+  direction), Select > Components > Control Vertex for curves and surfaces, Select > Surface Border and CV Selection
+  Boundary, the Shape Editor's Shapes > Rebuild Target, Edit > Delete All by Type > Sounds, and Windows > Home
+  (Blender's start screen).
+- Rotate and Scale tools, mesh components: Ctrl+middle-drag turns each group of connected selected components about
+  its own normal, or scales it across its normal (the face stays in its plane), around the group's centre, like Maya.
+  The drag to the right turns clockwise / grows, to the left the other way; in Object Mode Ctrl+middle-drag is the
+  plain middle drag (#430).
+- Attribute Editor, lights: a Cycles section (closed at first) with the light settings that have no Maya attribute
+  row: Exposure, Normalize, Spread (area lights), Soft Falloff (point and spot lights), Portal (area lights), Max
+  Bounces, Multiple Importance and Shadow Caustics, like the render engine's section of a light in Maya. Thanks to
+  @Scorpy-laz. (#433)
+
+### Changed
+- Extrude along a curve: with two curves selected the first picked one is the path, like Maya; with Keep Faces
+  Together off the faces taper and twist about the centre of all of them, like Maya; its Channel Box rows follow
+  Maya's attribute order (#418).
+
+### Fixed
+- Extrude along a curve (a selected curve or Curve: Generated) uses Offset, like Maya: each step's border edges
+  move in by its share of Offset after the taper; the option box's Offset reaches it and the node has an Offset
+  row in the Channel Box and the In-View Editor (#424).
+- File > Import with Maya Units and Axes keeps the rest skeleton of a rig whose bones Blender connects (for example an
+  auto-rigged character's spine, arms and legs): those joints no longer land turned 90 degrees with a broken pose, and joints with a
+  slight joint orient keep their exact offset, so the pose channels are 0 at the bind pose. (#416)
+- A floating Tool Settings, Channel Box / Layer Editor, Attribute Editor or Modeling Toolkit that went behind the main
+  window comes back to the front when it is asked for again (Windows > General Editors, Ctrl+A, a tool's option box,
+  a Tool Box double-click), at the same place and size, like Maya. Windows > General Editors > Tool Settings now only
+  shows the Tool Settings, like Maya's item; the Status Line button still shows or hides it. (#417)
+- Skin > Move Skinned Joints: a click on empty space leaves Edit Mode also in a split 3D View, with Blender keys and with
+  the Tool Box hidden; a click on a joint's wire (also at a large Joint Size), inside a wide B-Bone or on the Move handle
+  keeps editing the joints, and one Undo / Redo steps the joint selection back and forth. Move Skinned Joints stays on after
+  a click elsewhere, like Maya's tool: the next joint pick edits joints again, and choosing it again goes back to editing.
+  Thanks to @cnzim. (#415)
+- With another workflow add-on that clears the 3D View sidebar's Tool tab while its layout is on (Blenda 4D), Maya mode
+  starts again: the kit's tool settings stay on Blender's Active Tool panel while that add-on has it out, and a failed
+  start no longer leaves the Maya top bar over the other add-on's (and Blender's) menu bar. Switching Maya mode off
+  leaves alone a layout that another add-on made from the Maya layout (only the kit's own Maya layout goes), no longer
+  puts back sidebar panels their add-on took out, and copes when the kit's own panels were taken out and put back.
+  (#423)
+- Multi-Cut works with Symmetry like Maya: with Object, World or Topology symmetry on, a cut, a Ctrl+click edge loop
+  and a slice are made on both sides of the mesh, and the preview shows the mirrored side too. A cut that is its own
+  mirror (across the middle) is made once. (#420)
+- Isolate Select stays with its panel when the layout changes, like Maya: a Space tap from the single perspective view to
+  the four view and back used to move the isolation to the side panel and then drop it, so the perspective view showed
+  and marquee-selected the hidden objects again. Each panel of the four view keeps its own Isolate Select. (#422)
+- macOS: Cmd+1 is Isolate Select too, like Maya on macOS (3D View and UV Editor). It used to switch Edit Mode to
+  vertex selection, so a face click after it picked vertices instead of the face. (#422)
+- Isolate Select: a marquee or lasso without Shift / Ctrl in Object Mode replaces the whole selection, like Maya. An
+  object the view hides (picked in the Outliner, or selected before Ctrl+1) used to stay selected and came back
+  selected when Isolate Select ended. (#422)
+- Maya mode only takes the place of Blender's own draw in the headers it draws (top bar, status bar, 3D View, Outliner,
+  UV, Node, Graph Editor, Dope Sheet, Script Editor, Trax Editor). A function another add-on put in front of a header,
+  or in the place of Blender's draw, keeps drawing while Maya mode is on, and switching Maya mode off gives each
+  header's draw list back as it was. (#425)
+- A kit header draw that another add-on puts back into a header after Maya mode is off (it took the kit's draw for
+  Blender's while Maya mode was on) now draws Blender's own header: no more error from the editor icon row when
+  Maya mode is switched next to another workflow add-on (Blenda 4D). (#426)
+- A panel's Show > None, then Show > Polygons, hides the light shapes in that view and the lights still light it,
+  like Maya. Blender hid the lights' light with their shapes. Blender draws light, camera and locator shapes
+  together, so while cameras or locators are shown in the view, Show > Lights off still hides the lights by type
+  and they stop lighting it. (#433)
+- Blender 5.0: the Maya layout no longer prints a BufferError on every redraw of the time range bar and the Channel
+  Box / Layer Editor dock. (#431)
+
+## [0.20.0] — 2026-11-20
+
+Thank you for the reports. This release makes marking menus and the Move tool feel more like Maya, fixes UV Unfold,
+Layout, Straighten Shell and Camera-based mapping, makes Paint Skin Weights easier, and adds Maya's Image Plane menus.
+Thanks to @AlEuf01, @envwarby, @GUYVERZERO, @JinxSwe, @leo2ard, @magmastk, @PucaJam and @suenwaichit for reports that
+showed what to fix.
+
+### Fixed
+- Edit Mesh > Average Vertices and the vertex marking menu's Average Vertices round the selected vertices at once,
+  like Maya: Blender's Smooth Vertices drag with no amount used to move nothing and wait for the mouse, which felt frozen on a
+  heavy mesh. The polyAverageVertex node keeps its Iterations (10) editable in the In-View Editor and Channel Box INPUTS, and
+  the option box shows Iterations. (#396)
+- Quad Draw: a Shift+drag relax on a live surface (also with Soft Selection) no longer pulls the mesh's far side through to the
+  front, and relaxed vertices stay where they were on the surface instead of sliding toward the camera near the outline. (#389)
+- In Isolate Select, RMB on an object seen through a hole in another opens the marking menu for the object you see, not for one
+  Isolate Select hides, so Vertex / Edge / Face work from any angle. (#395)
+- An object-mode click no longer stops on "'NoneType' object has no attribute 'vertices'" when the scene has a curve with no
+  splines or one whose Geometry Nodes output is only instances, and selecting such a curve no longer stops the selected-object
+  wire from drawing. (#390)
+- Hotkey Editor: every keyboard key Blender has can be assigned, including the "<" key of German and other European
+  keyboards, "+", the Menu key and the media keys; the list shows "<" and "+" for them. (#386)
+- Marking menus: like Maya, a radial submenu opens when the pointer rests on it for a moment; a stroke that keeps
+  moving goes over it, so list rows beyond it can be reached (Ctrl+RMB: To Shell under To Faces). (#387)
+- Marking menus: like Maya, a stroke that lets go on a radial submenu item before its submenu opens runs nothing and
+  closes the menu, instead of leaving the menu open; a quick click still keeps the menu up (#387).
+- UV > Camera-based (and UV Editor > Create > Camera-based) with an object selected in object mode maps the whole
+  object from the 3D View, like Maya; it only showed a warning. Camera-based also works from a separate UV Editor
+  window, in object and component mode. (#392)
+- Straighten Shell (UV Toolkit, UV Editor > Modify, the UV marking menu) straightens the selected UV edge loop along
+  U or V and unfolds the rest of its shell around it, so a ribbon shell becomes a straight strip, like Maya. It asked
+  for an active face before. (#393)
+- Unfold, Layout and Straighten Shell keep the mesh and UV selection, with UV Sync Selection on or off and with
+  several meshes in edit mode, like Maya; the selection was lost or the whole mesh ended up selected.
+- Move tool: Ctrl+drag on an axis arrow moves freely in the plane of the other two axes and makes that plane the
+  active handle, like Maya; a Ctrl+click only makes it the active handle (#383). Ctrl+drag along the axis with grid
+  snapping is now the preference "Ctrl+Drag on a Move Axis Snaps", off by default: in the Move Tool Settings, in
+  Windows > Settings/Preferences > Preferences > Manipulators and in the add-on preferences.
+- Extrude manipulator: Ctrl+drag on a scale cube scales the other two axes together, Ctrl+drag on an arrow moves in
+  the other two axes, like Maya (#383).
+- Move tool in component mode: Ctrl+Shift+drag on a manipulator handle slides the selected components along their
+  edges, like Maya (#391).
+- Move tool in component mode: Ctrl+middle-drag moves the selected components along their normals, like Maya: a
+  vertex along its own normal, an edge along the edge's normal keeping its length, a face along the face's normal
+  (#394). The Transform Constraint "Along Normals" moves edges the same way.
+- The viewport panel toolbar's Image Plane button picks an image file like Maya: the image becomes an image plane
+  facing that view (top / front / side at the origin; every click there adds another image), attached in front of
+  the camera a camera view looks through; when that camera already has one, the button shows or hides it. It made
+  an empty plane facing front before. (#398)
+- Paint Skin Weights: F frames the selected vertices where the posed mesh shows them (or the painted mesh when none
+  is selected), instead of the selected joints (#399).
+- Paint Skin Weights: Select mode selects vertices with a box or a lasso (Tool Settings > Brush > Select: Box /
+  Lasso); Box stays the first choice (#401).
+- Skin > Mirror Skin Weights: the option box opens Mirror Skin Weights Options (Mirror across, Direction: Positive
+  to negative, Influence Association, Normalize) instead of mirroring +X onto -X at once, so -X onto +X works too
+  (#402).
+- Skin: a skinned mesh keeps its pose in component mode, with its components, colours and preselection on the posed
+  mesh like Maya, also for skins bound before or by Blender's own tools; Paint Skin Weights shows its wireframe the
+  first time on a mesh, and opening it again after Select mode stays in the tool (#397).
+- Option boxes: a command whose settings are its own (Edit Mesh > Add Divisions, Skin > Smooth Skin Weights and
+  others) shows them on a click of its option box, like Maya.
+- Marking menus: off the item boxes, the highlighted item is the one whose box lies nearest the pointer's direction,
+  like Maya: the sectors follow the box sizes and a menu with few items has one in every direction. Below the top of
+  the list under the ring only its rows are picked, and a radial item already highlighted stays so there.
+- Marking menus: a stroke released soon after the press is a mark, like Maya: it runs the item of its
+  direction, never the list row it ends on (a release right after the press runs nothing, see below).
+- Move tool in component mode: while Ctrl+Shift is held over a manipulator handle, a "slide" label shows under the
+  mouse, like Maya's slide cursor; a drag then slides the selected components along their edges (#391).
+- Straighten Shell: when the straightened line crosses a ribbon shell of two or more faces, the shell's width moves
+  only part of the way from its old layout toward its 3D proportions, like Maya; a line along the ribbon, or across
+  a one-face ribbon, still gives the shell its 3D proportions (#413).
+- Move tool in component mode: the "slide" label stays under the mouse for the whole Ctrl+Shift slide drag, like
+  Maya's slide cursor, and goes away when the drag ends or is cancelled and the keys are let go (#410).
+- Marking menus: right around the centre nothing is highlighted or picked, like Maya (#411).
+- Marking menus: a rest opens the highlighted radial submenu when its box lies on the way from the centre to the
+  pointer, like Maya: beyond a wide box also at a shallow angle, not past the box's far corner; moving on
+  starts the rest again (#412).
+- Marking menus: a release right after the press runs nothing, like Maya, also on a radial item, counted from
+  when the press came even when Blender handles it a frame late; a quick click in the centre still keeps the menu
+  up (#414).
+- Skin: with Normalize Weights set to Disable or Enable (Skin > Normalize Weights), a posed skin's components, their
+  colours and preselection stay on the posed mesh in component mode, like Maya (#407).
+- Translations: every option window (Copy / Mirror Skin Weights Options and the others) shows its title, buttons,
+  field names, choices and Not in Blender lines in Japanese and Chinese (Simplified / Traditional), and each
+  "X Options" title uses the menu item's translation; the translation template lists them too (#408).
+- Viewport panels: View > Image Plane (Import Image..., Import Movie..., Image Plane Attributes) and a right-click
+  menu on the panel toolbar's Image Plane button (Import Image..., Display Mode None / RGBA, Delete), like Maya. A
+  plane with Display Mode None is not drawn but stays selectable, so Image Plane Attributes selects it, and no
+  plane is drawn while Show > Image Planes is off (#409).
+
 ## [0.19.0] — 2026-11-18
 
 Thank you for the reports and the help. This release brings Maya's IK/FK switching, the rest of the Time Slider
@@ -1055,7 +1240,7 @@ Discussions.
   shape there even when the face angles differ less, and the new corner can sit about 1% of the width away) and
   three-edge corners whose face angles differ by more than about 10%.
 - **Bevel with Segments 2 or more** (#213): every profile is now a circle that touches both faces, cut in equal
-  angle steps, like Maya, also where the faces meet at other angles than 90 degrees (a triangle prism's side
+  angle steps, like Maya. The same holds where the faces are not at a right angle (a triangle prism's side
   edge) and on inner (concave) edges, where the circle becomes a fillet. Depth moves each point straight toward
   the line between the profile's ends (0 = on that line, -1 = mirrored), as in Maya, with any number of
   segments. A corner where three or more bevelled edges meet (all edges of a box) is closed with one polygon
@@ -1480,7 +1665,7 @@ LTS; 5.0 and 5.1 install but are not tested.
   path's start when the path doesn't start at the profile; Extrude (Distance) uses the best-fit plane of a non-planar
   profile; Boundary / Square give each direction the mean parameter range of its two sides; Birail 1 with two
   different curved rails follows the rails exactly.
-- **Loft > Polygons** UVs run along the curves (u) and across them (v), like Maya's Loft, instead of turned 90°.
+- **Loft > Polygons** UVs run along the curves (u) and across them (v), like Maya's Loft. Before, the UV layout came out turned a quarter turn.
 - **UV > Normalize** with UVs or edges selected scales every face those UVs belong to, like Maya, instead of only
   the picked UVs.
 - **Alt+LMB tumble with Emulate 3 Button Mouse on** (#242): Blender turns Alt+left drag into a middle drag when
