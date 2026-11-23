@@ -243,8 +243,8 @@ MAP = {
     "Select/Hierarchy": ("object.select_grouped", {"type": 'CHILDREN_RECURSIVE', "extend": True}),
     "Select/Inverse": ("object.select_all", {"action": 'INVERT'}),
     "Select/Similar": ("object.select_grouped", {"type": 'TYPE'}),
-    "Select/Grow": "mesh.select_more",
-    "Select/Shrink": "mesh.select_less",
+    "Select/Grow": "allset.grow_selection",        # Maya: edges grow by vertex, faces / vertices by face
+    "Select/Shrink": "allset.shrink_selection",    # Maya: the open mesh border counts as outside
     "Select/Object/Component": "allset.toggle_sel_mode",
     "Select/Components/Multi-Component": ("allset.component_mode", {"type": 'MULTI'}),
     "Select/Components/Vertex": ("allset.component_mode", {"type": 'VERT'}),
@@ -255,7 +255,7 @@ MAP = {
     # selection touches (Ctrl+F9-F11's operator), the other conversions operators/select_convert.py.
     "Select/Convert Selection/To Vertices": ("allset.convert_selection", {"type": 'VERT'}),
     "Select/Convert Selection/To Edges": ("allset.convert_selection", {"type": 'EDGE'}),
-    "Select/Convert Selection/To Edge Loop": ("allset.select_loops", {"ring": False}),
+    "Select/Convert Selection/To Edge Loop": ("allset.select_loops", {"ring": False, "border": True}),
     "Select/Convert Selection/To Edge Ring": ("allset.select_loops", {"ring": True}),
     "Select/Convert Selection/To Edge Perimeter": _sel('EDGE_PERIMETER'),
     "Select/Convert Selection/To Faces": ("allset.convert_selection", {"type": 'FACE'}),
@@ -435,12 +435,12 @@ MAP = {
     "Deform/Paint Membership": "paint.weight_paint_toggle",
     # --- UV ---
     "UV/UV Editor": _editor('UV'),
-    "UV/Planar": "allset.uv_planar",
+    "UV/Planar": ("allset.uv_planar", {"axis": 'X'}),    # the option window's defaults: X axis, bounding box
     "UV/Normal-Based": "allset.uv_planar",
     "UV/Automatic": "allset.uv_automatic",      # Maya polyAutoProjection
     "UV/Camera-based": ("v3d", "uv.project_from_view", {}),
-    "UV/Cylindrical": ("v3d", "uv.cylinder_project", {}),
-    "UV/Spherical": ("v3d", "uv.sphere_project", {}),
+    "UV/Cylindrical": "allset.uv_cylindrical",     # on the selection's centre, around the up axis (#442)
+    "UV/Spherical": "allset.uv_spherical",
     "UV/Cut UV Edges": "allset.uv_cut",          # seam + shells apart in place
     "UV/Sew UV Edges": "allset.uv_sew",
     "UV/3D Cut and Sew UV Tool": "allset.cut_sew_tool_set",   # seam cleared + the smaller shell moved onto the edge
@@ -605,6 +605,7 @@ MAP = {
     "Lighting/Shading/Assign New Material/New Material...": "allset.assign_new_material",
     "Lighting/Shading/Assign Favorite Material": ("menu", "ALLSET_MT_assign_favorite_material"),
     "Lighting/Shading/Assign Existing Material": ("menu", "ALLSET_MT_assign_existing_material"),
+    "Lighting/Shading/Convert Old Kit Materials": "allset.convert_old_materials",   # kit only (EXTRA)
     "Texturing/3D Paint Tool": "paint.texture_paint_toggle",
     "Render/Render Settings...": "allset.render_settings",
     # Render menu: Blender's own render (INVOKE opens Blender's Render window, Maya's Render View) through the scene
@@ -631,6 +632,8 @@ EXTRA = {
     "Create/Lights/Volume Light": [("-", ""), ("Dome Light",)],
     # Maya 2027's Smart Bevel (#303) right below Bevel (operators/smart_bevel.py)
     "Edit Mesh/Bevel": [("Smart Bevel",)],
+    # Materials of older kit versions -> plain Principled BSDF, once (operators/material.convert_old)
+    "Lighting/Shading/Assign Existing Material": [("Convert Old Kit Materials",)],
 }
 # EXTRA items that have an option box (the static menu data lists the others')
 EXTRA_OPTION_BOXES = frozenset({"Edit Mesh/Smart Bevel"})

@@ -155,17 +155,22 @@ def frame_inverse(ob):
 def ungroup(context, groups, world=False, preserve=True):
     """Maya Edit > Ungroup (default Ungroup under Parent, Preserve position on): each group's
     children move under the group's parent (``world``: to the world; the world when it has none) keeping their world
-    transform, then the group goes. Preserve position off (``cmds.ungroup(relative=True)``) folds the group's local
-    transform into each child's local values instead (grp t 0 5 0, child t 1 2 3 -> child t 1 7 3).
+    transform, then the group goes. Preserve position off keeps each child's local values instead, so the child
+    moves by the group's transform (grp t 0 5 0, child t 1 2 3 -> child t 1 2 3 under the new parent).
     A selected object that has data of its own (a mesh with
-    children) only loses its children. Returns the moved children."""
+    children) only loses its children. Returns the moved children; like Maya they are listed last among their new
+    siblings, in the order they had in the group (Outliner order, ui/outliner_order.py)."""
+    from ..ui import outliner_order
+    scene = context.scene
     moved = []
     for grp in groups:
-        kids = list(grp.children)
+        if scene is not None:
+            outliner_order.number_new(list(scene.objects))
+        kids = sorted(grp.children, key=lambda o: o.get(outliner_order.ORDER, 0))
         target = None if world else grp.parent
         for child in kids:
             if not preserve:
-                local = grp.matrix_parent_inverse @ grp.matrix_basis @ child.matrix_parent_inverse @ child.matrix_basis
+                local = child.matrix_parent_inverse @ child.matrix_basis
                 frame = frame_inverse(target) if target is not None else Matrix.Identity(4)
                 child.parent = target
                 child.matrix_parent_inverse = frame         # values in the new parent's frame, like Maya
@@ -177,6 +182,8 @@ def ungroup(context, groups, world=False, preserve=True):
                 child.parent = None
                 child.matrix_world = world_m
         moved.extend(kids)
+        if scene is not None and kids:
+            outliner_order.to_end(kids, scene)
         if grp.type == 'EMPTY':
             bpy.data.objects.remove(grp)
     return moved
@@ -194,7 +201,7 @@ class ALLSET_OT_ungroup(bpy.types.Operator):
                ('WORLD', "World", "At the top of the hierarchy")))
     preserve_position: bpy.props.BoolProperty(
         name="Preserve Position", default=True, options={'SKIP_SAVE'},
-        description="Keep the children where they are (off = the group's transform goes into their local values)")
+        description="Keep the children where they are (off = keep their local values)")
 
     @classmethod
     def poll(cls, context):

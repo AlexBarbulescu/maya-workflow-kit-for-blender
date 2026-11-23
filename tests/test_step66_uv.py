@@ -6,7 +6,6 @@ from importlib import import_module
 
 import bmesh
 import bpy
-from mathutils import Vector
 
 import kit
 
@@ -105,9 +104,7 @@ def test_cut_splits_the_shell_in_place():
     assert not (a & b), "pack_islands treats the cut as two shells"
 
 
-def test_sew_moves_the_smaller_shell_onto_the_edge():
-    _clear()
-    ob = _two_quads()
+def _cut_and_turn_the_second_quad(ob):
     _select_shared_edge(ob)
     bpy.ops.allset.uv_cut()
     bm, uv = _bm(ob)
@@ -117,11 +114,40 @@ def test_sew_moves_the_smaller_shell_onto_the_edge():
         x, y = loop[uv].uv
         loop[uv].uv = (0.9 - y, 0.2 + x)      # rotated 90 degrees and moved
     bmesh.update_edit_mesh(ob.data)
-    _select_shared_edge(ob)
+    bm, uv = _bm(ob)
+    return {(f.index, l.vert.index): l[uv].uv.copy() for f in bm.faces for l in f.loops}
+
+
+def test_sew_joins_the_edge_half_way_and_keeps_the_shells_in_place():
+    """Like Maya Sew UV Edges: no shell moves; only the UVs on the sewn edge meet half-way."""
+    _clear()
+    ob = _two_quads()
+    before = _cut_and_turn_the_second_quad(ob)
+    shared = _select_shared_edge(ob)
     assert bpy.ops.allset.uv_sew() == {'FINISHED'}
     bm, uv = _bm(ob)
     assert not any(e.seam for e in bm.edges)
     assert _blender_islands(ob) == 1, "one shell again"
+    on_edge = {v.index for v in bm.edges[shared].verts}
+    for f in bm.faces:
+        for l in f.loops:
+            p = l[uv].uv
+            if l.vert.index in on_edge:
+                mid = (before[(0, l.vert.index)] + before[(1, l.vert.index)]) / 2
+                assert (p - mid).length < 1e-5, (f.index, l.vert.index, p, mid)
+            else:
+                assert (p - before[(f.index, l.vert.index)]).length < 1e-6, "the other UVs stay where they were"
+
+
+def test_3d_cut_and_sew_tool_still_moves_the_smaller_shell():
+    """The 3D Cut and Sew tool's Sew key moves the smaller shell onto the edge (sizes kept)."""
+    _clear()
+    ob = _two_quads()
+    _cut_and_turn_the_second_quad(ob)
+    _select_shared_edge(ob)
+    assert bpy.ops.allset.uv_sew(mesh_select=True) == {'FINISHED'}
+    bm, uv = _bm(ob)
+    assert _blender_islands(ob) == 1
     assert max(abs(uvt._uv_area(f, uv) - 0.25) for f in bm.faces) < 1e-3, "sizes kept (similar shells; Cut nudge aside)"
 
 
@@ -134,12 +160,13 @@ def test_unfold_keeps_shells_in_place_and_flat():
     bpy.ops.mesh.select_all(action='SELECT')
     bm, uv = _bm(ob)
     shells = uvt.islands(bm, uv)
-    centres = sorted(tuple(round(c, 3) for c in sum(uvt.uv_bounds(s, uv), Vector((0, 0))) / 2) for s in shells)
+    # each shell keeps the mean of its UVs (its cuts stay cut, so its outline can change)
+    centres = sorted(tuple(round(c, 3) for c in uvt._point_mean(s, uv)) for s in shells)
     assert bpy.ops.allset.uv_unfold() == {'FINISHED'}
     bm, uv = _bm(ob)
     after = uvt.islands(bm, uv)
     assert len(after) == len(shells), "shell borders kept"
-    got = sorted(tuple(round(c, 3) for c in sum(uvt.uv_bounds(s, uv), Vector((0, 0))) / 2) for s in after)
+    got = sorted(tuple(round(c, 3) for c in uvt._point_mean(s, uv)) for s in after)
     assert got == centres, (got, centres)
     assert all(uvt._uv_area(f, uv) > 1e-6 for f in bm.faces), "no collapsed faces"
     assert sum(f.select for f in bm.faces) == 6, "selection back"

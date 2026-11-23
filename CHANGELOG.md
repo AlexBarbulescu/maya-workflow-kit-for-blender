@@ -3,6 +3,167 @@
 All notable changes to Maya Workflow Kit (earlier versions were called Allset for Maya Users and, before that, Maya Kit). Format: [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.21.0] — 2026-11-23
+
+Thank you for the reports since 0.20.1. **Materials change in this version:** new materials are now plain Blender
+Principled BSDF materials, so they render and export like any Blender material (see Changed). This update also
+makes Twist, Squash, Flare, Sine and Wave deform like Maya on meshes, curves, lattices and surfaces, reworks many UV
+tools (Sew, Move and Sew, Unfold, Layout, Planar, Cylindrical, Spherical, Automatic), adds Selection Constraint:
+Angle, edge-sliding Rotate / Scale and image plane attributes, and fixes the Channel Box, keys and tangents, Grow /
+Shrink, Symmetry selection, Ungroup, Fill Hole, skinning and playback. Thanks to @pixelkeyblade18, @suenwaichit,
+@Kill-butterfly, @invader-zimm, @envwarby, @magmastk and @JinxSwe for reports that showed what to fix.
+
+### Added
+- Image planes: the Attribute Editor tab of an image plane (imagePlane) has Image Plane Attributes with Display Mode,
+  Image Name and Alpha Gain. Lower Alpha Gain to see through a reference image and trace over it (#436).
+- Selection Constraint: Angle, like Maya. Set it in the Modeling Toolkit (Selection Constraint: Angle and the angle
+  next to it) or in the Move / Rotate / Scale / Select tool option menus (Selection Constraints > Angle). A click or
+  marquee on faces, edges or vertices then also selects the connected ones whose normal is within that angle of the
+  picked one, so one click picks a flat or gently curved patch; Shift and Ctrl add and remove whole patches (#435).
+- Rotate and Scale tools in mesh edit mode: Ctrl+Shift+drag on a manipulator ring or handle, or Ctrl+Shift+middle-drag
+  anywhere, rotates or scales the selection with every vertex sliding along whichever of its own edges best follows
+  the drag, like Maya: a move that points off the surface is put back on it first, a vertex stops at the far end of
+  its edge, and with vertices or edges selected the edges between selected vertices are left out, so an edge loop
+  slides across its neighbours instead of along itself (#429).
+
+### Fixed
+- Switching to Blender and back to Maya, or saving the file and opening it again, keeps the Maya layout's panels
+  like a Maya scene keeps them: the viewport split into several panels (a perspective and a side view, the Four
+  View), each panel's background, grid and other display settings, and its view. They came back as one perspective
+  panel with the starting background and the grid on (#458).
+- Marking Menu Editor: a Shelf Button item made from one of several buttons with the same label runs that button;
+  the list tells such buttons apart (#446).
+- Kit editor windows asked for again come to the front, like Maya: Shelf Editor, Hotkey Editor, Marking Menu Editor,
+  Hypergraph and the other kit editor windows (#450).
+- Windows > UI Elements > Status Line closes the Maya layout's Status Line row and the shelf stays; turning it on
+  brings the row back (#447).
+- Help Line and Command Line both off hide the bottom row instead of leaving Blender's status bar there (#448).
+- Show > Joints off in a panel keeps rig controls drawn as curve shapes; they follow Show > NURBS Curves (#451).
+- Channel Box INPUTS and the Attribute Editor show a creation node's Axis / Pivot / Normal / Center on the scene's
+  axes, like the Create option windows (#454).
+- Constrain > Aim / Normal / Tangent (Aim vector, Up vector) and Attach to Motion Path (Front axis, Up axis) name the
+  object's own axes as the Channel Box shows them; the defaults keep an aimed object upright and saved option values
+  keep what they did (#453).
+- Copy Skin Weights with Influence Association Closest bone pairs bones, not joints, like Maya (#462).
+- Frame Selected on several objects apart comes as close as the objects' own boxes allow, like Maya, instead of
+  framing the box around all of them from farther away (#473).
+- Graph Editor: a Linear tangent points the key's in and out tangents at the neighbouring keys; a segment is straight
+  only between two linear keys, like Maya (#471).
+- Graph Editor: Linear Pre / Post Infinity follows the end key's tangent (flat after an Auto or Linear end key), and
+  each side keeps its own infinity type, like Maya (#472).
+- Switching to Blender keeps another add-on's wrapper of the timeline header or the toolbar; Maya mode takes back only
+  its own change (#449).
+- UV > Cylindrical / Spherical sit on the selection's centre around the scene's up axis, like Maya: the view angle no
+  longer changes the result, and Cylindrical spans the tile's height over the selection's height (#442).
+- Edit Edge Flow on a loop that runs from border to border keeps the whole loop on the surface: the border vertices
+  follow the curve along the border and the inner ones no longer settle below it, like Maya (#466).
+- Edit Mesh > Extrude with edges and a curve selected extrudes the edges along the curve in Divisions steps with Taper
+  and Twist, like faces; along a curve every step turns on from the previous one, so faces and edges follow a curve
+  that bends in more than one plane, like Maya (#444, #490).
+- Edit Mesh > Circularize on a block of faces puts the circle around the mean of all the selected faces' vertices and
+  moves the vertices inside the block onto the circle's plane, like Maya (#465).
+- Deform > Nonlinear > Twist, Squash, Flare, Sine and Wave deform meshes and curves like Maya, in the handle's space:
+  Twist turns and Flare scales from the Low bound to the High bound, bounds set further out spread the effect, Squash
+  stretches and bulges between the bounds, Sine waves the object sideways along the handle and Wave makes rings
+  around it; the Channel Box and the Attribute Editor show the deformers' own attributes (#457, #461).
+- Deform > Nonlinear > Squash has Start Smoothness and End Smoothness: they round the bulge off towards the Low and
+  High bound, and at their highest ease it smoothly into the bound, like Maya (#492).
+- Insert Edge Loop and Offset Edge Loop with "Insert with edge flow" put the new loop on the same curve as Edit Edge
+  Flow, like Maya: halfway along the ring it sits where Edit Edge Flow puts it, nearer an edge it eases towards the
+  straight cut, and several loops at once are cut straight. Edit Edge Flow on a loop next to a border row no longer
+  pushes that loop too far out (#491).
+- Deform > Nonlinear > Twist, Squash, Flare, Sine and Wave on a lattice or a NURBS surface deform it like on a mesh,
+  like Maya: the same shapes in the handle's space, following the handle, the node's attributes in the Channel Box
+  (keyable), Envelope and the node's weights. The shape is a shape key of the node's name, removed with the node
+  (#493).
+- Locked channels are no longer keyed by Key Selected, Key All Keyable, Breakdown and Set Key, like Maya (#476).
+- Renaming in the Channel Box, Status Line or Outliner cleans up the typed name like Maya (leading digits dropped,
+  other characters turned into _, a trailing # numbered) instead of refusing it; a name like Cube_01 names its shape
+  Cube_Shape1 (#477).
+- Ungroup lists the freed children last among their new siblings in the Outliner, like Maya (#478).
+- New cameras start not renderable with the same gate mask opacity as Maya, and new directional lights start with no
+  light angle, like new Maya ones (#479).
+- Attribute Editor: Horizontal / Vertical Film Aperture are shown and typed in inches, like Maya (#482).
+- Channel Box: a camera's SHAPES shows Film Aperture (inches), Focal Length, F Stop, Focus Distance and Locator Scale
+  instead of the clip planes, and lights show Use Ray Trace Shadows, like Maya (#481).
+- Polygon Cube, Sphere, Cone, Plane and Torus have Height Baseline and Create UVs in the Channel Box like the
+  Cylinder, with the same choices and starting values as Maya; Height Baseline stays within Maya's range (#480).
+- Sew UV Edges keeps the shells where they are and joins the UVs on each edge half-way, like Maya (#483).
+- Move and Sew sews an open border inside one UV shell like Sew UV Edges (#484).
+- Unfold keeps every UV cut, also a cut inside one shell, so a cylinder side unfolds flat like Maya (#485).
+- UV > Planar projects along the scene's axes and fits the selection's box in the scene, also on moved, turned or
+  scaled objects; clicking the menu item gives the option window's result (#487).
+- UV Layout keeps every shell's orientation and first scales the shells to one texel density, like Maya (#486).
+- UV > Automatic with 3, 4, 5, 8 or 12 planes groups the faces into shells like Maya, as 6 planes already did: the
+  same planes, the same Fewer pieces angle and shells that stop where they would overlap; with 8 planes a face
+  exactly between two planes, such as a cube side, can still go to another shell (#488).
+- Mesh edit mode, edge selection: a marquee picks every edge it touches, like Maya, also the edges that cross its
+  border, so a box along a row of faces picks the edges along the row without the ones across it having to be
+  wholly inside too. Shift toggles, Ctrl removes, Ctrl+Shift adds; with "Marquee Selects Hidden Components" off and
+  X-ray off, only edges seen in front count (#438).
+- Shelf Editor: switching a button's Command Type to Python fills the Python field with that button's own command
+  (a menu item's operator, an operator with its properties, a tool or a menu) instead of the default Add Cube code,
+  so it can be edited from there, for example to add settings to the call (#441).
+- UV > Planar (and Planar Map X / Y / Z in the Shift+right-click Mapping menu): the X, Y and Z axis choices project
+  along the scene's X, Y and Z axes, the axes the Channel Box and the manipulator show; Y and Z were swapped (#439).
+- UV > Planar fits the projection like Maya: the longer side spans 0-1 and the shorter side is centred in the UV
+  tile instead of sitting at its bottom or left edge (#440).
+- UV > 3D Grab UV Tool picked over the 3D View no longer raises a Python error: it sets the Grab tool in the UV
+  Editor, which opens first when none is open (#434).
+- macOS: the kit's own Ctrl keys (such as Ctrl+1 Isolate Select) and the Ctrl clicks inside its tools (Multi-Cut,
+  Connect, 3D Cut and Sew, Distance Tool, Interactive Creation, the 2D Pan/Zoom Tool) also answer Cmd, like Blender's,
+  and a Ctrl key the kit removed or replaced no longer leaves its Cmd copy behind (#432).
+- Hiding the Tool Box (Preferences > UI Elements, Windows > UI Elements > Tool Box, the hotbox) closes the Tool Box
+  column of the Maya layout instead of leaving Blender's toolbar in it; showing it again puts the column back left of
+  the Outliner. In Blender's own layouts it shows or hides the viewport's toolbar (#437).
+- Symmetry: with Symmetry on, clicking, Shift / Ctrl / Ctrl+Shift clicking, a marquee, a lasso and a double-clicked
+  edge loop also pick the mirror partners, like Maya: Shift toggles both, Ctrl removes both, Ctrl+Shift adds both
+  (Object, World and Topology symmetry). Grow / Shrink and UV picks don't mirror (#445).
+- Mesh edit mode: Ctrl+Shift+click adds the clicked component instead of selecting the shortest path from the active
+  one (#445).
+- Mesh edit mode in Maya mode: the first hover after a move, a click or another edit no longer stalls on a dense mesh
+  while the pre-selection highlight reads the mesh again (#452).
+- Option windows read X / Y / Z as the scene axes the Channel Box and the manipulator show, like Maya, instead of
+  taking Y as the up axis: Edit > Duplicate Special, the Constraint axes and the Scale Constraint Offset, Mesh >
+  Mirror, Skeleton > Mirror Joints, Skin > Mirror Skin Weights, the Multi-Cut slice planes and Extract offset,
+  ShrinkWrap Along X / Y / Z, the Create windows' Axis, Axis definition, Pivot and Center, Surfaces > Revolve /
+  Extrude, Orient Joint and the Joint Tool's world orientation, and the World up vector. The defaults keep their
+  result (Axis Z: a primitive stands upright; World up vector 0 0 1; Mirror Joints across XZ; Revolve about Z), and
+  option values saved by an older version keep doing what they did (#443).
+- Select > Grow (>) on edges adds only the edges that share a vertex with the selection, and Shrink (<) also lets go
+  of the vertices and faces on the open border of a mesh, like Maya (#455).
+- Select > Convert Selection > To Edge Loop on a border edge selects the whole border, round its corners, like Maya
+  (#456).
+- Skin > Bind Skin to Selected joints: a joint that isn't bound adds no reach to its parent, so the vertices next to an
+  unselected branch go to the nearest bound joints, like Maya (#459).
+- Skin > Copy Skin Weights onto a mesh skinned to a skeleton with other joint names replaces the destination's
+  weights instead of adding to them (#460).
+- Mesh > Fill Hole with one border edge of a hole selected (or a few) closes that whole hole, like Maya (#463).
+- Edit > Ungroup with Preserve position off keeps the children's local values, so they move by the group's transform,
+  like Maya (#464).
+- Key > Paste Keys with Paste method Insert and Copies above 1 keeps the earlier copy's key where two copies
+  meet, like Maya; Merge still keeps the later one (#467).
+- Create > Cameras > Camera gives the new camera Maya's F Stop, Focus Distance and Orthographic Width,
+  so the Attribute Editor shows Maya's values and a switch to orthographic frames the same width (#468).
+- Key > Bake Simulation gives the baked keys the default (Auto) tangents, like any new key in Maya, so with
+  Sample by above 1 the values between the baked keys follow a smooth curve instead of straight lines (#469).
+
+### Changed
+- **Materials are plain Blender materials now.** New materials (shelf buttons, Assign New Material, Assign Favorite
+  Material, the Hypershade, and the lambert1 every new object gets) are plain Principled BSDF materials with Blender's
+  own values, so they look the same in Eevee and Cycles as any Blender material and export to FBX, glTF and USD with
+  their colour and textures. Lambert, Blinn, Phong, Standard Surface and the other kinds give the material its Maya
+  name, labels and Attribute Editor layout; a texture connected to Color goes straight to Base Color. **Scenes saved
+  with earlier versions render as before.** To turn their kit materials into plain Principled materials, use
+  Lighting/Shading > Convert Old Kit Materials once (a texture on Color then shows a little brighter, as Blender's
+  Base Color has no extra diffuse factor). Ramp Shader, Layered Shader and Use Background keep their extra nodes,
+  and Surface Shader its glow, for now. A new Standard Surface no longer changes Roughness and Coat Roughness (#470).
+- Playback in Maya mode does a little less on every frame: the viewport drawings and frame updates that have nothing
+  to show (camera aim lines, bend handles, distance dimensions, a polygon being placed, IK / FK chains, Simple Deform
+  bends, ghosts, vertex keys, the blue pencil) stop after their cheapest check, and the Range Slider row, the Range
+  Slider bar's colours and a Graph Editor toolbar's row are worked out again only when what they depend on changed
+  (#344).
+
 ## [0.20.1] — 2026-11-21
 
 Thank you for the quick reports after 0.20.0. This update fixes FBX rigs, floating panels and working next to other

@@ -149,8 +149,11 @@ def apply(light, maya_intensity=None, n=None, k=None):
         _falloff_nodes(light, n, k)
 
 
-def maya_defaults(light, k):
-    """A new Maya light: intensity 1, No Decay; spot cone 40 / penumbra 0; area light 2 x 2 units."""
+def start_values(light, k):
+    """The start values of a new Maya light: its intensity and No Decay, the spot cone and penumbra, the area light
+    size and a directional light with sharp shadows."""
+    if light.type == 'SUN':
+        light.angle = 0.0
     if light.type == 'SPOT':
         light.spot_size = math.radians(MAYA_SPOT_CONE)
         light.spot_blend = MAYA_SPOT_PENUMBRA
@@ -234,9 +237,18 @@ def _penumbra():
     return get, set_
 
 
+def _shadow_get(light):
+    return light.use_shadow
+
+
+def _shadow_set(light, v):
+    light.use_shadow = bool(v)
+
+
 def channel_attrs(light=None):
     """Maya light shape channels Blender keeps differently (keyable attributes): Color R / G / B
-    (one colour vector), spot Cone Angle / Penumbra Angle (``spot_size`` + ``spot_blend``) — Channel Box SHAPES rows
+    (one colour vector), Use Ray Trace Shadows (the light's shadow switch), spot Cone Angle / Penumbra Angle
+    (``spot_size`` + ``spot_blend``) — Channel Box SHAPES rows
     ``maya:colorR`` ... (ui/cb_inputs._virtual). ``paths`` = the Blender properties a key on the row keys."""
     from .deformers import Attr
     out = []
@@ -244,6 +256,9 @@ def channel_attrs(light=None):
         a = Attr(f"color{c}", f"Color {c}", "NONE", *_color(i))
         a.paths = (("color", i),)
         out.append(a)
+    a = Attr("useRayTraceShadows", "Use Ray Trace Shadows", "BOOL", _shadow_get, _shadow_set)
+    a.paths = (("use_shadow", -1),)
+    out.append(a)
     for key, label, fns in (("coneAngle", "Cone Angle", _cone()), ("penumbraAngle", "Penumbra Angle", _penumbra())):
         a = Attr(key, label, "NONE", *fns)
         a.paths = (("spot_size", -1), ("spot_blend", -1))

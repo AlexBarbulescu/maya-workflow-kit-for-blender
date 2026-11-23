@@ -6,12 +6,13 @@
   vertices: Blender needs sync off for that (and then draws only the selected faces' UVs, so every face is selected).
 - UV Shell = Blender UV island. Blender's island operators group UVs by shared coordinates and ignore seams
   (pack_islands / average_islands_scale), only unwrap reads seams. So Cut = seam + the smaller side moved
-  2e-4 off the cut (a real split that still looks in place), Sew = seam cleared + the smaller shell moved onto the edge.
+  2e-4 off the cut (a real split that still looks in place), Sew = seam cleared + the UVs on the edge joined half-way.
 - Unfold = Blender Unwrap (Minimum Stretch) on the chosen shells with their borders kept as seams, each shell put back where
-  it was; Layout = Pack Islands with Maya's shell padding in pixels of the map; Texel Density = px per Maya unit.
+  it was; Layout = Average Islands Scale, then Pack Islands without turning, with the shell padding in pixels of the map;
+  Texel Density = px per Maya unit.
 
 Code: uv_islands (shells, UV selection), uv_components (UV component mode, UV Editor), uv_projection (Automatic,
-Contour Stretch); this module keeps the UV settings, Cut / Sew, Unfold / Layout, Texel Density and their operators,
+Contour Stretch, Cylindrical, Spherical); this module keeps the UV settings, Cut / Sew, Unfold / Layout, Texel Density and their operators,
 the classes tuple and re-exports.
 """
 
@@ -33,7 +34,8 @@ from .uv_components import (COMPONENTS, UV_SELECT_MODES, _MESH_SELECTION, _UV_MO
                             forget_uv_mode, in_uv_mode, leave_uv_mode, mesh_selection_wanted, prepare,
                             remember_mesh_selection, set_component)
 from .uv_projection import (AUTOPROJ, PLANE_ITEMS, ALLSET_OT_uv_automatic,  # noqa: F401
-                            ALLSET_OT_uv_automatic_edit, ALLSET_OT_uv_contour, auto_planes, auto_project, fit_unit,
+                            ALLSET_OT_uv_automatic_edit, ALLSET_OT_uv_contour, ALLSET_OT_uv_cylindrical,
+                            ALLSET_OT_uv_spherical, auto_project, fit_unit,
                             note_object_state, object_state_ok)
 
 MAYA_MAP_SIZE = 1024
@@ -102,9 +104,26 @@ def cut(bm, uv, edges):
     return split
 
 
-def sew(bm, uv, edges):
-    """Maya Sew UVs: clear the seams; a shell on the other side of an edge is moved (rotated, scaled) onto it,
-    the smaller shell onto the bigger one. Returns the number of edges sewn."""
+def weld_edge(e, a, b, uv):
+    """Join the two UVs at each end of ``e`` (one from face ``a``, one from face ``b``) half-way; every UV of the
+    vertex sitting on either of them follows (they are the same UV). Returns whether a UV moved."""
+    moved = False
+    for vert in e.verts:
+        pa, pb = _uv_at(a, vert, uv).copy(), _uv_at(b, vert, uv).copy()
+        if _same(pa, pb):
+            continue
+        moved = True
+        mid = (pa + pb) / 2
+        for loop in vert.link_loops:
+            if not loop.face.hide and (_same(loop[uv].uv, pa) or _same(loop[uv].uv, pb)):
+                loop[uv].uv = mid.copy()
+    return moved
+
+
+def sew(bm, uv, edges, move=False):
+    """Maya Sew UVs: clear the seams and join the UVs on each edge, every pair meeting half-way; the shells stay
+    where they are. ``move`` (the 3D Cut and Sew tool) first moves (rotates, scales) the smaller shell on the other
+    side of an edge onto it. Returns the number of edges sewn."""
     for e in edges:
         e.seam = False
     sewn = 0
@@ -113,19 +132,17 @@ def sew(bm, uv, edges):
         fs = [f for f in e.link_faces if not f.hide]
         if len(fs) != 2:
             continue
+        a, b = fs
+        if not move:
+            weld_edge(e, a, b, uv)
+            sewn += 1
+            continue
         if groups is None:     # islands change only when a shell moves onto another (once per edge was
             groups = islands(bm, uv, [f for f in bm.faces if not f.hide])      # O(edges x mesh))
             where = {f: i for i, isl in enumerate(groups) for f in isl}
-        a, b = fs
         v, w = e.verts
         if where[a] == where[b]:
-            shell = set(groups[where[a]])
-            for vert in (v, w):     # a slit inside one shell: weld the two sides half-way
-                pa, pb = _uv_at(a, vert, uv).copy(), _uv_at(b, vert, uv).copy()
-                mid = (pa + pb) / 2
-                for loop in vert.link_loops:
-                    if loop.face in shell and (_same(loop[uv].uv, pa) or _same(loop[uv].uv, pb)):
-                        loop[uv].uv = mid.copy()
+            weld_edge(e, a, b, uv)      # a slit inside one shell: weld the two sides half-way
             sewn += 1
             continue
         big, small = (a, b) if len(groups[where[a]]) >= len(groups[where[b]]) else (b, a)
@@ -149,12 +166,17 @@ def sew(bm, uv, edges):
 # --- Unfold / Layout (Blender operators with the selection set up) -----------------------------------
 
 def mark_shell_borders(bm, uv, faces):
-    """Seams on the borders of the shells of ``faces`` (keeps them apart through an unwrap)."""
+    """Seams on the borders of the shells of ``faces`` and on the cuts inside a shell (an edge whose two faces have
+    different UVs there): an unwrap keeps all of them apart."""
     where = {f: i for i, isl in enumerate(islands(bm, uv, [f for f in bm.faces if not f.hide])) for f in isl}
     fs = set(faces)
     for e in {e for f in faces for e in f.edges}:
         linked = [f for f in e.link_faces if not f.hide]
-        if len(linked) == 2 and (where[linked[0]] != where[linked[1]] or (linked[0] in fs) != (linked[1] in fs)):
+        if len(linked) != 2:
+            continue
+        a, b = linked
+        if where[a] != where[b] or (a in fs) != (b in fs) or \
+                not all(_same(_uv_at(a, v, uv), _uv_at(b, v, uv)) for v in e.verts):
             e.seam = True
 
 
@@ -215,8 +237,13 @@ def layout(context, ob, padding_px, map_size, fallback=True):
         return 0
     faces = [f for isl in shells for f in isl]
     margin = padding_px / max(map_size, 1)
-    _with_faces(context, ob, faces, lambda: bpy.ops.uv.pack_islands(
-        rotate=True, margin_method='FRACTION', margin=margin))
+
+    def run():
+        # like Maya Layout: the shells first scaled to their 3D size ratio (one texel density), then packed as
+        # they are turned
+        bpy.ops.uv.average_islands_scale()
+        return bpy.ops.uv.pack_islands(rotate=False, margin_method='FRACTION', margin=margin)
+    _with_faces(context, ob, faces, run)
     return len(shells)
 
 
@@ -280,7 +307,7 @@ class ALLSET_OT_uv_cut(bpy.types.Operator):
 
 @undo_steps.no_redo_panel      # no Adjust Last Operation (Maya has none)
 class ALLSET_OT_uv_sew(bpy.types.Operator):
-    """Sew the UVs along the selected edges (Maya Sew UV Edges): the smaller shell moves onto the bigger one"""
+    """Sew the UVs along the selected edges (Maya Sew UV Edges): the UVs on each edge meet half-way"""
     bl_idname = "allset.uv_sew"
     bl_label = "Sew UV Edges"
     bl_options = {'REGISTER', 'UNDO'}
@@ -297,7 +324,7 @@ class ALLSET_OT_uv_sew(bpy.types.Operator):
             uv = bm.loops.layers.uv.verify()
             edges = selected_edges(bm, uv, mesh)
             if edges:
-                done += sew(bm, uv, edges)
+                done += sew(bm, uv, edges, move=self.mesh_select)
                 bmesh.update_edit_mesh(ob.data)
         if not done:
             self.report({'WARNING'}, "Select edges between UV shells to sew")
@@ -402,4 +429,4 @@ class ALLSET_OT_uv_texel_set(bpy.types.Operator):
 
 classes = (ALLSET_OT_uv_cut, ALLSET_OT_uv_sew, ALLSET_OT_uv_unfold, ALLSET_OT_uv_layout, ALLSET_OT_uv_texel_get,
            ALLSET_OT_uv_texel_set, ALLSET_OT_uv_component, ALLSET_OT_uv_automatic, ALLSET_OT_uv_automatic_edit,
-           ALLSET_OT_uv_contour)
+           ALLSET_OT_uv_contour, ALLSET_OT_uv_cylindrical, ALLSET_OT_uv_spherical)

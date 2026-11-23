@@ -310,21 +310,111 @@ class ALLSET_OT_select_loops(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     ring: bpy.props.BoolProperty(name="Ring", description="Edge rings instead of edge loops")
+    border: bpy.props.BoolProperty(
+        name="Whole Border", options={'SKIP_SAVE'},
+        description="A selected open-border edge takes in its whole border, round the corners too "
+                    "(Maya Convert Selection > To Edge Loop)")
 
     @classmethod
     def poll(cls, context):
         return context.mode == 'EDIT_MESH'
 
     def execute(self, context):
+        starts = {}
+        if self.border and not self.ring:
+            for ob in context.objects_in_mode_unique_data:
+                bm = bmesh.from_edit_mesh(ob.data)
+                starts[ob.name] = [e.index for e in bm.edges if e.select and e.is_boundary]
         # Blender 5.0: mesh.loop_multi_select(ring); 5.1+: mesh.select_edge_loop_multi /
         # select_edge_ring_multi (VIEW3D_MT_edit_mesh_select_loops).
         from .. import compat
         if compat.has_op(bpy.ops.mesh, "loop_multi_select"):
-            return bpy.ops.mesh.loop_multi_select(ring=self.ring)
-        op = bpy.ops.mesh.select_edge_ring_multi if self.ring else bpy.ops.mesh.select_edge_loop_multi
-        return op()
+            res = bpy.ops.mesh.loop_multi_select(ring=self.ring)
+        else:
+            op = bpy.ops.mesh.select_edge_ring_multi if self.ring else bpy.ops.mesh.select_edge_loop_multi
+            res = op()
+        for ob in context.objects_in_mode_unique_data:
+            if starts.get(ob.name):
+                bm = bmesh.from_edit_mesh(ob.data)
+                bm.edges.ensure_lookup_table()
+                for e in border_run(bm.edges[i] for i in starts[ob.name]):
+                    e.select_set(True)
+                bmesh.update_edit_mesh(ob.data)
+        return res
 
+
+def border_run(edges):
+    """The open-border edges joined to ``edges`` through vertices where exactly two border edges meet: a border
+    edge's whole border loop, round its corners (Maya's edge loop of a border edge)."""
+    seen, todo = set(), list(edges)
+    while todo:
+        e = todo.pop()
+        if e in seen:
+            continue
+        seen.add(e)
+        for v in e.verts:
+            nxt = [o for o in v.link_edges if o is not e and o.is_boundary]
+            if len(nxt) == 1:
+                todo.append(nxt[0])
+    return seen
+
+
+
+def shrink_off_border(bm, mode):
+    """After Blender's Shrink: Maya also lets go of the selected vertices on an open border of the mesh and of the
+    selected faces that touch one (the mesh border counts as outside the selection). ``mode`` = 'VERT' / 'FACE'."""
+    if mode == 'VERT':
+        for v in bm.verts:
+            if v.select and v.is_boundary:
+                v.select_set(False)
+    else:
+        for f in bm.faces:
+            if f.select and any(v.is_boundary for v in f.verts):
+                f.select_set(False)
+    bm.select_flush_mode()
+
+
+@undo_steps.no_redo_panel      # no Adjust Last Operation (Maya has none)
+class ALLSET_OT_grow_selection(bpy.types.Operator):
+    """Grow the component selection by one step (Maya Select > Grow, >): vertices and faces take in every vertex
+    or face that shares a face with the selection, edges every edge that shares a vertex with a selected edge"""
+    bl_idname = "allset.grow_selection"
+    bl_label = "Grow Selection"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.mode == 'EDIT_MESH'
+
+    def execute(self, context):
+        mode = tuple(context.scene.tool_settings.mesh_select_mode)
+        return bpy.ops.mesh.select_more(use_face_step=mode != _MODES['EDGE'])
+
+
+@undo_steps.no_redo_panel      # no Adjust Last Operation (Maya has none)
+class ALLSET_OT_shrink_selection(bpy.types.Operator):
+    """Shrink the component selection by one step (Maya Select > Shrink, <): the border of the selected region goes,
+    and so do selected vertices and faces on an open border of the mesh"""
+    bl_idname = "allset.shrink_selection"
+    bl_label = "Shrink Selection"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.mode == 'EDIT_MESH'
+
+    def execute(self, context):
+        res = bpy.ops.mesh.select_less()
+        kind = next((k for k in ('VERT', 'FACE') if tuple(context.scene.tool_settings.mesh_select_mode) == _MODES[k]),
+                    None)
+        if kind is not None and 'FINISHED' in res:
+            for ob in context.objects_in_mode_unique_data:
+                bm = bmesh.from_edit_mesh(ob.data)
+                shrink_off_border(bm, kind)
+                bmesh.update_edit_mesh(ob.data)
+        return res
 
 
 classes = (ALLSET_OT_select_none, ALLSET_OT_bevel, ALLSET_OT_bevel_edit, ALLSET_OT_convert_selection,
-           ALLSET_OT_delete_components, ALLSET_OT_select_loops)
+           ALLSET_OT_delete_components, ALLSET_OT_select_loops,
+           ALLSET_OT_grow_selection, ALLSET_OT_shrink_selection)

@@ -106,8 +106,8 @@ CAMERA = [
       ("prop", "data", "clip_start", "Near Clip Plane"),
       ("prop", "data", "clip_end", "Far Clip Plane")),
     S("Film Back", True,
-      ("prop", "data", "sensor_width", "Horizontal Film Aperture"),
-      ("prop", "data", "sensor_height", "Vertical Film Aperture"),
+      ("prop", "data", "allset_film_aperture_h", "Horizontal Film Aperture"),    # inches (operators/film_fit.py)
+      ("prop", "data", "allset_film_aperture_v", "Vertical Film Aperture"),
       ("prop", "data", "allset_film_fit", "Fit Resolution Gate"),     # Maya Fill / Horizontal / Vertical / Overscan
       ("prop", "data", "shift_x", "Film Offset X"),
       ("prop", "data", "shift_y", "Film Offset Y")),
@@ -226,9 +226,9 @@ STANDARD_SURFACE_ATTRS = (
 )
 MAYA_ATTR = {socket: attr for attr, socket in STANDARD_SURFACE_ATTRS if socket}
 # --- lambert (Maya Attribute Editor) -----------------------
-# Principled stand-ins: transparency -> Alpha (opacity), incandescence -> Emission, bump ->
-# Normal, diffuse -> the "Maya Diffuse" node factor (Base Color = Color x Diffuse, operators/material.py;
-# Color = that node's B input), translucence -> Subsurface; refractions -> Transmission.
+# Maya names on Principled inputs: color -> Base Color, transparency -> Alpha (opacity), incandescence -> Emission,
+# bump -> Normal, translucence -> Subsurface; refractions -> Transmission. Diffuse shows only on a material made by an
+# older kit version (its "Maya Diffuse" node, operators/material.py).
 _LAMBERT_COMMON = S("Common Material Attributes", True,
                     ("socket", "Base Color", "Color"), ("socket", "Alpha", "Opacity"),
                     ("socket", "Emission Color", "Incandescence"), ("socket", "Normal", "Bump Mapping"),
@@ -266,7 +266,7 @@ ANISOTROPIC = [_LAMBERT_COMMON,
                _RAYTRACE]
 RAMP_SHADER = [
     S("Color", True, ("missing", "Color", "the Color Ramp node in the graph (input: facing ratio)"),
-      ("maya", "allset_diffuse", "Diffuse", "Diffuse")),       # rampShader diffuse 0.8
+      ("maya", "allset_diffuse", "Diffuse", "Diffuse")),       # older kit materials only
     S("Specular Shading", True, ("socket", "Roughness", "Specularity")),
     S("Incandescence", False, ("socket", "Emission Color", "Incandescence")),
 ]
@@ -345,8 +345,17 @@ TYPE = [
                                "text to a mesh (Modify > Convert) and animate that.")),
 ]
 
+# --- image plane (a Blender image empty; the kit's View > Image Plane, Create > Free Image Plane) ------------------
+IMAGE_PLANE = [
+    S("Image Plane Attributes", True,
+      ("prop", "ob", "allset_image_plane_display", "Display Mode"),
+      ("prop", "data", "filepath", "Image Name"),
+      ("prop", "ob", "allset_alpha_gain", "Alpha Gain")),          # #436: see-through reference images
+]
+
 # (sections, Maya template name or None)
 BY_KIND = {
+    "IMAGE_PLANE": (IMAGE_PLANE, None),
     "FONT": (TYPE, None),
     "transform": (TRANSFORM, "transform"),
     "joint": (JOINT, "joint"),
@@ -373,7 +382,7 @@ BY_KIND = {
 # Maya node type shown in the tab header ("transform: [pCube1]").
 NODE_TYPE = {"MESH": "mesh", "CURVE": "nurbsCurve", "SURFACE": "nurbsSurface", "CAMERA": "camera",
              "LIGHT": "light", "LATTICE": "lattice", "ARMATURE": "joint", "FONT": "type",
-             "META": "metaball", "EMPTY": "locator"}
+             "META": "metaball", "EMPTY": "locator", "IMAGE_PLANE": "imagePlane"}
 LIGHT_TYPE = {"POINT": "pointLight", "SUN": "directionalLight", "SPOT": "spotLight",
               "AREA": "areaLight"}
 

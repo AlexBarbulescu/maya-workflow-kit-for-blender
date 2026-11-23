@@ -5,8 +5,6 @@ sculpt). Run by ``maya_patches.apply`` in ``PATCHES`` order; shared state: ``may
 line of ``$S\\presets\\keyconfig\\keymap_data\\industry_compatible_data.py``.
 """
 
-import sys
-
 from . import patch
 from .patch import make_event
 from .maya_patches_base import PICK_WALK_KEYS, UV_KM, VIEW3_SHADOWS, _add
@@ -32,7 +30,7 @@ CONVERT_KEYS = (("F9", "VERT"), ("F10", "EDGE"), ("F11", "FACE"))
 # with a key of their own for < > (Blender's GRLESS) type "<" plain and ">" with Shift. Mesh components and UVs.
 GROW_KEYS = (make_event("PERIOD", shift=True, repeat=True), make_event("GRLESS", shift=True, repeat=True))
 SHRINK_KEYS = (make_event("COMMA", shift=True, repeat=True), make_event("GRLESS", repeat=True))
-GROW_SHRINK = (("Mesh", "mesh.select_more", "mesh.select_less"),
+GROW_SHRINK = (("Mesh", "allset.grow_selection", "allset.shrink_selection"),
                ("UV Editor", "uv.select_more", "uv.select_less"))
 
 
@@ -288,10 +286,7 @@ def patch_key_batch_3(kd):
     for key, mode in (("FOUR", 'WIREFRAME'), ("FIVE", 'SHADED'), ("SIX", 'IMAGE'), ("EIGHT", 'SHELL_BORDERS'),
                       ("NINE", 'TEXTURE_BORDERS')):
         _add(kd, "UV Editor", "allset.uv_display", make_event(key), {"mode": mode})
-    _add(kd, "UV Editor", "allset.uv_isolate", make_event("ONE", ctrl=True))
-    if sys.platform == "darwin":        # Maya on macOS: Cmd+1 too (Blender's macOS data copies Ctrl+1 to Cmd+1)
-        kd.remove("UV Editor", "mesh.select_mode", type="ONE", oskey=True, optional=True)
-        _add(kd, "UV Editor", "allset.uv_isolate", make_event("ONE", oskey=True))
+    _add(kd, "UV Editor", "allset.uv_isolate", make_event("ONE", ctrl=True))          # macOS: Cmd+1 too
     _add(kd, "UV Editor", "allset.uv_delete", make_event("DEL"))
     _add(kd, "UV Editor", "allset.uv_create_shell", make_event("X", ctrl=True, shift=True))
 

@@ -186,8 +186,8 @@ def add_surface_constraint(context, kind, owner, surface, aim_vector=rig_tools.A
     return con
 
 
-WORLD_UP_ITEMS = (("Vector", "Vector", "World up vector (0, 1, 0) = Blender world Z (default)"),
-                  ("Scene up", "Scene up", "The scene's up axis (Maya Y = Blender Z)"),
+WORLD_UP_ITEMS = (("Vector", "Vector", "World up vector 0 0 1: the scene's Z, up (default)"),
+                  ("Scene up", "Scene up", "The scene's up axis (Z)"),
                   ("None", "None", "No up vector: the shortest turn (Blender Damped Track)"))
 
 
@@ -197,7 +197,7 @@ class _SurfaceConstraint:
 
     weight: FloatProperty(name="Weight", default=1.0, min=0.0, max=1.0)
     aim_vector: FloatVectorProperty(name="Aim vector", default=(1.0, 0.0, 0.0), size=3)
-    up_vector: FloatVectorProperty(name="Up vector", default=(0.0, 1.0, 0.0), size=3)
+    up_vector: FloatVectorProperty(name="Up vector", default=(0.0, 0.0, 1.0), size=3)
     world_up_type: EnumProperty(name="World up type", items=WORLD_UP_ITEMS, default="Vector")
 
     @classmethod

@@ -14,7 +14,7 @@ from . import cb_entry
 from .cb_nodes import full_path, is_bone, is_root_joint, lead, root_translate, set_root_translate
 from .cb_keys import (BLEND_PREFIX, CUSTOM_PREFIX, HISTORY_PREFIX, MAIN_BY_KEY, MODEL_PREFIX, SHAPE_PREFIX, blend_path,
                       channel_path, input_parts, is_blend_key, is_constraint_key, is_history_key, is_input_key,
-                      is_keyable, is_shape_key, model_parts, nice_name)
+                      is_keyable, is_locked, is_shape_key, model_parts, nice_name)
 from .cb_inputs import (SHAPE_PROPS, _row_kind, _row_read, _row_write, _virtual, blend_target, input_label, row_owner,
                         shape_label)
 
@@ -180,7 +180,7 @@ def _history_get(ob, key):
     from ..operators import prim_history
     owner, node = history_node_of(ob, key)
     name = key[len(HISTORY_PREFIX):]
-    return prim_history.to_entry(node, name, prim_history.attrs(owner)[name])
+    return prim_history.to_entry(node, name, prim_history.shown_attrs(owner)[name])
 
 
 def _history_set(ob, key, value):
@@ -191,8 +191,8 @@ def _history_set(ob, key, value):
     if prim_history.entry_kind(node["type"], name) == "INT":
         value = math.floor(value + 0.5)      # a drag / slider gives floats: integer attributes step
     value = prim_shapes.clamp(node["type"], name, value)
-    if value != prim_history.attrs(owner)[name]:
-        prim_history.rebuild(bpy.context, ob, {name: value})
+    if value != prim_history.shown_attrs(owner)[name]:
+        prim_history.rebuild(bpy.context, ob, prim_history.from_scene({name: value}))
 
 
 def curve_owner(ob, key):
@@ -346,6 +346,9 @@ def set_value(ob, key, value):
 
 
 def keyframe(ob, key, keytype='KEYFRAME'):
+    if is_locked(ob, key):
+        # like Maya: a locked channel is never keyed (Key Selected, Key All Keyable, S, setKeyframe)
+        return False
     prop = _own_weight(ob, key)
     if prop is not None:
         # a one-target constraint's own weight: an ID property of the node, keyed like a custom attribute

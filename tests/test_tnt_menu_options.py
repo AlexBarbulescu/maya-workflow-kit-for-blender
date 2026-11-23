@@ -45,6 +45,8 @@ def test_cylindrical_options_apply_to_whole_object_and_restore_mode():
     for layer in list(cube.data.uv_layers):
         cube.data.uv_layers.remove(layer)
     window = options.find_path('UV/Cylindrical')
+    assert {'direction', 'radius'} <= window.defaults().keys()
+    assert {'direction', 'seam'} <= options.find_path('UV/Spherical').defaults().keys()
     assert options.run(window, bpy.context, window.defaults()) == {'FINISHED'}
     assert bpy.context.mode == 'OBJECT' and bpy.context.active_object == cube
     assert len(cube.data.uv_layers) == 1

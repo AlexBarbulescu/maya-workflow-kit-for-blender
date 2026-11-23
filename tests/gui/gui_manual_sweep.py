@@ -2677,8 +2677,8 @@ def _m63_2_paths():
     missing = [p for p in paths if p not in mm]
     check(f"[M63-2] every Mesh / Components / Tools button runs its Maya menu action (unmapped {missing})", not missing)
     notes = mod("ui.notices").PANEL_NOTICES
-    grey = ["Modeling Toolkit/Highlight Backfaces", "Modeling Toolkit/Selection Constraint", "Modeling Toolkit/UV"]
-    check(f"[M63-2] greyed rows (Highlight Backfaces, Selection Constraint, UV) carry a tooltip / Help Line "
+    grey = ["Modeling Toolkit/Highlight Backfaces", "Modeling Toolkit/UV"]       # Selection Constraint works (#435)
+    check(f"[M63-2] greyed rows (Highlight Backfaces, UV) carry a tooltip / Help Line "
           f"notice ({[g for g in grey if g not in notes]} missing)", all(g in notes for g in grey))
     check("[M63-2] Target Weld is a real tool now, not greyed", mm.get("Mesh Tools/Target Weld", (None,))[0] == "tool")
     ob = edit_cube([0])
@@ -5033,7 +5033,7 @@ def _m70_2_v3d_check():
     got = kinds()
     check(f"[M70-2] 3D View Shift+S + LMB > Tangents > Linear: the current frame's key only ({C['k0']} -> {got}; "
           f"submenu opened {C['m70_2_v3d_opened']})",
-          C["m70_2_v3d_opened"] and got[10] == 'LINEAR' and got[1] == C["k0"][1] and got[20] == C["k0"][20])
+          C["m70_2_v3d_opened"] and got[10] == 'VECTOR' and got[1] == C["k0"][1] and got[20] == C["k0"][20])
     wm = bpy.context.window_manager
     wm.allset_time_range = (1, 10)
     wm.allset_time_range_on = True

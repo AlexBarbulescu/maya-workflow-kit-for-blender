@@ -3971,15 +3971,19 @@
   "Marking menus/Move Options": {
    "Along Normals": "Along Normals",
    "Along Rotation Axis": "Along Rotation Axis",
+   "Angle": "Angle",
    "Asset Centric": "Asset Centric",
    "Automatic Camera-Based Selection": "Automatic Camera-Based Selection",
    "Axis": "Axis",
+   "Border": "Border",
    "Camera-Based Selection": "Camera-Based Selection",
    "Clear Selection": "Clear Selection",
    "Color Feedback": "Color Feedback",
    "Component": "Component",
    "Custom": "Custom",
    "Discrete Move": "Discrete Move",
+   "Edge Loop": "Edge Loop",
+   "Edge Ring": "Edge Ring",
    "Edge Slide": "Edge Slide",
    "Face Center": "Face Center",
    "Global": "Global",
@@ -4005,6 +4009,7 @@
    "Set To Object": "Set To Object",
    "Set To Point": "Set To Point",
    "Set to Component": "Set to Component",
+   "Shell": "Shell",
    "Shift Duplicate": "Shift Duplicate",
    "Shift Extrude": "Shift Extrude",
    "Snap": "Snap",
@@ -4015,6 +4020,7 @@
    "Topology": "Topology",
    "Transform Constraints": "Transform Constraints",
    "Tweak Mode": "Tweak Mode",
+   "UV Edge Loop": "UV Edge Loop",
    "Update Triad": "Update Triad",
    "Vertex": "Vertex",
    "Volume": "Volume",
@@ -4025,8 +4031,10 @@
   },
   "Marking menus/Rotate Options": {
    "Along Normals": "Along Normals",
+   "Angle": "Angle",
    "Asset Centric": "Asset Centric",
    "Automatic Camera-Based Selection": "Automatic Camera-Based Selection",
+   "Border": "Border",
    "Camera-Based Selection": "Camera-Based Selection",
    "Clear Selection": "Clear Selection",
    "Color Feedback": "Color Feedback",
@@ -4034,6 +4042,8 @@
    "Custom": "Custom",
    "Default": "Default",
    "Discrete Rotate": "Discrete Rotate",
+   "Edge Loop": "Edge Loop",
+   "Edge Ring": "Edge Ring",
    "Edge Slide": "Edge Slide",
    "Free Rotate": "Free Rotate",
    "Gimbal": "Gimbal",
@@ -4059,6 +4069,7 @@
    "Set To Object": "Set To Object",
    "Set To Point": "Set To Point",
    "Set to Component": "Set to Component",
+   "Shell": "Shell",
    "Shift Duplicate": "Shift Duplicate",
    "Shift Extrude": "Shift Extrude",
    "Soft Select": "Soft Select",
@@ -4068,6 +4079,7 @@
    "Topology": "Topology",
    "Transform Constraints": "Transform Constraints",
    "Tweak Mode": "Tweak Mode",
+   "UV Edge Loop": "UV Edge Loop",
    "Volume": "Volume",
    "World": "World",
    "X Axis": "X Axis",
@@ -4077,15 +4089,19 @@
   "Marking menus/Scale Options": {
    "Along Normals": "Along Normals",
    "Along Rotation Axis": "Along Rotation Axis",
+   "Angle": "Angle",
    "Asset Centric": "Asset Centric",
    "Automatic Camera-Based Selection": "Automatic Camera-Based Selection",
    "Axis": "Axis",
+   "Border": "Border",
    "Camera-Based Selection": "Camera-Based Selection",
    "Clear Selection": "Clear Selection",
    "Color Feedback": "Color Feedback",
    "Component": "Component",
    "Custom": "Custom",
    "Default": "Default",
+   "Edge Loop": "Edge Loop",
+   "Edge Ring": "Edge Ring",
    "Edge Slide": "Edge Slide",
    "Global": "Global",
    "Highlight Backfaces": "Highlight Backfaces",
@@ -4112,6 +4128,7 @@
    "Set To Object": "Set To Object",
    "Set To Point": "Set To Point",
    "Set to Component": "Set to Component",
+   "Shell": "Shell",
    "Shift Duplicate": "Shift Duplicate",
    "Shift Extrude": "Shift Extrude",
    "Snap Scale": "Snap Scale",
@@ -4122,6 +4139,7 @@
    "Topology": "Topology",
    "Transform Constraints": "Transform Constraints",
    "Tweak Mode": "Tweak Mode",
+   "UV Edge Loop": "UV Edge Loop",
    "Volume": "Volume",
    "World": "World",
    "X Axis": "X Axis",
@@ -4130,11 +4148,15 @@
   },
   "Marking menus/Select Options": {
    "Along Normals": "Along Normals",
+   "Angle": "Angle",
    "Asset Centric": "Asset Centric",
    "Automatic Camera-Based Selection": "Automatic Camera-Based Selection",
+   "Border": "Border",
    "Camera-Based Selection": "Camera-Based Selection",
    "Clear Selection": "Clear Selection",
    "Color Feedback": "Color Feedback",
+   "Edge Loop": "Edge Loop",
+   "Edge Ring": "Edge Ring",
    "Edge Slide": "Edge Slide",
    "Global": "Global",
    "Highlight Backfaces": "Highlight Backfaces",
@@ -4148,12 +4170,14 @@
    "Select": "Select",
    "Select Options": "Select Options",
    "Selection Constraints": "Selection Constraints",
+   "Shell": "Shell",
    "Soft Select": "Soft Select",
    "Surface": "Surface",
    "Surface Slide": "Surface Slide",
    "Symmetry": "Symmetry",
    "Topology": "Topology",
    "Transform Constraints": "Transform Constraints",
+   "UV Edge Loop": "UV Edge Loop",
    "Volume": "Volume",
    "World": "World",
    "X Axis": "X Axis",
@@ -5425,6 +5449,7 @@
    "Value": "Value"
   },
   "Labels/operators/component": {
+   "A selected open-border edge takes in its whole border, round the corners too (Maya Convert Selection > To Edge Loop)": "A selected open-border edge takes in its whole border, round the corners too (Maya Convert Selection > To Edge Loop)",
    "Bevel": "Bevel",
    "Bevel width as a fraction of the shortest edge it slides along": "Bevel width as a fraction of the shortest edge it slides along",
    "Bevel width in Maya units when Offset As Fraction is off": "Bevel width in Maya units when Offset As Fraction is off",
@@ -5438,6 +5463,7 @@
    "Faces": "Faces",
    "Faces across the bevel": "Faces across the bevel",
    "Fraction": "Fraction",
+   "Grow Selection": "Grow Selection",
    "New edges whose faces meet at more than this angle (degrees) are hard, the others soft": "New edges whose faces meet at more than this angle (degrees) are hard, the others soft",
    "Offset": "Offset",
    "Offset As Fraction": "Offset As Fraction",
@@ -5447,10 +5473,12 @@
    "Segments": "Segments",
    "Select Edge Loops": "Select Edge Loops",
    "Select None": "Select None",
+   "Shrink Selection": "Shrink Selection",
    "Smoothing Angle": "Smoothing Angle",
    "To": "To",
    "Use Fraction (off: Offset in Maya units)": "Use Fraction (off: Offset in Maya units)",
    "Vertices": "Vertices",
+   "Whole Border": "Whole Border",
    "World Space": "World Space",
    "polyBevel": "polyBevel"
   },
@@ -5755,6 +5783,14 @@
    "Where a connection cuts an edge (0 = its first end, 1 = the other)": "Where a connection cuts an edge (0 = its first end, 1 = the other)",
    "Where a loop ends inside the mesh, merge the two triangles there": "Where a loop ends inside the mesh, merge the two triangles there",
    "Where the loop cuts the clicked edge (from its first vertex)": "Where the loop cuts the clicked edge (from its first vertex)"
+  },
+  "Labels/operators/edge_marquee": {
+   "Box Select": "Box Select"
+  },
+  "Labels/operators/edge_rotate": {
+   "Left": "Left",
+   "Middle": "Middle",
+   "Rotate": "Rotate"
   },
   "Labels/operators/edit_mesh_items": {
    "Detach": "Detach",
@@ -6094,7 +6130,7 @@
   },
   "Labels/operators/group": {
    "Group": "Group",
-   "Keep the children where they are (off = the group's transform goes into their local values)": "Keep the children where they are (off = the group's transform goes into their local values)",
+   "Keep the children where they are (off = keep their local values)": "Keep the children where they are (off = keep their local values)",
    "Parent": "Parent",
    "Preserve Position": "Preserve Position",
    "Transform Group": "Transform Group",
@@ -6150,8 +6186,11 @@
    "Twist type": "Twist type"
   },
   "Labels/operators/image_plane": {
+   "Alpha Gain": "Alpha Gain",
    "Delete Image Plane": "Delete Image Plane",
    "Display Mode": "Display Mode",
+   "Display Mode of the image plane, like the Image Plane button's right-click menu": "Display Mode of the image plane, like the Image Plane button's right-click menu",
+   "How opaque the image plane is drawn: lower it to see through the image, e.g. to trace over it (Blender: the image empty's Opacity)": "How opaque the image plane is drawn: lower it to see through the image, e.g. to trace over it (Blender: the image empty's Opacity)",
    "Image Plane": "Image Plane",
    "Image Plane Attributes": "Image Plane Attributes",
    "Image Plane Display Mode": "Image Plane Display Mode",
@@ -6305,6 +6344,7 @@
   },
   "Labels/operators/manip": {
    "Drag Active Handle": "Drag Active Handle",
+   "Drag Active Handle Along Edges": "Drag Active Handle Along Edges",
    "Drag Along Closest Axis": "Drag Along Closest Axis",
    "Factor": "Factor",
    "Manipulator Ctrl Handle": "Manipulator Ctrl Handle",
@@ -6315,12 +6355,15 @@
    "Manipulator Slide": "Manipulator Slide",
    "Manipulator Slide Label": "Manipulator Slide Label",
    "Manipulator Slide Label Mouse": "Manipulator Slide Label Mouse",
+   "Rotate": "Rotate",
+   "Scale": "Scale",
    "Smart Duplicate": "Smart Duplicate",
    "Smart Duplicate / Extrude": "Smart Duplicate / Extrude",
    "Smart Extrude": "Smart Extrude"
   },
   "Labels/operators/manip_scale": {
    "Ctrl on an axis handle: scale the other two axes": "Ctrl on an axis handle: scale the other two axes",
+   "Ctrl+Shift: keep every vertex on one of its edges (mesh edit mode)": "Ctrl+Shift: keep every vertex on one of its edges (mesh edit mode)",
    "Left": "Left",
    "Middle": "Middle",
    "Scale": "Scale"
@@ -6332,6 +6375,7 @@
    "Assign Existing Material": "Assign Existing Material",
    "Assign Favorite Material": "Assign Favorite Material",
    "Assign New Material": "Assign New Material",
+   "Convert Old Kit Materials": "Convert Old Kit Materials",
    "Cosine Power": "Cosine Power",
    "Diffuse": "Diffuse",
    "Eccentricity": "Eccentricity",
@@ -6340,7 +6384,7 @@
    "Material Attributes": "Material Attributes",
    "Maya Blinn eccentricity (size of the highlight); Principled Roughness = sqrt(eccentricity)": "Maya Blinn eccentricity (size of the highlight); Principled Roughness = sqrt(eccentricity)",
    "Maya Phong cosine power (higher = smaller highlight); Principled Roughness = (2 / (power + 2)) ^ 0.25": "Maya Phong cosine power (higher = smaller highlight); Principled Roughness = (2 / (power + 2)) ^ 0.25",
-   "Maya diffuse: the share of the colour reflected (Base Color = Color x Diffuse through the Maya Diffuse node)": "Maya diffuse: the share of the colour reflected (Base Color = Color x Diffuse through the Maya Diffuse node)",
+   "Maya diffuse of a material made by an older kit version: the share of the colour reflected (Base Color = Color x Diffuse through its Maya Diffuse node)": "Maya diffuse of a material made by an older kit version: the share of the colour reflected (Base Color = Color x Diffuse through its Maya Diffuse node)",
    "No materials in the scene": "No materials in the scene",
    "Use the object under the RMB menu when nothing is selected": "Use the object under the RMB menu when nothing is selected"
   },
@@ -6455,7 +6499,7 @@
    "Preserve UVs": "Preserve UVs",
    "Slice Along Plane": "Slice Along Plane",
    "Slice: delete the faces on one side of the slice (the side to the right of the drag)": "Slice: delete the faces on one side of the slice (the side to the right of the drag)",
-   "Slice: how far extracted faces move (Maya X / Y / Z, scene units)": "Slice: how far extracted faces move (Maya X / Y / Z, scene units)",
+   "Slice: how far extracted faces move (X / Y / Z, scene units)": "Slice: how far extracted faces move (X / Y / Z, scene units)",
    "Slice: only faces facing the camera are cut": "Slice: only faces facing the camera are cut",
    "Slice: split the faces on one side off and move them by the offset": "Slice: split the faces on one side off and move them by the offset",
    "Smoothing Angle": "Smoothing Angle",
@@ -7160,6 +7204,12 @@
    "Type": "Type",
    "Weight": "Weight"
   },
+  "Labels/operators/sel_constraint": {
+   "Angle": "Angle",
+   "Angle tolerance in degrees: a pick also selects the connected components whose normal is within this angle of the picked one's (0 = only what is picked)": "Angle tolerance in degrees: a pick also selects the connected components whose normal is within this angle of the picked one's (0 = only what is picked)",
+   "Maya selection constraint for picks in component mode": "Maya selection constraint for picks in component mode",
+   "Selection Constraint": "Selection Constraint"
+  },
   "Labels/operators/select_2d": {
    "Maya Click Select": "Maya Click Select",
    "Maya Marquee Toggle": "Maya Marquee Toggle"
@@ -7462,6 +7512,11 @@
    "Symmetry: Off": "Symmetry: Off",
    "Use matched regions for Quad Draw topology symmetry": "Use matched regions for Quad Draw topology symmetry"
   },
+  "Labels/operators/symmetry_select": {
+   "Box": "Box",
+   "Box Select": "Box Select",
+   "Lasso": "Lasso"
+  },
   "Labels/operators/taphold": {
    "Binding": "Binding",
    "Maya Tap/Hold Key": "Maya Tap/Hold Key"
@@ -7596,9 +7651,11 @@
    "1 = Fewer pieces, 0 = Less distortion": "1 = Fewer pieces, 0 = Less distortion",
    "Automatic": "Automatic",
    "Contour Stretch": "Contour Stretch",
+   "Cylindrical": "Cylindrical",
    "Optimize": "Optimize",
    "Percentage Space": "Percentage Space",
    "Planes": "Planes",
+   "Spherical": "Spherical",
    "polyAutoProj": "polyAutoProj"
   },
   "Labels/operators/uv_select_178": {
@@ -8937,6 +8994,7 @@
    "Blender": "Blender",
    "Menus": "Menus",
    "Shelf": "Shelf",
+   "Tool Box": "Tool Box",
    "UI Elements": "UI Elements"
   },
   "Labels/ui/mesh_tools": {
@@ -9001,6 +9059,7 @@
    "Reset": "Reset",
    "Reset Settings": "Reset Settings",
    "Reset Soft Selection": "Reset Soft Selection",
+   "Selection Constraint": "Selection Constraint",
    "Soft Select": "Soft Select",
    "Soft selection radius in Maya units (Blender: Proportional Size)": "Soft selection radius in Maya units (Blender: Proportional Size)",
    "Surface": "Surface",
@@ -9156,6 +9215,7 @@
    "IK handles (the empties IK constraints follow: shown or hidden in every view)": "IK handles (the empties IK constraints follow: shown or hidden in every view)",
    "Image planes (Blender image empties: shown or hidden in every view, like Alt+4)": "Image planes (Blender image empties: shown or hidden in every view, like Alt+4)",
    "Isolate select": "Isolate select",
+   "Joints in this view. Rig controls drawn as bone shapes stay (they follow NURBS Curves); while the scene has such controls, the joints are shown or hidden in every view": "Joints in this view. Rig controls drawn as bone shapes stay (they follow NURBS Curves); while the scene has such controls, the joints are shown or hidden in every view",
    "Lights: their shapes in this view. Hidden lights still light the view while cameras and locators are hidden too (Blender hides those shapes together); with cameras or locators shown they stop lighting it": "Lights: their shapes in this view. Hidden lights still light the view while cameras and locators are hidden too (Blender hides those shapes together); with cameras or locators shown they stop lighting it",
    "Locators (empties) in this view": "Locators (empties) in this view",
    "Lock Camera: the camera this view looks through can't be moved (Blender: its location and rotation channels are locked)": "Lock Camera: the camera this view looks through can't be moved (Blender: its location and rotation channels are locked)",
@@ -9704,7 +9764,8 @@
    "Quick Layouts": "Quick Layouts",
    "Search Blender commands in the main modeling viewport (F3)": "Search Blender commands in the main modeling viewport (F3)",
    "Search Commands": "Search Commands",
-   "Single Perspective View": "Single Perspective View"
+   "Single Perspective View": "Single Perspective View",
+   "Tool Box": "Tool Box"
   },
   "Labels/ui/trax_editor": {
    "Blend": "Blend",
@@ -9953,7 +10014,7 @@
    "Start time": "Start time",
    "Time range": "Time range",
    "Up axis": "Up axis",
-   "World up type Object up / Object rotation up / Normal (Blender keeps the up axis toward world Z = Scene up / Vector 0 1 0)": "World up type Object up / Object rotation up / Normal (Blender keeps the up axis toward world Z = Scene up / Vector 0 1 0)",
+   "World up type Object up / Object rotation up / Normal (Blender keeps the up axis toward world Z = Scene up / Vector 0 0 1)": "World up type Object up / Object rotation up / Normal (Blender keeps the up axis toward world Z = Scene up / Vector 0 0 1)",
    "World up vector / object": "World up vector / object"
   },
   "Option windows/option_windows_197": {
@@ -11467,7 +11528,9 @@
    "Clear the selection and go back to object mode (Maya Alt+D)": "Clear the selection and go back to object mode (Maya Alt+D)",
    "Convert the selection to the vertices, edges or faces it touches (Maya Ctrl+F9-F11)": "Convert the selection to the vertices, edges or faces it touches (Maya Ctrl+F9-F11)",
    "Delete the selected faces, edges (non-border, cleaning up their vertices) or vertices\nright away, by the select mode (Maya Delete on components)": "Delete the selected faces, edges (non-border, cleaning up their vertices) or vertices\nright away, by the select mode (Maya Delete on components)",
-   "Select the edge loops (or rings) of the selected edges (Maya Select > Contiguous Edges, Convert\nSelection > To Edge Loop / Ring)": "Select the edge loops (or rings) of the selected edges (Maya Select > Contiguous Edges, Convert\nSelection > To Edge Loop / Ring)"
+   "Grow the component selection by one step (Maya Select > Grow, >): vertices and faces take in every vertex\nor face that shares a face with the selection, edges every edge that shares a vertex with a selected edge": "Grow the component selection by one step (Maya Select > Grow, >): vertices and faces take in every vertex\nor face that shares a face with the selection, edges every edge that shares a vertex with a selected edge",
+   "Select the edge loops (or rings) of the selected edges (Maya Select > Contiguous Edges, Convert\nSelection > To Edge Loop / Ring)": "Select the edge loops (or rings) of the selected edges (Maya Select > Contiguous Edges, Convert\nSelection > To Edge Loop / Ring)",
+   "Shrink the component selection by one step (Maya Select > Shrink, <): the border of the selected region goes,\nand so do selected vertices and faces on an open border of the mesh": "Shrink the component selection by one step (Maya Select > Shrink, <): the border of the selected region goes,\nand so do selected vertices and faces on an open border of the mesh"
   },
   "Tooltips/operators/component_local": {
    "Rotate the selected component groups about their own normals, or scale them across their normals (Maya\nCtrl+middle-drag with the Rotate / Scale tool)": "Rotate the selected component groups about their own normals, or scale them across their normals (Maya\nCtrl+middle-drag with the Rotate / Scale tool)"
@@ -11611,6 +11674,12 @@
    "Maya Tool Settings of Insert Edge Loop / Offset Edge Loop / Slide Edge (default values).": "Maya Tool Settings of Insert Edge Loop / Offset Edge Loop / Slide Edge (default values).",
    "Middle-drag: slide the selected edges along their neighbouring edges (Maya Slide Edge)": "Middle-drag: slide the selected edges along their neighbouring edges (Maya Slide Edge)"
   },
+  "Tooltips/operators/edge_marquee": {
+   "Marquee on edges: every edge it touches (Shift toggles, Ctrl removes, Ctrl+Shift adds)": "Marquee on edges: every edge it touches (Shift toggles, Ctrl removes, Ctrl+Shift adds)"
+  },
+  "Tooltips/operators/edge_rotate": {
+   "Rotate the selected components while keeping every vertex on one of its edges (Maya Ctrl+Shift+drag with the\nRotate tool)": "Rotate the selected components while keeping every vertex on one of its edges (Maya Ctrl+Shift+drag with the\nRotate tool)"
+  },
   "Tooltips/operators/edit_mesh_items": {
    "Detach the selected components: vertices split per face, edges split open, faces become their own\nshell (Maya Edit Mesh > Detach)": "Detach the selected components: vertices split per face, edges split open, faces become their own\nshell (Maya Edit Mesh > Detach)",
    "Move the selected edges so they follow the curvature of the surrounding surface\n(Maya Edit Mesh > Edit Edge Flow)": "Move the selected edges so they follow the curvature of the surrounding surface\n(Maya Edit Mesh > Edit Edge Flow)",
@@ -11718,7 +11787,7 @@
    "Edit keys: the selected keys in the Graph Editor, else the selection's keys at the current time\n(Maya Shift+S marking menu > Keys)": "Edit keys: the selected keys in the Graph Editor, else the selection's keys at the current time\n(Maya Shift+S marking menu > Keys)",
    "Insert Key tool while held: MMB click / drag in the Graph Editor inserts a key on the selected curves at that\nframe, keeping the curve shape (Maya i)": "Insert Key tool while held: MMB click / drag in the Graph Editor inserts a key on the selected curves at that\nframe, keeping the curve shape (Maya i)",
    "Maya 2026 Dope Sheet keys: g frames the playback range, t centres the current time, h / j lock / unlock the\nselected channels (the same as the Graph Editor's keys in Maya 2026)": "Maya 2026 Dope Sheet keys: g frames the playback range, t centres the current time, h / j lock / unlock the\nselected channels (the same as the Graph Editor's keys in Maya 2026)",
-   "Maya Curves > Pre / Post Infinity on the selected curves: Cycle / Cycle with Offset / Oscillate = a Cycles\nmodifier side, Linear / Constant = the curve's extrapolation (Blender's is the same on both sides)": "Maya Curves > Pre / Post Infinity on the selected curves: Cycle / Cycle with Offset / Oscillate = a Cycles\nmodifier side, Linear / Constant = the curve's extrapolation (Blender's is the same on both sides)",
+   "Maya Curves > Pre / Post Infinity on the selected curves: Cycle / Cycle with Offset / Oscillate = a Cycles\nmodifier side, Linear / Constant = the curve's extrapolation (each side keeps its own)": "Maya Curves > Pre / Post Infinity on the selected curves: Cycle / Cycle with Offset / Oscillate = a Cycles\nmodifier side, Linear / Constant = the curve's extrapolation (each side keeps its own)",
    "Maya Edit > Change Curve Color (option box = the colour) / Remove Curve Color on the selected curves": "Maya Edit > Change Curve Color (option box = the colour) / Remove Curve Color on the selected curves",
    "Set the in and out tangents: the selected keys in the Graph Editor, else the selection's keys at the\ncurrent time (Maya Graph Editor tangent buttons, Shift+S marking menu)": "Set the in and out tangents: the selected keys in the Graph Editor, else the selection's keys at the\ncurrent time (Maya Graph Editor tangent buttons, Shift+S marking menu)",
    "Turn Snap Time To Selection on or off: selecting keys moves the current time to them (Maya Alt+/)": "Turn Snap Time To Selection on or off: selecting keys moves the current time to them (Maya Alt+/)"
@@ -11860,7 +11929,8 @@
   "Tooltips/operators/manip": {
    "Ctrl / Shift pressed or let go over a Move manipulator handle: show the slide label while both are held": "Ctrl / Shift pressed or let go over a Move manipulator handle: show the slide label while both are held",
    "Ctrl+LMB on the manipulator: a Move axis moves in the plane of the other two axes (with the Ctrl+Drag Snaps\npreference: along the axis with grid snapping), a Move plane / centre drag snaps, Ctrl+click on the Move centre\nfrees the active handle, a Scale axis handle scales the other two axes": "Ctrl+LMB on the manipulator: a Move axis moves in the plane of the other two axes (with the Ctrl+Drag Snaps\npreference: along the axis with grid snapping), a Move plane / centre drag snaps, Ctrl+click on the Move centre\nfrees the active handle, a Scale axis handle scales the other two axes",
-   "Ctrl+Shift+drag on a Move manipulator handle in mesh edit mode: slide the selected components along their\nedges (Maya)": "Ctrl+Shift+drag on a Move manipulator handle in mesh edit mode: slide the selected components along their\nedges (Maya)",
+   "Ctrl+Shift+drag on a manipulator handle in mesh edit mode: Move slides the selected components along their\nedges, Rotate / Scale rotate / scale them with every vertex kept on one of its edges (Maya)": "Ctrl+Shift+drag on a manipulator handle in mesh edit mode: Move slides the selected components along their\nedges, Rotate / Scale rotate / scale them with every vertex kept on one of its edges (Maya)",
+   "Ctrl+Shift+middle-drag with the Rotate / Scale tool in mesh edit mode: rotate / scale along the active handle\nwith every vertex kept on one of its edges (Maya)": "Ctrl+Shift+middle-drag with the Rotate / Scale tool in mesh edit mode: rotate / scale along the active handle\nwith every vertex kept on one of its edges (Maya)",
    "LMB on the manipulator: clicking or dragging a handle makes it the active handle (Maya active handle)": "LMB on the manipulator: clicking or dragging a handle makes it the active handle (Maya active handle)",
    "Left button released: a Smart Duplicate / Extrude press that never became a drag was a click": "Left button released: a Smart Duplicate / Extrude press that never became a drag was a click",
    "MMB drag anywhere: move/rotate/scale along the last picked manipulator handle\n(free when none, Maya)": "MMB drag anywhere: move/rotate/scale along the last picked manipulator handle\n(free when none, Maya)",
@@ -11883,12 +11953,13 @@
    "Create a material and assign it to the selected objects or faces (Maya shelf\nmaterial buttons, Assign Favorite Material)": "Create a material and assign it to the selected objects or faces (Maya shelf\nmaterial buttons, Assign Favorite Material)",
    "Create a material of a favourite type and assign it (Maya Assign Favorite Material)": "Create a material of a favourite type and assign it (Maya Assign Favorite Material)",
    "Pick a material type, create it and assign it to the selected objects or faces\n(Maya Assign New Material, Shift+T)": "Pick a material type, create it and assign it to the selected objects or faces\n(Maya Assign New Material, Shift+T)",
-   "Show the object's material in the Attribute Editor (Maya Material Attributes)": "Show the object's material in the Attribute Editor (Maya Material Attributes)"
+   "Show the object's material in the Attribute Editor (Maya Material Attributes)": "Show the object's material in the Attribute Editor (Maya Material Attributes)",
+   "Turn the materials made by older kit versions into plain Principled BSDF materials: the Maya Diffuse node in\nfront of Base Color is removed (a plain colour keeps its look, a texture now shows at full brightness)": "Turn the materials made by older kit versions into plain Principled BSDF materials: the Maya Diffuse node in\nfront of Base Color is removed (a plain colour keeps its look, a texture now shows at full brightness)"
   },
   "Tooltips/operators/menu_extras": {
    "Export only the selected objects (Maya File > Export Selection)": "Export only the selected objects (Maya File > Export Selection)",
    "Open this editor in a new window (Maya Windows menu)": "Open this editor in a new window (Maya Windows menu)",
-   "Project UVs on the plane of the faces' average normal (Maya Planar / Normal-Based)": "Project UVs on the plane of the faces' average normal (Maya Planar / Normal-Based)",
+   "Project UVs along the scene's X / Y / Z axis (Maya Planar) or on the plane of the faces' average normal\n(Maya Normal-Based)": "Project UVs along the scene's X / Y / Z axis (Maya Planar) or on the plane of the faces' average normal\n(Maya Normal-Based)",
    "Save under the next version number and keep working in it (Maya Increment and Save)": "Save under the next version number and keep working in it (Maya Increment and Save)"
   },
   "Tooltips/operators/menu_items": {
@@ -12240,6 +12311,9 @@
   "Tooltips/operators/symmetry": {
    "Maya symmetric modelling: edit-mode transforms move the mirrored components too": "Maya symmetric modelling: edit-mode transforms move the mirrored components too"
   },
+  "Tooltips/operators/symmetry_select": {
+   "Marquee or lasso with Symmetry on: the components inside and their mirror partners (Shift toggles, Ctrl\nremoves, Ctrl+Shift adds)": "Marquee or lasso with Symmetry on: the components inside and their mirror partners (Shift toggles, Ctrl\nremoves, Ctrl+Shift adds)"
+  },
   "Tooltips/operators/taphold": {
    "Tap for the default action; hold and click for the menu (Maya)": "Tap for the default action; hold and click for the menu (Maya)"
   },
@@ -12308,6 +12382,8 @@
   "Tooltips/operators/uv_projection": {
    "Change the last UV > Automatic (Maya: edit the polyAutoProj node). Blender keeps no history, so only the\nlast one can be changed": "Change the last UV > Automatic (Maya: edit the polyAutoProj node). Blender keeps no history, so only the\nlast one can be changed",
    "Lay the selected faces out along their quad grid and stretch them to fill 0-1 (Maya UV > Contour Stretch;\nBlender Follow Active Quads): every face of the selected meshes in object mode": "Lay the selected faces out along their quad grid and stretch them to fill 0-1 (Maya UV > Contour Stretch;\nBlender Follow Active Quads): every face of the selected meshes in object mode",
+   "Project UVs from a cylinder around the scene's up axis, centred on the selection (Maya UV > Cylindrical):\nthe selected faces, or every face of the selected meshes in object mode": "Project UVs from a cylinder around the scene's up axis, centred on the selection (Maya UV > Cylindrical):\nthe selected faces, or every face of the selected meshes in object mode",
+   "Project UVs from a sphere around the scene's up axis, centred on the selection (Maya UV > Spherical):\nthe selected faces, or every face of the selected meshes in object mode": "Project UVs from a sphere around the scene's up axis, centred on the selection (Maya UV > Spherical):\nthe selected faces, or every face of the selected meshes in object mode",
    "Project UVs from several planes at once (Maya UV > Automatic): the selected faces, or every face of the\nselected meshes in object mode": "Project UVs from several planes at once (Maya UV > Automatic): the selected faces, or every face of the\nselected meshes in object mode"
   },
   "Tooltips/operators/uv_select_178": {
@@ -12349,7 +12425,7 @@
    "Lay the selected UV shells (all when none are selected) out in 0-1 (Maya Layout; Blender Pack Islands)": "Lay the selected UV shells (all when none are selected) out in 0-1 (Maya Layout; Blender Pack Islands)",
    "Measure the texel density of the selected UV shells (all when none are selected): pixels per Maya unit": "Measure the texel density of the selected UV shells (all when none are selected): pixels per Maya unit",
    "Scale the selected UV shells (all when none are selected) to the texel density (pixels per Maya unit)": "Scale the selected UV shells (all when none are selected) to the texel density (pixels per Maya unit)",
-   "Sew the UVs along the selected edges (Maya Sew UV Edges): the smaller shell moves onto the bigger one": "Sew the UVs along the selected edges (Maya Sew UV Edges): the smaller shell moves onto the bigger one",
+   "Sew the UVs along the selected edges (Maya Sew UV Edges): the UVs on each edge meet half-way": "Sew the UVs along the selected edges (Maya Sew UV Edges): the UVs on each edge meet half-way",
    "Unfold the selected UV shells (all when none are selected), keeping their borders and places\n(Maya Unfold; Blender Unwrap, Minimum Stretch)": "Unfold the selected UV shells (all when none are selected), keeping their borders and places\n(Maya Unfold; Blender Unwrap, Minimum Stretch)"
   },
   "Tooltips/operators/view": {
@@ -12936,7 +13012,8 @@
   },
   "Tooltips/ui/toolbox_layouts": {
    "Maya Tool Box quick layout button": "Maya Tool Box quick layout button",
-   "Show or hide the Outliner": "Show or hide the Outliner"
+   "Open or close the Outliner panel": "Open or close the Outliner panel",
+   "Show or hide the Tool Box": "Show or hide the Tool Box"
   },
   "Tooltips/ui/trax_editor": {
    "Maya Trax Library > Insert Clip: the source clips": "Maya Trax Library > Insert Clip: the source clips",

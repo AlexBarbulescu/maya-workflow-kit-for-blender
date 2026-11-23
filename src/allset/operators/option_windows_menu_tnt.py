@@ -35,8 +35,8 @@ class NativeField(F):
         return bpy.props.FloatProperty(**kwargs)
 
 
-def _run(context, path, values):
-    _, target, fixed = menu_map.spec(path)
+def _run(context, path, values, action=None):
+    _, target, fixed = action or menu_map.spec(path)
     kwargs = {**fixed, **values}
     if target == 'outliner.orphans_purge':
         bpy.data.orphans_purge(**kwargs)
@@ -68,14 +68,15 @@ def _run(context, path, values):
         return _op(target, **kwargs)
 
 
-def _native(key, path, names):
+def _native(key, path, names, native_target=None):
     _, target, fixed = menu_map.spec(path)
-    module, op = target.split('.')
+    action = ('v3d', native_target, {}) if native_target else None
+    module, op = (native_target or target).split('.')
     rna = getattr(getattr(bpy.ops, module), op).get_rna_type()
     fields = [NativeField(rna.properties[name]) for name in names if name in rna.properties]
     label = path.rsplit('/', 1)[-1]
     return Window('tnt_' + key, label + ' Options', label, (target, fixed), fields,
-                  lambda c, v: _run(c, path, v), paths=(path,),
+                  lambda c, v: _run(c, path, v, action), paths=(path,),
                   missing=tuple(name for name in names if name not in rna.properties),
                   enabled=(lambda v, name: bpy.context.mode == 'OBJECT') if path == 'Select/Similar' else None)
 
@@ -107,10 +108,11 @@ WINDOWS = [
             ('mirror_weights', 'flip_group_names', 'all_groups', 'use_topology')),
     _native('camera_uv', 'UV/Camera-based', ('orthographic', 'camera_bounds', 'correct_aspect',
             'clip_to_bounds', 'scale_to_bounds')),
+    # Keep the native controls and saved presets while unsaved clicks use Maya's round projection.
     _native('cylinder_uv', 'UV/Cylindrical', ('direction', 'align', 'pole', 'seam', 'radius', 'correct_aspect',
-            'clip_to_bounds', 'scale_to_bounds')),
+            'clip_to_bounds', 'scale_to_bounds'), native_target='uv.cylinder_project'),
     _native('sphere_uv', 'UV/Spherical', ('direction', 'align', 'pole', 'seam', 'correct_aspect',
-            'clip_to_bounds', 'scale_to_bounds')),
+            'clip_to_bounds', 'scale_to_bounds'), native_target='uv.sphere_project'),
     _native('create_groom', 'Generate/Create Interactive Groom Splines', ('align', 'location', 'rotation')),
     Window('tnt_insert_knot', 'Insert Knot Options', 'Insert Knot', ('allset.curve_insert_knot', {}), [
         F('location', 'Insert location:', 'enum', 'AT', items=['AT', 'BETWEEN']),

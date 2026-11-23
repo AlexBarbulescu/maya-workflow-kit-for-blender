@@ -11,7 +11,7 @@ import bpy
 from .. import i18n
 from ..operators import display
 from . import cb_entry, channel_box
-from .ae_nodes import ae_node, modifier_node, nice_type, principled
+from .ae_nodes import ae_node, modifier_node, nice_type
 from .maya_dock_strip import section
 
 
@@ -232,12 +232,10 @@ def draw_row(layout, context, ob, target, row):
             _k, socket, label = row
             maya_prop = None
         from ..operators import material as _material
-        # "Base Color" of a lambert-family material = its Maya Diffuse node's B (Maya Color)
+        # the Principled input; on an older kit material "Base Color" = its Maya Diffuse node's colour input
         inp = _material.maya_input(target, socket)
         if inp is None:
-            if maya_prop is not None and principled(target) is not None and hasattr(target, maya_prop):
-                layout.prop(target, maya_prop, text=label)   # e.g. Diffuse 1.0 without the node; editing adds it
-            return
+            return       # e.g. Diffuse: only an older kit material's Maya Diffuse node has it
         row = layout.row(align=True)
         if inp.is_linked:
             source = inp.links[0].from_node
@@ -307,10 +305,11 @@ def draw_history(layout, context, ob, md):
     if body is not None:
         col = section_body(body)
         col.prop(md, "show_viewport", text="Enabled (Node State)")
-        from ..operators import bend_deformer, deformers_205a, deformers_205b, sweep_mesh
-        # Tension / Solidify / Sculpt, Morph / Jiggle, a mesh's bend and sweepMeshCreator draw their Maya attributes
+        from ..operators import bend_deformer, deformers_205a, deformers_205b, nonlinear_nodes, sweep_mesh
+        # Tension / Solidify / Sculpt, Morph / Jiggle, a mesh's nonlinears and sweepMeshCreator draw their Maya
+        # attributes
         drawn = (deformers_205a.draw_ae(col, md) or deformers_205b.draw_ae(col, md) or bend_deformer.draw_ae(col, md)
-                 or sweep_mesh.draw_ae(col, md))
+                 or nonlinear_nodes.draw_ae(col, md) or sweep_mesh.draw_ae(col, md))
         if md.type == 'ARMATURE' and hasattr(ob, "allset_skinning_method"):
             col.prop(ob, "allset_skinning_method")       # Maya skinCluster Skinning Method
         for ident in ([] if drawn else modifier_props(md)):

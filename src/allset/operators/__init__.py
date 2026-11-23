@@ -9,7 +9,7 @@ Operator ids use the ``allset.`` prefix. Each module lists its classes in
 import bpy
 
 from . import (auto_key, undo_pairs, bookmarks, ik_fk, component, create, curve_tools, curves_maya, cut_sew, display, driven_key, duplicate, extrude, file_io, freeze, option_windows, fx, global_keys4, graph_keys, graph_key_menu, deformer_weights, joint_labels, group, history, hold, joints, pivot_menu, key_batch, key_batch3, key_insert, loop_pick, manip, marquee,
-               anim_layers, lights, material, menu_extras, menu_items, mesh_maya, multi_cut, poly_maya, rig_maya, mesh_tools, outliner_drag, parenting, pickwalk, pivot, playblast, preselect, project, rig_tools, select_convert, select_priority, sets, shading_maps, skin, snap_align, soft_select, symmetry, taphold,
+               anim_layers, lights, material, menu_extras, menu_items, mesh_maya, multi_cut, poly_maya, rig_maya, mesh_tools, outliner_drag, parenting, pickwalk, pivot, playblast, preselect, project, rig_tools, select_convert, select_priority, sets, shading_maps, skin, snap_align, soft_select, symmetry, symmetry_select, taphold,
                time_keys, tool_keys, units, uv_shells, uv_tools, uv_modify, uv_select_178, view, view_keys3, visibility)
 from . import poly_draw, quad_draw  # Create Polygon / Append to Polygon / Quad Draw (#30)
 from . import edge_loops  # Insert / Offset Edge Loop, Slide Edge (#31)
@@ -44,7 +44,7 @@ classes = (*display.classes, *group.classes, *hold.classes, *taphold.classes,
            *duplicate.classes, *history.classes, *create.classes, *visibility.classes,
            *component.classes, *manip.classes, *material.classes,
            *marquee.classes, *lattice_pick.classes, *preselect.classes, *select_priority.classes, *menu_extras.classes,
-           *tool_keys.classes, *symmetry.classes, *pivot.classes, *snap_align.classes, *time_keys.classes,
+           *tool_keys.classes, *symmetry.classes, *symmetry_select.classes, *pivot.classes, *snap_align.classes, *time_keys.classes,
            *joints.classes, *skin.classes, *driven_key.classes, *rig_tools.classes, *mesh_maya.classes,
            *mesh_tools.classes, *extrude.classes, *uv_tools.classes, *uv_shells.classes, *uv_modify.classes, *anim_layers.classes, *uv_select_178.classes, *shading_maps.classes, *fx.classes, *project.classes, *graph_keys.classes, *graph_key_menu.classes, *deformer_weights.classes, *joint_labels.classes, *ik_fk.classes, *playblast.classes, *key_batch.classes, *cut_sew.classes, *multi_cut.classes,
            *outliner_drag.classes, *key_insert.classes, *view_keys3.classes, *global_keys4.classes,
@@ -189,11 +189,16 @@ from . import joint_display  # noqa: E402  #165: Radius row, Local Rotation Axes
 classes += joint_display.classes
 from . import skin_method  # noqa: E402  #167: Weight Blended / DQ skinning method
 from . import uv_shell_select  # noqa: E402  #172: Maya UV Shell selection in the 3D View / UV Editor
+from . import sel_constraint  # noqa: E402  #435: Selection Constraint > Angle
 classes += uv_shell_select.classes
 from . import uv_loop_pick  # noqa: E402  UV Editor double-click: UV edge loop / ring, UV shell
 classes += uv_loop_pick.classes
 from . import manip_scale  # noqa: E402  #200: Maya Scale manipulator centre / axis drag
 classes += manip_scale.classes
+from . import edge_rotate  # noqa: E402  #429: Ctrl+Shift Rotate drag kept on the edges
+classes += edge_rotate.classes
+from . import edge_marquee  # noqa: E402  #438: an edge marquee picks every edge it touches
+classes += edge_marquee.classes
 classes += universal_manip.classes
 from . import dome_light  # noqa: E402  #201: Create > Lights > Dome Light = the World environment
 classes += dome_light.classes
@@ -272,6 +277,7 @@ def register():
     flow_path_228.register_props()
     legacy_cleanup.register()
     render_cameras.register_props()
+    image_plane.register_props()
     joint_edit.register()
     joint_display.register_props()
     poly_display.register_props()
@@ -296,6 +302,7 @@ def register():
     uv_tools.register_props()
     uv_toolkit_ops.register_props()
     uv_shell_select.register_props()
+    sel_constraint.register_props()
     taphold.register_bindings()
     graph_keys.register_bindings()
     graph_key_menu.register_bindings()
@@ -444,6 +451,7 @@ def unregister():
     film_fit.unregister_props()
     camera_overscan.unregister_props()
     material.unregister_props()
+    sel_constraint.unregister_props()
     uv_shell_select.unregister_props()
     uv_toolkit_ops.unregister_props()
     uv_tools.unregister_props()
@@ -459,6 +467,7 @@ def unregister():
     snap_align.unregister_props()
     pick_order.unregister_handlers()
     legacy_cleanup.unregister()
+    image_plane.unregister_props()
     render_cameras.unregister_props()
     _unregister_classes()
 

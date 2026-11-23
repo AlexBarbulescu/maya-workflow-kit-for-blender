@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Maya Edit Mesh > Detach, Edit Edge Flow and Wedge as bmesh edits in Edit Mode.
 
-``detach`` splits vertices per face or edges open, ``edge_flow`` moves each vertex onto the curve through its ring
-neighbours (also used by edge_loops), ``ALLSET_OT_wedge`` spins the selected faces around an edge. menu_items
+``detach`` splits vertices per face or edges open, ``edit_edge_flow`` moves each vertex of the selected edges to the
+middle of the curve through its ring neighbours, ``edge_flow`` places each vertex on such a curve at its own position
+between them (edge_loops), ``ALLSET_OT_wedge`` spins the selected faces around an edge. menu_items
 re-exports them.
 """
 
@@ -64,8 +65,12 @@ class ALLSET_OT_detach(bpy.types.Operator):
         return {'FINISHED'}
 
 
-def _across(v, e):
-    """The edge of ``v`` opposite ``e`` in a 4-edge vertex (the next edge of the ring), or None."""
+def _across(v, e, border=False):
+    """The edge of ``v`` opposite ``e`` in a 4-edge vertex (the next edge of the ring), or None. With ``border``, a
+    border edge ``e`` at a 3-edge border vertex continues along the other border edge."""
+    if border and len(v.link_edges) == 3 and e.is_boundary:
+        others = [x for x in v.link_edges if x is not e and x.is_boundary]
+        return others[0] if len(others) == 1 else None
     if len(v.link_edges) != 4:
         return None
     faces = set(e.link_faces)
@@ -73,56 +78,70 @@ def _across(v, e):
     return others[0] if len(others) == 1 else None
 
 
-def _circle_tangent(p_prev, p, p_next):
-    """Unit tangent at ``p`` of the circle through three points, pointing from ``p_prev`` towards ``p_next``
-    (None when they are in a line)."""
-    a, b = p_prev - p, p_next - p
-    axb = a.cross(b)
-    if axb.length_squared < 1e-18:
+def _ring_ends(v, selected):
+    """((a, a2), (b, b2)) for vertex ``v`` of the selected edges: its two ring neighbours (along the edges not
+    selected) and the vertex beyond each one along the ring (None at a pole or a border corner), or None when ``v``
+    has not exactly two ring edges."""
+    ring = [x for x in v.link_edges if x not in selected]
+    if len(ring) != 2:
         return None
-    centre = p + (b * a.length_squared - a * b.length_squared).cross(axb) / (2 * axb.length_squared)
-    t = axb.cross(p - centre)
-    if t.length_squared < 1e-18:
+    ends = []
+    for x in ring:
+        a = x.other_vert(v)
+        nxt = _across(a, x, border=True)
+        ends.append((a.co.copy(), nxt.other_vert(a).co.copy() if nxt else None))
+    return ends
+
+
+def _flow_offset(a, a2, b, b2):
+    """How far the middle of the flow curve between ``a`` and ``b`` lies from the middle of the straight edge: a
+    cubic Hermite curve whose tangent at a runs along the ring edge coming into a from beyond (a2 -> a), at b along
+    the edge going on from b (b -> b2), both 0.7 x |ab| long; a side with no edge beyond runs along ab itself."""
+    chord = b - a
+    if chord.length_squared < 1e-18:
         return None
-    t.normalize()
-    return t if t.dot(p_next - p_prev) >= 0 else -t
+    u = chord.normalized()
+    ta = (a - a2).normalized() if a2 is not None and (a - a2).length_squared > 1e-18 else u
+    tb = (b2 - b).normalized() if b2 is not None and (b2 - b).length_squared > 1e-18 else u
+    return (ta - tb) * (0.7 * chord.length / 8.0)       # Hermite at t = 0.5: (a + b) / 2 + (ma - mb) / 8
 
 
 def edge_flow(bm, edges, flow=1.0):
-    """Maya Edit Edge Flow (polyEditEdgeFlow -adjustEdgeFlow): each vertex of the selected edges moves onto a cubic
-    Hermite curve between its two ring neighbours a, b, with tangents along the circles through (a's outer
-    neighbour, a, b) and (a, b, b's outer neighbour) and length = |ab|, at the vertex's own parameter; flow 0 = the
-    straight line. Returns the number of moved vertices."""
+    """Insert / Offset Edge Loop with edge flow: each vertex of the new edges, at fraction t from ring neighbour a to
+    b, moves off the straight edge by 4 t (1 - t) x ``flow`` x the flow curve's offset at the middle
+    (``_flow_offset``): the full offset halfway, none at the ends. Returns the number of moved vertices."""
     selected = set(edges)
     moves = {}
     for v in {v for e in edges for v in e.verts}:
-        ring = [x for x in v.link_edges if x not in selected]
-        if len(ring) != 2:
+        ends = _ring_ends(v, selected)
+        if ends is None:
             continue
-        pts = []
-        for x in ring:
-            a = x.other_vert(v)
-            nxt = _across(a, x)
-            pts.append((a.co.copy(), nxt.other_vert(a).co.copy() if nxt else None))
-        (a, a2), (b, b2) = pts
+        (a, a2), (b, b2) = ends
         da, db = (v.co - a).length, (v.co - b).length
-        if da + db < 1e-9:
+        off = _flow_offset(a, a2, b, b2)
+        if da + db < 1e-9 or off is None:
             continue
         t = da / (da + db)
-        chord = b - a
-        length = chord.length
-        ta = _circle_tangent(a2, a, b) if a2 is not None else None
-        tb = _circle_tangent(a, b, b2) if b2 is not None else None
-        if ta is None and tb is None:
-            curve = a.lerp(b, t)
-        else:
-            u = chord.normalized()
-            ta = ta if ta is not None else (u * 2 * u.dot(tb) - tb)    # mirror the other tangent about the chord
-            tb = tb if tb is not None else (u * 2 * u.dot(ta) - ta)
-            h00, h10 = 2 * t ** 3 - 3 * t ** 2 + 1, t ** 3 - 2 * t ** 2 + t
-            h01, h11 = -2 * t ** 3 + 3 * t ** 2, t ** 3 - t ** 2
-            curve = a * h00 + ta * (length * h10) + b * h01 + tb * (length * h11)
-        moves[v] = a.lerp(b, t).lerp(curve, flow)
+        moves[v] = a.lerp(b, t) + off * (4.0 * t * (1.0 - t) * flow)
+    for v, co in moves.items():
+        v.co = co
+    return len(moves)
+
+
+def edit_edge_flow(bm, edges, flow=1.0):
+    """Maya Edit Edge Flow: each vertex of the selected edges moves to the middle of the flow curve between its two
+    ring neighbours (``_flow_offset``; a border edge continues along the border), the offset scaled by ``flow``
+    (0 = the middle of the straight edge). Returns the number of moved vertices."""
+    selected = set(edges)
+    moves = {}
+    for v in {v for e in edges for v in e.verts}:
+        ends = _ring_ends(v, selected)
+        if ends is None:
+            continue
+        (a, a2), (b, b2) = ends
+        off = _flow_offset(a, a2, b, b2)
+        if off is not None:
+            moves[v] = (a + b) * 0.5 + off * flow
     for v, co in moves.items():
         v.co = co
     return len(moves)
@@ -145,7 +164,7 @@ class ALLSET_OT_edge_flow(bpy.types.Operator):
     def execute(self, context):
         for ob in context.objects_in_mode:
             bm = bmesh.from_edit_mesh(ob.data)
-            edge_flow(bm, [e for e in bm.edges if e.select], self.flow)
+            edit_edge_flow(bm, [e for e in bm.edges if e.select], self.flow)
             bmesh.update_edit_mesh(ob.data)
         return {'FINISHED'}
 
