@@ -351,9 +351,10 @@ MAP = {
     f"{UV}/Select/Shortest Edge Path Tool": "uv.shortest_path_select",
     f"{UV}/Select/Grow": "uv.select_more",
     f"{UV}/Select/Shrink": "uv.select_less",
-    **{f"{UV}/Select/Convert Selection/{label}": ("allset.uv_component", {"mode": mode})
-       for label, mode in (("To Vertices", "VERTEX"), ("To Edges", "EDGE"), ("To Faces", "FACE"), ("To UVs", "UV"),
-                           ("To UV Shell", "SHELL"))},
+    # To Vertices / Edges / Faces / UVs convert the selection and switch the component type (like the Ctrl+RMB menu)
+    **{f"{UV}/Select/Convert Selection/{label}": ("allset.uv_convert", {"to": to})
+       for label, to in (("To Vertices", "VERTEX"), ("To Edges", "EDGE"), ("To Faces", "FACE"), ("To UVs", "UV"))},
+    f"{UV}/Select/Convert Selection/To UV Shell": ("allset.uv_component", {"mode": "SHELL"}),
     # the main Select menu's conversions (operators/select_convert.py; with UV Sync Selection off they read
     # the selected UVs as their vertices)
     **{f"{UV}/Select/{label}": ("allset.select_convert", {"kind": kind})
@@ -370,13 +371,13 @@ MAP = {
     f"{UV}/Cut/Sew/Merge": "allset.uv_merge",     # Maya polyMergeUV
     f"{UV}/Cut/Sew/Move and Sew": "allset.uv_move_sew",
     f"{UV}/Cut/Sew/Create UV Shell": "allset.uv_create_shell",
-    f"{UV}/Cut/Sew/Stitch Together": "uv.stitch",
-    f"{UV}/Modify/Align": ("uv.align", {"axis": 'ALIGN_AUTO'}),
-    f"{UV}/Modify/Flip": ("transform.mirror", {"constraint_axis": (True, False, False)}),
+    f"{UV}/Cut/Sew/Stitch Together": "allset.uv_stitch_together",
+    f"{UV}/Modify/Align": ("allset.uv_align_to", {"axis": 'U', "where": 'MIN'}),     # Align Options default
+    f"{UV}/Modify/Flip": "allset.uv_flip",      # Flip UVs Options defaults: Horizontal, Pivot, Cut UV Perimeter
     f"{UV}/Modify/Linear Align": ("uv.align", {"axis": 'ALIGN_S'}),
-    f"{UV}/Modify/Match UVs": "uv.remove_doubles",
+    f"{UV}/Modify/Match UVs": ("uv.remove_doubles", {"threshold": 0.01}),     # Match UVs Options default
     f"{UV}/Modify/Rotate": ("transform.rotate", {"value": -math.pi / 2}),
-    f"{UV}/Modify/Unitize": "uv.reset",
+    f"{UV}/Modify/Unitize": "allset.uv_unitize",
     f"{UV}/Modify/Gather Shells": "uv.pack_islands",
     f"{UV}/Modify/Layout": "allset.uv_layout",
     f"{UV}/Modify/Orient Shells": "allset.uv_orient_shells",
@@ -398,7 +399,7 @@ MAP = {
     f"{UV}/View/Isolate Select/View Selected": "allset.uv_isolate",
     f"{UV}/Image/Display": ("allset.uv_display", {"mode": 'IMAGE'}),
     f"{UV}/Modify/Randomize Shells": "allset.uv_randomize",     # operators/uv_toolkit_ops.py
-    f"{UV}/Modify/Optimize": "uv.minimize_stretch",
+    f"{UV}/Modify/Optimize": "allset.uv_optimize",
     f"{UV}/Modify/Straighten Shell": "allset.uv_straighten_shell",       # operators/uv_toolkit_ops.py (#393)
     f"{UV}/Modify/Straighten UVs": "allset.uv_straighten_uvs",
     f"{UV}/Modify/Unfold": "allset.uv_unfold",
@@ -429,9 +430,17 @@ MAP = {
     f"{UV}/Tools/Scale": _uv_tool("builtin.scale"),
     f"{UV}/Tools/Tweak": _uv_tool("builtin.select"),
     f"{UV}/Tools/Smooth": _uv_tool("sculpt.uv_sculpt_relax"),
-    f"{UV}/Tools/Optimize": _uv_tool("sculpt.uv_sculpt_relax"),
-    f"{UV}/Tools/Grab": _uv_tool("sculpt.uv_sculpt_grab"),
-    f"{UV}/Tools/Pinch": _uv_tool("sculpt.uv_sculpt_pinch"),
+    # the kit's UV brush tools (ui/uv_brush_tools.py), like Maya's UV Editor brushes
+    f"{UV}/Tools/Optimize": _uv_tool("allset.uv_brush_optimize"),
+    f"{UV}/Tools/Unfold": _uv_tool("allset.uv_brush_unfold"),
+    f"{UV}/Tools/Cut": _uv_tool("allset.uv_brush_cut"),
+    f"{UV}/Tools/Sew": _uv_tool("allset.uv_brush_sew"),
+    f"{UV}/Tools/Pin": _uv_tool("allset.uv_brush_pin"),
+    f"{UV}/Tools/Smear": _uv_tool("allset.uv_brush_smear"),
+    f"{UV}/Tools/Smudge": _uv_tool("allset.uv_brush_smudge"),
+    f"{UV}/Tools/Lattice": _uv_tool("allset.uv_lattice"),
+    f"{UV}/Tools/Grab": _uv_tool("allset.uv_brush_grab"),
+    f"{UV}/Tools/Pinch": _uv_tool("allset.uv_brush_pinch"),
     f"{UV}/View/UV Distortion": _prop(f"{_SP}.uv_editor.show_stretch"),
     f"{UV}/View/Grid": _prop(f"{_SP}.overlay.show_grid_background"),
     f"{UV}/View/Toolbar": _prop(f"{_SP}.show_region_toolbar"),
@@ -464,9 +473,6 @@ MAP = {
 
 # --- Hypershade, Script Editor -------------------------------------------------------------------
 HS, SE = "Hypershade", "Script Editor"
-_HS_MATERIALS = {"Anisotropic": 'ANISOTROPIC', "Blinn": 'BLINN', "Lambert": 'LAMBERT', "Layered Shader": 'LAYERED',
-                 "Phong": 'PHONG', "Phong E": 'PHONG_E', "Ramp Shader": 'RAMP', "Standard Surface": 'STANDARD_SURFACE',
-                 "Surface Shader": 'SURFACE', "Use Background": 'USE_BACKGROUND'}
 _HS_LIGHTS = {"Directional Light": 'DIRECTIONAL_LIGHT', "Point Light": 'POINT_LIGHT', "Spot Light": 'SPOT_LIGHT',
               "Area Light": 'AREA_LIGHT'}
 
@@ -585,7 +591,7 @@ MAP.update({
     **{f"{HS}/View/{label}": _prop("window_manager.allset_hs_sort", key)
        for label, key in (("By Name", 'NAME'), ("By Type", 'TYPE'), ("By Time", 'TIME'))},
     f"{HS}/View/Reverse Order": _prop("window_manager.allset_hs_reverse"),
-    **{f"{HS}/Create/Materials/{label}": ("allset.hs_create", {"kind": kind}) for label, kind in _HS_MATERIALS.items()},
+    f"{HS}/Create/Materials/New Material": "allset.hs_create",      # Blender's one material (menu_map.HIDE)
     **{f"{HS}/Create/Lights/{label}": ("allset.create", {"kind": kind}) for label, kind in _HS_LIGHTS.items()},
     **{f"{HS}/Create/{label}": ("allset.hs_create_extra", {"kind": kind}) for label, kind in HS_EXTRA.items()},
     f"{HS}/Create/Camera": ("allset.create", {"kind": 'CAMERA'}),

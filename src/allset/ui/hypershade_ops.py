@@ -124,15 +124,15 @@ class ALLSET_OT_hs_item(bpy.types.Operator):
 
 
 class ALLSET_OT_hs_create(bpy.types.Operator):
-    """Create a material of this type without assigning it (Maya Hypershade Create)"""
+    """Create a new material (Blender's Principled BSDF) without assigning it (Maya Hypershade Create)"""
     bl_idname = "allset.hs_create"
-    bl_label = "Create Material"
+    bl_label = "New Material"
     bl_options = {'REGISTER', 'UNDO'}
 
-    kind: EnumProperty(items=material_ops.KIND_ITEMS, name="Material")
+    kind: StringProperty(name="Type", options={'HIDDEN', 'SKIP_SAVE'})   # of an older call: ignored
 
     def execute(self, context):
-        mat = material_ops.new_material(self.kind)
+        mat = material_ops.new_material()
         mat.use_fake_user = True    # no user yet: Blender would drop it on save, Maya keeps it
         show(context, mat, context.space_data)
         context.window_manager.allset_hs_tab = 'MATERIALS'
@@ -153,7 +153,7 @@ class ALLSET_OT_hs_node(bpy.types.Operator):
     def execute(self, context):
         mat = current(context)
         if mat is None:
-            mat = material_ops.new_material('LAMBERT')
+            mat = material_ops.new_material()
             mat.use_fake_user = True
         compat.ensure_material_nodes(mat)
         tree = mat.node_tree
@@ -183,9 +183,9 @@ class ALLSET_OT_hs_edit(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     action: EnumProperty(items=(
-        ("DELETE", "Delete", "Delete the current material (lambert1 stays, like Maya's)"),
-        ("DELETE_UNUSED", "Delete Unused Nodes", "Delete the materials no object uses (lambert1 stays)"),
-        ("DELETE_MATERIALS", "Delete All Materials", "Delete every material but lambert1"),
+        ("DELETE", "Delete", "Delete the current material"),
+        ("DELETE_UNUSED", "Delete Unused Nodes", "Delete the materials no object uses"),
+        ("DELETE_MATERIALS", "Delete All Materials", "Delete every material"),
         ("SELECT_OBJECTS", "Select Objects with Materials", "Select the objects that use the current material"),
         ("FROM_OBJECT", "Select Materials from Objects", "The active object's material becomes current"),
         ("DUPLICATE", "Duplicate", "Copy the current material (and its network)"),
@@ -198,15 +198,12 @@ class ALLSET_OT_hs_edit(bpy.types.Operator):
             self.report({'WARNING'}, "No material selected in the Hypershade")
             return {'CANCELLED'}
         if act == "DELETE":
-            if material_ops.is_default(cur):
-                self.report({'WARNING'}, f"{cur.name} can't be deleted (the default material, like Maya)")
-                return {'CANCELLED'}
             release_editors([cur])
             bpy.data.materials.remove(cur)
             context.window_manager.allset_hs_material = ""
         elif act in {"DELETE_UNUSED", "DELETE_MATERIALS"}:
             assigned = assigned_materials() if act == "DELETE_UNUSED" else set()
-            doomed = [m for m in materials() if not material_ops.is_default(m) and m not in assigned]
+            doomed = [m for m in materials() if m not in assigned]
             release_editors(doomed)
             if context.window_manager.allset_hs_material in {m.name for m in doomed}:
                 context.window_manager.allset_hs_material = ""

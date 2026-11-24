@@ -4114,7 +4114,11 @@ def _m66_3_layout_check():
         for f in isl:
             p = [l[uv].uv.copy() for l in f.loops]
             for j in range(1, len(p) - 1):
-                tris.append((i, (p[0], p[j], p[j + 1])))
+                # Layout packs with no shell padding by default: shells may touch, so each triangle is shrunk a
+                # little toward its centre and only overlapping areas count
+                t = (p[0], p[j], p[j + 1])
+                c = (t[0] + t[1] + t[2]) / 3
+                tris.append((i, tuple(c + (q - c) * 0.98 for q in t)))
     overlap = any(tris[a][0] != tris[b][0] and _geo.intersect_tri_tri_2d(*tris[a][1], *tris[b][1])
                   for a in range(len(tris)) for b in range(a + 1, len(tris)))
     dens = [ut.density(isl, uv, OB().matrix_world, 1024, k()) for isl in isls]
@@ -4240,7 +4244,7 @@ def _m67_2_setup():
     C["obname"] = ob.name
     select_only(ob)
     with override():
-        bpy.ops.allset.assign_new_material(kind='LAMBERT')
+        bpy.ops.allset.assign_new_material()
     C["onmat"] = ob.active_material.name
     menu("Windows/Rendering Editors/Hypershade")
 
@@ -4252,7 +4256,7 @@ def _m67_2_open():
         return
     w, a = hs_window()
     with hs_ctx():
-        bpy.ops.allset.hs_create(kind='STANDARD_SURFACE')
+        bpy.ops.allset.hs_create()
     C["newmat"] = bpy.context.window_manager.allset_hs_material
     mat = bpy.data.materials.get(C["newmat"])
     check(f"[M67-2] Create = a new material, not assigned ({mat is not None}, users {mat.users if mat else None}, "
@@ -4368,7 +4372,7 @@ def _m67_3_rows():
     class _P:
         socket = "Base Color"
     tip = sm.ALLSET_OT_ae_map.description(bpy.context, _P())
-    check(f"[M67-3] the button's tooltip names the Maya attribute ({tip!r})", tip.startswith("baseColor"))
+    check(f"[M67-3] the button's tooltip names the input ({tip!r})", tip.startswith("Base Color"))
     with hs_ctx():
         bpy.ops.allset.ae_map_break(material=mat.name, socket="Base Color")
     inp = sm.principled(mat).inputs["Base Color"]

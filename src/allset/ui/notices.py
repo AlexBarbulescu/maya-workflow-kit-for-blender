@@ -195,12 +195,6 @@ NOTICES = {
     **{f"nCache/{item}": (
         "Baked caches", "Blender always plays a baked cache: Delete Cache to simulate again.")
        for item in ("Enable All Caches on Selected", "Disable All Caches on Selected")},
-    # Lights (operators/lights.py)
-    **{f"Create/Lights/{kind} Light": (
-        f"{kind} light", "Maya Decay Rate No Decay renders in Cycles; Blender EEVEE and the viewport get darker with the "
-        "square of the distance, the power matching Maya intensity 1 at 10 units.") for kind in ("Point", "Spot")},
-    "Create/Lights/Area Light": (
-        "Area light", "Blender's area light falls off like Maya's; its power matches Maya intensity 1 (2 x 2 units)."),
     **{f"{menu}/Lights/Ambient Light": (
         "World colour or Point Light", "Blender has no ambient light: raise the World colour (World Properties > "
         "Surface) for light from every side, or add a Point Light.") for menu in ("Create", "Hypershade/Create")},
@@ -236,7 +230,24 @@ NOTICES = {
     "Fields/Solvers/Gravity": (
         "Wind field", "Blender has no gravity field: a Wind field blowing down (Blender's strength); the scene's "
         "gravity is global (Scene properties)."),
+    # Maya surface shaders that are a node set-up in Blender (greyed; the command line's shadingNode says the same)
+    "Hypershade/Create/Materials/Ramp Shader": (
+        "Shader Editor: Layer Weight + Color Ramp", "Blender builds a ramp shader in the Shader Editor: Layer Weight "
+        "(Facing) into a Color Ramp into Base Color."),
+    "Hypershade/Create/Materials/Layered Shader": (
+        "Shader Editor: Mix Shader", "Blender layers shaders in the Shader Editor with a Mix Shader (Fac = the top "
+        "layer's transparency)."),
+    "Hypershade/Create/Materials/Surface Shader": (
+        "Shader Editor: Emission", "Blender's flat, unlit surface is an Emission shader in the Shader Editor."),
+    "Hypershade/Create/Materials/Use Background": (
+        "Shader Editor: Holdout", "Blender shows the background through a surface with a Holdout shader in the Shader "
+        "Editor (Cycles: Object > Visibility > Shadow Catcher catches shadows)."),
 }
+# Maya node type -> its greyed Hypershade Create item (the notice the command line's shadingNode gives)
+NODE_SETUPS = {"rampShader": "Hypershade/Create/Materials/Ramp Shader",
+               "layeredShader": "Hypershade/Create/Materials/Layered Shader",
+               "surfaceShader": "Hypershade/Create/Materials/Surface Shader",
+               "useBackground": "Hypershade/Create/Materials/Use Background"}
 
 
 # mapped items whose Blender result differs from Maya's.
@@ -775,9 +786,6 @@ CATEGORIES.update({
     "UV Editor/Select": (
         "Select menu", "Blender's UV Editor shows one image, so there is no per-image face filter: Select Linked, "
         "Overlapping and the face filters (Connected / Contained Faces) are there."),
-    "UV Editor/Tools": (
-        "UV tools", "Blender's UV tools are Select, Move / Rotate / Scale, Rip and the Grab / Relax / Pinch sculpt "
-        "brushes."),
     "UV Editor/View": (
         "Overlays", "Blender's UV Editor has no such display option: see its Overlays popover and View menu."),
     "UV Editor/View/Isolate Select": (
@@ -1045,8 +1053,7 @@ CATEGORIES.update({
         "Shift+A in the Shader Editor", "Blender has no node of this Maya type: add the closest node with Shift+A "
         "in the Shader Editor."),
     "Hypershade/Create/Materials": (
-        "Principled BSDF", "Blender has no game, hair-tube, ocean or USD Preview shader of this kind: start from a "
-        "Standard Surface (Principled BSDF)."),
+        "Principled BSDF", "Blender has no shader of this kind: start from New Material (a Principled BSDF)."),
     "Hypershade/Create/Volumetric Materials": (
         "Volume shaders", "Blender's volumes are shaders on the material's Volume output (Principled Volume) or the "
         "World's: add them with Shift+A > Volume."),
@@ -1316,16 +1323,34 @@ MARKING.update({
         "Sidebar UV Vertex", "Blender has no pixel ruler: the sidebar (N) Image tab shows the selected UVs' position, "
         "so two readings give the distance."),
     **{f"{m}/Tools/Symmetrize Tool": CATEGORIES["UV Editor/Tools/Symmetrize"] for m in _UV_MENUS},
-    **{f"{m}/Tools/Lattice Tool": (
-        "Proportional Editing", "Blender's UV Editor has no lattice tool: move UVs with proportional editing (O) for "
-        "a smooth falloff.") for m in _UV_MENUS},
-    **{f"{m}/Tools/Smear Tool": (
-        "Grab brush", "Blender's UV sculpt brushes are Grab, Relax and Pinch: Grab drags the UVs under the brush.")
-       for m in _UV_MENUS},
     **{f"{m}/Pinning/Reset Settings": CATEGORIES["UV Editor/Edit/Reset UV Editor UI"] for m in _UV_MENUS},
-    **{f"{m}/Pinning/{label}": _UV_CONSTRAINTS for m in _UV_MENUS
+    **{f"{m}/{label}": _UV_CONSTRAINTS for m in (*(f"{n}/Pinning" for n in _UV_MENUS), "UV_CONVERT")
        for label in ("Selection Constraints", "Transform Constraints")},
     **{f"SHIFT_UV_SHELL/Distribute Shells/{label}": (
         "Distribute Shells Right", "The kit lines shells up to the right only: run Right, then rotate or move the "
         "row.") for label in ("Left", "Up", "Down", "Towards Target")},
+})
+
+
+# UV Editor Ctrl+Shift+RMB tool option menus: the 3D View option menus' notices where Blender lacks the same thing.
+_UV_OPTS = ("UV_OPT_MOVE", "UV_OPT_ROTATE", "UV_OPT_SCALE", "UV_OPT_SELECT")
+_UV_SOFT = {"Object": MARKING["OPT_MOVE/Select/Soft Select/Object"],
+            "Global": MARKING["OPT_MOVE/Select/Soft Select/Global"],
+            "Color Feedback": MARKING["OPT_MOVE/Select/Soft Select/Color Feedback"]}
+_UV_BACKFACES = ("UV Editor", "Blender's UV Editor pre-selects no components: it highlights the selection only.")
+MARKING.update({
+    **{f"{m}/{label}": _UV_CONSTRAINTS for m in _UV_OPTS
+       for label in ("Selection Constraints", "Transform Constraints")},
+    **{f"{m}/Select/{label}": _UV_CONSTRAINTS for m in _UV_OPTS[:3]
+       for label in ("Selection Constraints", "Transform Constraints")},
+    **{f"{m}/Select/Highlight Backfaces": _UV_BACKFACES for m in _UV_OPTS[:3]},
+    "UV_OPT_SELECT/Highlight Backfaces": _UV_BACKFACES,
+    **{f"{m}/Select/Soft Select/{label}": text for m in _UV_OPTS[:3] for label, text in _UV_SOFT.items()},
+    **{f"UV_OPT_SELECT/Soft Select/{label}": text for label, text in _UV_SOFT.items()},
+    "UV_OPT_MOVE/Keep Spacing": (
+        "Snap With", "Blender moves the selected UVs together while snapping; there is no separate keep-spacing "
+        "switch."),
+    "UV_OPT_SCALE/Prevent Negative Scale": (
+        "Scale gizmo", "Blender's UV scale can pass zero and flip the UVs: stop the drag before the handle crosses "
+        "the pivot."),
 })

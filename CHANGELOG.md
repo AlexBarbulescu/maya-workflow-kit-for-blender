@@ -3,6 +3,114 @@
 All notable changes to Maya Workflow Kit (earlier versions were called Allset for Maya Users and, before that, Maya Kit). Format: [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.22.0] — 2026-11-23
+
+**Materials, lights and render start values are Blender's own.** The kit keeps Maya's menus, hotkeys and Attribute
+Editor layout for shading and lighting, while shaders, light power and falloff, their values and the render start
+values are Blender's. Scenes saved with an
+earlier version open unchanged: nothing in them is converted.
+
+### Added
+- Key > Pose Breakdowner, Relax Pose to Breakdown and Push Pose from Breakdown, right below Set Breakdown Key (#496):
+  Blender's pose in-between tools in Pose Mode, whose Blender keys (Shift+E, F3 search) are Maya keys in the kit.
+- **UV Editor option windows** (#497, #502): Modify > Unfold and Layout, Cut/Sew > Auto Seams, Move and Sew, Merge
+  and Stitch Together, and the other Modify commands open their option windows (option box or Shift+click), with
+  Apply, Apply and Close and Reset like the other kit option windows.
+- **UV Editor marking menus** (#499, #501): Ctrl+right-click opens the selection conversion menu (to UVs, vertices,
+  edges, faces, shells, shell borders ...), Ctrl+Shift+right-click the active tool's options menu (Move, Rotate,
+  Scale, Select and the UV brush tools).
+- **UV Toolkit Transform** (#494, #509): Pivot (selection / UV area, Edit Pivot, Reset), Move by a step in eight
+  directions and typed U / V positions, Rotate by an angle, Scale by a factor in U and V, U or V, Snap of the
+  selected shells onto a corner, edge middle or the centre of a range, presets for the step, angle and factor, a
+  Step Snap row per area, Retain Component Spacing, Distribute U / V, a right-click menu on the Rotate buttons that
+  turns by 45 or 15 degrees, and Rotate in the image's pixels so shapes keep their look on a non-square image.
+- **UV Toolkit look** (#494): command buttons show a kit-drawn picture and their text from the left edge, flat until
+  the pointer is over them, in even columns; Align is a row of six pictures.
+- **UV Editor > Modify > Optimize** (#498, #510, #511): evens out UV distortion of the selected shells (Iterations,
+  Surfangle, Power, Prevent triangle flips, Pin UV border, Pin UVs, Edge weights), keeps one UV of a free shell in place, and has the Legacy (relax) method in
+  its option window. The UV brush Optimize uses it too.
+- **UV Editor brush tools** (#500, #512 – #519): Tools > Unfold, Optimize, Cut, Sew, Pin, Smear, Smudge, Lattice, Grab
+  and Pinch are UV Editor tools that work on the UVs under the brush (the selected UVs when there is a selection),
+  with a brush marking menu (the brush tools, Last Tool naming the tool it goes back to, Falloff Type, Invert Pin),
+  middle-mouse drag for size and strength, Smudge's Middle mouse initiates, Cut / Sew Steady Stroke, Cut Open Ratio
+  and Display All Shell Borders, Lattice Falloff, Use bounding rectangle, Show move manipulator and line drags, Grab
+  Direction and Twist, Pinch, and Pin's Paint / Smooth methods (Shift+drag smooths the pins).
+- **Stitch Together** (#503): stitches every selected border edge at once, the smaller shell moving onto the larger
+  one (Order in its option window).
+- **Flip** (#506): Modify > Flip uses its Coordinate (Pivot, Selection Center, Global) and Cut UV Perimeter options.
+- **Layout over UDIM tiles** (#505): Layout's Shell Distribution with Tiles U / V spreads the shells over tiles.
+- **Marking menu pictures** (#525): marking menu items (the radial items and the list) show their command's picture
+  left of the label, the kit's own drawings; a disabled item's picture is grey. The Mesh menu's Booleans and
+  Unsmooth items and the UV Toolkit's Pin, Unpin and Invert buttons have pictures too.
+
+### Changed
+- One New Material: Lighting/Shading > Assign New Material (and Shift+T), Assign Favorite Material, the marking menu's
+  Assign Favorite Material, Hypershade Create > Materials, the Hypershade Favorites list and the shelf's Standard
+  Surface Material button all make the same new material: Blender's Principled BSDF with Blender's values, named by
+  Blender (Material, Material.001 ...). The Maya surface shader kinds (Lambert, Blinn, Phong, Phong E, Anisotropic,
+  Standard Surface, OpenPBR Surface) are no longer listed; their shelf buttons stay in place, greyed, and point to
+  the Standard Surface Material button. The command line's `shadingNode lambert -asShader` (and the other surface
+  shader types) makes the same material and returns its name.
+- No lambert1: new objects have no material (Blender's grey), however they are made. Assigning a material to some
+  faces leaves the other faces without a material. Use Assign New Material to give an object a material.
+- Attribute Editor: a material tab shows the Principled BSDF inputs by Blender's names, in the order of Blender's
+  material panel (Base, Diffuse, Subsurface, Specular, Transmission, Coat, Sheen, Emission, Thin Film). The Blinn
+  Eccentricity and Phong Cosine Power rows are gone; Roughness is shown instead. `setAttr .eccentricity` /
+  `.cosinePower` on the command line now report that the attribute does not exist; Standard Surface attribute names
+  (`setAttr Material.baseColor`, `specularRoughness` ...) reach the matching Principled input.
+- Ramp Shader, Layered Shader, Surface Shader and Use Background are greyed in Hypershade Create and on the shelf; the
+  tooltip and the Help Line say how to build them in the Shader Editor (Layer Weight + Color Ramp, Mix Shader,
+  Emission, Holdout), and the command line's `shadingNode` gives the same sentence.
+- Hypershade Delete, Delete Unused Nodes and Delete All Materials treat every material the same (no material is
+  kept back). The command line's `initialShadingGroup` stands for the shapes without a material: `sets -q` lists
+  them and `sets -e -forceElement initialShadingGroup` takes the material off a shape.
+- **Lights: Blender's power.** New lights have Blender's own values (power, falloff, spot cone and penumbra, area
+  size, directional Angle). The Channel Box and Attribute Editor row in Maya's Intensity place shows Blender's Power
+  (a directional light: Strength) itself, so its number looks different from before (for example thousands instead
+  of 1); keys and driven keys on it were power keys already and work as before. On the command line `setAttr
+  pointLight1.intensity 100` now sets the power to 100 as it is, and `decayRate` is no attribute: Blender lights fall
+  off with distance squared (in Cycles a Light Falloff node in the light's node tree changes it). The Decay Rate row
+  is greyed with that note.
+- New cameras keep Blender's depth of field values (F Stop, Focus Distance). Orthographic Width, the gate mask
+  opacity and a new camera that is not renderable stay as before.
+- The Maya layout file's Render Settings image size is Blender's (1920 x 1080).
+- Imported materials keep Blender's names (Material.001).
+
+### Fixed
+- UV Editor: Shift+marquee toggles the faces, edges, vertices or UVs it catches, like Shift+click (#524). With UV Sync
+  Selection on in face mode it cleared the selection, and with it off a UV shared by several faces stayed picked.
+- UV Editor: Select > Convert Selection > To Vertices / Edges / Faces / UVs convert the selection instead of only
+  switching the select mode (#507).
+- Translations: the toolkits' "Drag" selection style has its own Japanese text, apart from the Fields "Drag" (#508).
+- UV Toolkit Flip U / Flip V and the UV marking menu's Flip Along U / V use the Flip options (Coordinate, Cut UV
+  Perimeter) like Modify > Flip, instead of mirroring around Blender's transform pivot (#520).
+- UV Editor: Stitch Together and Move and Sew with a mirrored shell fold it onto the other shell like Maya (#523).
+- UV Editor: Layout's Distribute over several tiles shares the shells out by count, tile after tile, like Maya (#522).
+- UV Editor: Modify > Unitize makes every face its own UV shell on the 0-1 square, like Maya; UVs of neighbouring
+  faces no longer stay joined and move along (#526).
+- UV Editor: faces picked in the 3D View show only their own UV edges in the selection colour; the edges of other
+  shells on the same mesh edges no longer look selected (#527).
+- Marking menus: a list that would leave the window beside the ring moves closer to the ring instead of over it.
+- Blender 5.3: closed outlines draw every side (#528): marking menu option boxes, the marquee and lattice frames, the
+  Graph Editor scale box, the Outliner drop frame and the UV brush circle missed their last side.
+- Viewport: with the gradient background (Alt+B), image planes stay drawn in wireframe display and wherever no mesh
+  is in front of them; the gradient covered them before (#529).
+- Rigging: picking another tool (Q / W / E / R, the toolbar, the Tool Box or a menu entry) ends Skin > Move Skinned
+  Joints like Maya, also W while the Move tool is active; the joints go back to Pose with that tool (#415).
+- Turning the UV Manipulator preference on or off in Blender mode no longer gives Blender's UV Move / Rotate / Scale
+  tools the kit's handles; the kit's UV tools leave cleanly when Maya mode is turned off.
+- Animation: a Graph Editor or Dope Sheet open during playback no longer slows Maya mode down as the scene gets
+  more animated: its Stats fields (the selected keys' time and value) are read once per playback instead of on every
+  frame (#344).
+
+### Older scenes
+- Nothing is converted when a scene is opened: lambert1, materials made by earlier versions (with their Maya Diffuse
+  node) and Ramp / Layered / Use Background node set-ups keep rendering as they were saved, and so do cameras and
+  lights: a light keeps its saved power, and a "Maya Decay Rate" Light Falloff node an earlier version put on it
+  keeps rendering in Cycles (edit it in the Shader Editor; the kit no longer changes it). Their materials show the same Principled BSDF tab. An old lambert1 keeps its objects but is no longer given
+  to new objects. Lighting/Shading > Convert Old Kit Materials still turns the older materials into plain Principled
+  BSDF materials.
+
 ## [0.21.0] — 2026-11-23
 
 Thank you for the reports since 0.20.1. **Materials change in this version:** new materials are now plain Blender

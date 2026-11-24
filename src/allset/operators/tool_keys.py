@@ -11,9 +11,8 @@
 import bpy
 import gpu
 from bpy.props import EnumProperty
-from gpu_extras.batch import batch_for_shader
 
-from .. import results
+from .. import compat, results
 
 # --- box zoom ------------------------------------------------------------------------------------
 
@@ -49,7 +48,7 @@ class ALLSET_OT_box_zoom(bpy.types.Operator):
             return
         (x0, y0), (x1, y1) = self._start, self._end
         shader = gpu.shader.from_builtin('UNIFORM_COLOR')
-        batch = batch_for_shader(shader, 'LINE_LOOP', {"pos": [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]})
+        batch = compat.closed_line_batch(shader, [(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
         gpu.state.blend_set('ALPHA')
         shader.uniform_float("color", (1.0, 1.0, 1.0, 0.8))
         batch.draw(shader)
@@ -192,7 +191,8 @@ def _carry():
     area, region = main_view3d(window.screen) if window is not None else (None, None)
     try:
         if area is not None:
-            with context.temp_override(window=window, area=area, region=region):
+            from . import joint_selection
+            with context.temp_override(window=window, area=area, region=region), joint_selection.kit_tool_set():
                 bpy.ops.wm.tool_set_by_id(name=tool, space_type='VIEW_3D')
     except (RuntimeError, ReferenceError, TypeError):   # tool unavailable in this mode / no UI
         pass

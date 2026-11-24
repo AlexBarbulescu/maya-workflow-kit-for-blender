@@ -19,7 +19,7 @@ import bpy
 from bpy.props import EnumProperty
 
 from .. import compat, results
-from . import film_fit, lights, naming, prim_history, units
+from . import film_fit, naming, prim_history, units
 from .. import i18n
 
 HALF_PI = math.pi / 2
@@ -85,15 +85,9 @@ NO_SHAPE_NAME = {'JOINT', 'TEXT'}
 # A Maya locator (Create > Locator, cmds.spaceLocator): an Empty with this flag; cmds_shim gives it a shape name
 # ``locatorShapeN``
 LOCATOR_PROP = "allset_locator"
-# Lights (operators/lights.py): Maya intensity 1, Decay Rate No Decay. The power follows the Maya unit
-# (x maya_unit()^2) and is set so an intensity-1 light at 10 units lights a surface the Maya way;
-# Cycles renders No Decay / Linear with a Light Falloff node, EEVEE and the viewport keep distance squared.
-FALLOFF_LIGHTS = {'POINT', 'SPOT', 'AREA'}
-LIGHT_NOTICE = ("Maya Decay Rate No Decay renders in Cycles; EEVEE and the viewport get darker with the square of "
-                "the distance (the same brightness as Maya at 10 units).")
 
 MAYA_CAMERA_LENS, MAYA_FILM_MM, MAYA_FILM_H_MM = 35.0, 36.0, 24.0
-MAYA_CAMERA_FSTOP, MAYA_CAMERA_FOCUS, MAYA_CAMERA_ORTHO_WIDTH = 5.6, 5.0, 30.0
+MAYA_CAMERA_ORTHO_WIDTH = 30.0
 MAYA_GATE_MASK_OPACITY = 0.7
 
 # Operator properties that are lengths (scaled by units.maya_unit).
@@ -111,18 +105,13 @@ def _scale_data(ob, k):
         film_fit.set_fit(data, 'FILL', bpy.context.scene)
         data.display_size *= k
         data.clip_start, data.clip_end = units.CLIP["clip_start"] * k, units.CLIP["clip_end"] * k
-        # F Stop, Focus Distance and Orthographic Width of a camera from Maya's Create > Cameras
-        data.dof.aperture_fstop = MAYA_CAMERA_FSTOP
-        data.dof.focus_distance = MAYA_CAMERA_FOCUS * k
+        # Orthographic Width of a camera from Maya's Create > Cameras (depth of field keeps Blender's values)
         data.ortho_scale = MAYA_CAMERA_ORTHO_WIDTH * k
         # a new Maya camera is not renderable (only the startup persp is) and draws its gate mask partly see-through
         data.allset_renderable = False
         data.passepartout_alpha = MAYA_GATE_MASK_OPACITY
     elif ob.type == 'LIGHT':
-        data.shadow_soft_size *= k
-        if data.type == 'AREA':
-            data.size_y *= k
-        lights.start_values(data, k)     # intensity 1, No Decay, spot cone 40, area 2 x 2 units
+        data.shadow_soft_size *= k       # power, cone, penumbra, area size and angle stay Blender's
 
 
 def _maya_naming(context):
@@ -145,10 +134,6 @@ def create(context, kind, maya_naming=True, overrides=None):
         vals = dict(overrides or {})
         uvs = bool(vals.pop("createUVs", True))
         ob = prim_history.create_object(context, kind, vals, maya_naming, create_uvs=uvs)
-        from . import material
-        for part in [ob, *ob.children]:   # nurbsCube: each patch joins lambert1
-            if part.type in {'MESH', 'SURFACE'}:
-                material.give_default(part)
         return ob
     mod, name = op.split(".")
     k = units.maya_unit(context.scene)
@@ -166,9 +151,6 @@ def create(context, kind, maya_naming=True, overrides=None):
         _first_joint(ob, maya_naming)
     if kind in ('CAMERA_AIM', 'CAMERA_AIM_UP'):
         _aim_rig(ob, kind == 'CAMERA_AIM_UP', k)
-    if maya_naming:
-        from . import material
-        material.give_default(ob)   # Maya: a new shape joins initialShadingGroup = lambert1
     return ob
 
 
@@ -225,8 +207,7 @@ class ALLSET_OT_create(bpy.types.Operator):
         if interactive_create.wanted(context, self.kind) and interactive_create.start(context, self.kind):
             return {'FINISHED'}
         ob = create(context, self.kind, _maya_naming(context))
-        note = LIGHT_NOTICE if ob.type == 'LIGHT' and ob.data.type in FALLOFF_LIGHTS else ""
-        results.result(self, f"Created {ob.name}" + (f". {note}" if note else ""))
+        results.result(self, f"Created {ob.name}")
         return {'FINISHED'}
 
 

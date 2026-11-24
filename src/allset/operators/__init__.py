@@ -234,6 +234,18 @@ classes += render_cameras.classes
 
 from . import uv_toolkit_ops  # noqa: E402  UV Toolkit Align / Straighten UVs / Unfold Along / Randomize
 classes += uv_toolkit_ops.classes
+from . import uv_transform  # noqa: E402  UV Toolkit Pivot / Move / Rotate / Scale / Snap (#494)
+classes += uv_transform.classes
+from . import uv_optimize  # noqa: E402  UV Editor > Modify > Optimize (#498)
+classes += uv_optimize.classes
+from . import uv_brush  # noqa: E402  UV Editor > Tools > Unfold / Optimize / Cut / Sew / Pin / Smear / Smudge brushes (#500)
+classes += uv_brush.classes
+from . import uv_lattice  # noqa: E402  UV Editor > Tools > Lattice (#500)
+classes += uv_lattice.classes
+from . import uv_stitch  # noqa: E402  UV Editor > Cut/Sew > Stitch Together (#503)
+classes += uv_stitch.classes
+from . import uv_flip  # noqa: E402  UV Editor > Modify > Flip with its options (#506)
+classes += uv_flip.classes
 
 from . import type_manip  # noqa: E402  Type Manipulator: per-character move / rotate / scale (#258)
 classes += type_manip.classes
@@ -287,7 +299,6 @@ def register():
     snap_align.register_props()
     pick_order.register_handlers()
     material.register_props()
-    lights.register_props()
     camera_overscan.register_props()
     film_fit.register_props()
     universal_manip.register_props()
@@ -301,6 +312,7 @@ def register():
     smart_extrude.register_props()
     uv_tools.register_props()
     uv_toolkit_ops.register_props()
+    uv_transform.register_extra()
     uv_shell_select.register_props()
     sel_constraint.register_props()
     taphold.register_bindings()
@@ -321,6 +333,8 @@ def register():
     autosave.register()
     preselect.register_handlers()
     cut_sew.register_handlers()
+    uv_brush.register_extra()
+    uv_lattice.register_extra()
     multi_cut.register_handlers()
     connect_tool.register_handlers()     # the Connect Tool's HUD line
     poly_draw.register_handlers()
@@ -425,6 +439,8 @@ def unregister():
     poly_draw.unregister_handlers()
     multi_cut.unregister_handlers()
     cut_sew.unregister_handlers()
+    uv_lattice.unregister_extra()
+    uv_brush.unregister_extra()
     project.unregister_handlers()
     pivot_follow.unregister_handlers()
     pivot.unregister_handler()
@@ -446,13 +462,13 @@ def unregister():
     pivot_menu.unregister_props()
     taphold.unregister_bindings()
     anim_layers.unregister_props()
-    lights.unregister_props()
     universal_manip.unregister_props()
     film_fit.unregister_props()
     camera_overscan.unregister_props()
     material.unregister_props()
     sel_constraint.unregister_props()
     uv_shell_select.unregister_props()
+    uv_transform.unregister_extra()
     uv_toolkit_ops.unregister_props()
     uv_tools.unregister_props()
     extrude.unregister_handlers()

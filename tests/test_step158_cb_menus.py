@@ -206,18 +206,17 @@ def _light(kind='POINT'):
 def test_light_intensity_and_color_are_keyable_channels():
     ob = _light('POINT_LIGHT')
     keys = cb.drawn_keys(ob)
-    assert "sh:allset_intensity" in keys and "sh:maya:colorR" in keys and "sh:maya:coneAngle" not in keys, keys
-    assert cb.channel_label("sh:allset_intensity") == "Intensity"
-    cb.set_selected_channels(["sh:allset_intensity", "sh:maya:colorR"])
+    assert "sh:energy" in keys and "sh:maya:colorR" in keys and "sh:maya:coneAngle" not in keys, keys
+    assert cb.channel_label("sh:energy") == "Power"
+    cb.set_selected_channels(["sh:energy", "sh:maya:colorR"])
     bpy.context.scene.frame_set(1)
     assert bpy.ops.allset.cb_key_selected() == {'FINISHED'}
     paths = sorted((f.data_path, f.array_index) for f in kit.fcurves(ob.data))
     assert paths == [("color", 0), ("energy", 0)], paths
-    assert cb.channel_state(ob, "sh:allset_intensity") == 'KEYED'
-    # a typed value through the channel goes to the light (Maya intensity 2 = twice the power)
-    e1 = ob.data.energy
-    cb.set_value(ob, "sh:allset_intensity", 2.0)
-    assert abs(ob.data.energy - 2 * e1) < 1e-4 and abs(cb.get_value(ob, "sh:allset_intensity") - 2.0) < 1e-6
+    assert cb.channel_state(ob, "sh:energy") == 'KEYED'
+    # a typed value through the channel is the light's power
+    cb.set_value(ob, "sh:energy", 2.0)
+    assert abs(ob.data.energy - 2.0) < 1e-6 and abs(cb.get_value(ob, "sh:energy") - 2.0) < 1e-6
     assert bpy.ops.allset.cb_mute(mute=True) == {'FINISHED'}
     assert cb.channel_state(ob, "sh:maya:colorR") == 'MUTED'
     assert bpy.ops.allset.cb_delete_keys() == {'FINISHED'}
@@ -227,10 +226,11 @@ def test_light_intensity_and_color_are_keyable_channels():
 def test_spot_cone_and_penumbra_rows():
     ob = _light('SPOT_LIGHT')
     light = ob.data
+    light.spot_size, light.spot_blend = math.radians(40.0), 0.0          # cone 40, penumbra 0
     rows = [n for kind, n, _t, _i in cb.wanted_rows(ob) if kind == "SHAPE"]
     assert rows[-2:] == ["maya:coneAngle", "maya:penumbraAngle"], rows
     cone, pen = lights.cone_penumbra(light)
-    assert abs(cone - 40.0) < 1e-4 and abs(pen) < 1e-6, (cone, pen)      # defaults 40 / 0
+    assert abs(cone - 40.0) < 1e-4 and abs(pen) < 1e-6, (cone, pen)
     cb.set_value(ob, "sh:maya:penumbraAngle", 5.0)
     assert abs(math.degrees(light.spot_size) - 50.0) < 1e-4 and abs(light.spot_blend - 0.2) < 1e-6
     assert abs(cb.get_value(ob, "sh:maya:coneAngle") - 40.0) < 1e-4
@@ -246,10 +246,10 @@ def test_shape_rows_are_selectable_cells():
     ob = _light('POINT_LIGHT')
     cb.rebuild_rows(bpy.context)
     rows = bpy.context.scene.allset_cb.rows
-    i = next(i for i, r in enumerate(rows) if r.kind == "SHAPE" and r.name == "allset_intensity")
-    assert cb.cell_key(f"allset_cb.rows[{i}].sel", bpy.context.scene) == ("sh:allset_intensity", "NAME")
+    i = next(i for i, r in enumerate(rows) if r.kind == "SHAPE" and r.name == "energy")
+    assert cb.cell_key(f"allset_cb.rows[{i}].sel", bpy.context.scene) == ("sh:energy", "NAME")
     rows[i].sel = True
-    assert "sh:allset_intensity" in cb.selected_channels() and rows[i].sel
+    assert "sh:energy" in cb.selected_channels() and rows[i].sel
 
 
 # --- #97 Bind Skin INPUTS name -----------------------------------------------------------------------------------

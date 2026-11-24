@@ -24,7 +24,7 @@ from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty
 from mathutils import Vector
 
 from .. import compat, i18n, results, undo_steps
-from . import uv_tools
+from . import uv_tools, uv_transform
 from .uv_modify import all_points, selected_ids
 from .uv_shells import _index_loops, _meshes, _poll, owner_map
 
@@ -69,6 +69,12 @@ class ALLSET_OT_uv_align_to(bpy.types.Operator):
                         options={'SKIP_SAVE'})
 
     poll = classmethod(lambda cls, context: _poll(context))
+
+    @classmethod
+    def description(cls, context, props):
+        """The toolkit's Align pictures: the button's name (Min U ... Max V) over the command's tooltip."""
+        label = f"{props.where.title()} {props.axis}"
+        return i18n.tip(label) + "\n" + i18n.tip(" ".join(cls.__doc__.split()))
 
     def execute(self, context):
         synced = uv_tools.sync(context)
@@ -577,6 +583,44 @@ class ALLSET_PG_uv_toolkit(bpy.types.PropertyGroup):
                                                     "lined up")
     straighten_u: BoolProperty(name="U", default=True, description="Straighten UVs: line up edges along U")
     straighten_v: BoolProperty(name="V", default=True, description="Straighten UVs: line up edges along V")
+    # Transform (operators/uv_transform.py)
+    pivot_area: EnumProperty(name="Pivot", default='SELECTION', items=(
+        ('SELECTION', "Selection", "The pivot buttons use the selected UVs' bounding box"),
+        ('UV_AREA', "UV Area", "The pivot buttons use the UV range below")))
+    pivot_min_u: IntProperty(name="Min U", default=0, description="UV Area: lowest U")
+    pivot_max_u: IntProperty(name="Max U", default=1, description="UV Area: highest U")
+    pivot_min_v: IntProperty(name="Min V", default=0, description="UV Area: lowest V")
+    pivot_max_v: IntProperty(name="Max V", default=1, description="UV Area: highest V")
+    nudge: FloatProperty(name="Move Step", default=0.1, precision=4, step=1,
+                         description="How far the Move buttons move the selected UVs")
+    position_u: FloatProperty(name="U", precision=4, step=1, get=uv_transform.position_get(0),
+                              set=uv_transform.position_set(0), options={'SKIP_SAVE'},
+                              description="Centre of the selected UVs in U: type a value to move them there")
+    position_v: FloatProperty(name="V", precision=4, step=1, get=uv_transform.position_get(1),
+                              set=uv_transform.position_set(1), options={'SKIP_SAVE'},
+                              description="Centre of the selected UVs in V: type a value to move them there")
+    rotate_angle: FloatProperty(name="Angle", default=90.0, precision=4, step=100,
+                                description="Degrees the Rotate buttons turn the selected UVs")
+    scale_factor: FloatProperty(name="Factor", default=2.0, precision=4, step=10,
+                                description="The Scale button multiplies by this factor, Shrink divides by it")
+    move_snap_value: FloatProperty(name="Move Step Snap", default=0.1, min=0.0001, soft_max=1.0, precision=4,
+                                   step=1, update=uv_transform.move_step_update,
+                                   description="Step of the UV Editor's Move tool with Step Snap on (the UV grid "
+                                               "step follows it)")
+    rotate_snap_value: FloatProperty(name="Rotate Step Snap", default=15.0, min=0.01, max=180.0, precision=4,
+                                     step=100, update=uv_transform.rotate_step_update,
+                                     description="Degrees per step of the UV Editor's Rotate tool with Step Snap on")
+    retain_spacing: BoolProperty(name="Retain Component Spacing", default=True,
+                                 description="A typed U / V value moves the selected UVs together (on) or puts each "
+                                             "of them on that value (off)")
+    distribute_axis: EnumProperty(name="Distribute Along", default='U', items=(
+        ('U', "U", "Distribute along U"), ('V', "V", "Distribute along V")))
+    scale_axis: EnumProperty(name="Scale In", default='UV', items=(
+        ('UV', "UV", "Scale in U and V"), ('U', "U", "Scale in U only"), ('V', "V", "Scale in V only")))
+    snap_min_u: IntProperty(name="Min U", default=0, description="Snap range: lowest U")
+    snap_max_u: IntProperty(name="Max U", default=1, description="Snap range: highest U")
+    snap_min_v: IntProperty(name="Min V", default=0, description="Snap range: lowest V")
+    snap_max_v: IntProperty(name="Max V", default=1, description="Snap range: highest V")
 
 
 def straighten_axis(context):
@@ -584,8 +628,30 @@ def straighten_axis(context):
     return 'UV' if s.straighten_u == s.straighten_v else ('U' if s.straighten_u else 'V')
 
 
+class ALLSET_OT_uv_tool_settings(bpy.types.Operator):
+    """Show the settings of the UV Editor's active tool (the sidebar's Tool tab)"""
+    bl_idname = "allset.uv_tool_settings"
+    bl_label = "Tool Settings"
+    bl_options = {'INTERNAL'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.area is not None and context.area.type == 'IMAGE_EDITOR'
+
+    def execute(self, context):
+        context.space_data.show_region_ui = True
+        for region in context.area.regions:
+            if region.type == 'UI':
+                try:        # read-only until the sidebar has drawn its tabs once
+                    region.active_panel_category = "Tool"
+                except (AttributeError, TypeError, ValueError):
+                    pass
+        context.area.tag_redraw()
+        return {'FINISHED'}
+
+
 classes = (ALLSET_PG_uv_toolkit, ALLSET_OT_uv_align_to, ALLSET_OT_uv_straighten_uvs, ALLSET_OT_uv_unfold_along,
-           ALLSET_OT_uv_straighten_shell, ALLSET_OT_uv_randomize)
+           ALLSET_OT_uv_straighten_shell, ALLSET_OT_uv_randomize, ALLSET_OT_uv_tool_settings)
 
 
 def register_props():

@@ -163,7 +163,7 @@ See [custom pivot editing](docs/pivot_component_picking.md) for the full control
 ### Modeling & UV
 
 - **Maya creation defaults**: Maya names (`pCube1`, `pCubeShape1`, `group1`, `polySmooth1`), Maya sizes in
-  centimetres, a default `lambert1` material; optional **Maya Units** preference (1 Blender unit = 1 cm).
+  centimetres, Blender's Principled BSDF for new materials; optional **Maya Units** preference (1 Blender unit = 1 cm).
 - **Maya concepts**: Freeze Transformations (channels back to 0 / 0 / 1, pivot kept), Reset Transformations, Center
   Pivot, Delete History and Delete by Type, Maya-style parenting (**P / Shift+P** keep the Channel Box values),
   **Ctrl+G** groups, Duplicate Special.
@@ -171,7 +171,9 @@ See [custom pivot editing](docs/pivot_component_picking.md) for the full control
 - Mesh tools including Combine / Separate / Mirror / Boolean, extrude with editable history, **Ctrl+B** Bevel,
   Smart Bevel (Maya 2027's width in scene units, edge filters and output options), Circularize, Connect and Make
   Hole, Maya's convert-selection rules.
-- **UV**: Cut / Sew UV Edges, 3D Cut and Sew, Unfold, Layout, UV shell selection, Maya UV Editor menus and UV Toolkit.
+- **UV**: Cut / Sew UV Edges, 3D Cut and Sew, Unfold, Optimize, Layout, Stitch Together, UV shell selection, Maya UV
+  Editor menus, option windows and marking menus, UV brush tools (Unfold, Optimize, Cut, Sew, Pin, Smear, Smudge,
+  Lattice, Grab, Pinch) and the UV Toolkit with its Transform section.
 
 ### Animation
 
@@ -198,9 +200,10 @@ See [custom pivot editing](docs/pivot_component_picking.md) for the full control
 
 ### Rendering & FX
 
-- **Hypershade** menus and Browser tabs, Maya shader types with their Attribute Editor sections, shading groups.
+- **Hypershade** menus and Browser tabs, one New Material (Blender's Principled BSDF) with Maya's Attribute Editor
+  layout, shading groups.
 - **Rendering** menu set on Blender's own render: Render Current Frame / Sequence, Render Settings (Blender's Render
-  properties), Keep Image in the render view, light linking; Intensity and Decay of lights in the Channel Box.
+  properties), Keep Image in the render view, light linking; a light's Power in the Channel Box.
 - **FX** menu set on Blender's own simulations (Cloth, Collision, particles, force fields, rigid bodies, Mantaflow).
   Nothing is rescaled: Blender simulates one unit as one metre, so FX works in metre scenes. See
   [Maya FX and Rendering in Blender](docs/fx_render_concepts.md).
@@ -239,10 +242,10 @@ Some Maya behaviour needs Blender's C++ code; the kit does not fork Blender, so 
 - **No theme.** Maya's grey UI and green lead selection come from a theme you install yourself
   ([Recommended setup](#recommended-setup)); extensions.blender.org add-ons may not change themes.
 - **Docking stays inside Blender's areas.** Maya's side tabs and OS-level docking of panels are not imitated.
-- Not every Maya menu item has a Blender counterpart; those items are greyed with a note. Today 1,077 of the 1,912
-  main menu items run a kit or Blender command and the other 842 are greyed with a note (none without one). Editor
-  menu bars: UV Editor 85 %, Graph Editor 82 %, Dope Sheet 78 %, Shape Editor 77 %, Script Editor 76 %, Reference
-  Editor 71 %, Hypershade 58 %. What is done and what comes next is tracked in the roadmap issue
+- Not every Maya menu item has a Blender counterpart; those items are greyed with a note. Today 1,080 of the 1,915
+  main menu items run a kit or Blender command and the other 835 are greyed with a note (none without one). Editor
+  menu bars: UV Editor 87 %, Graph Editor 84 %, Shape Editor 80 %, Dope Sheet 79 %, Script Editor 76 %, Reference
+  Editor 71 %, Hypershade 55 %. What is done and what comes next is tracked in the roadmap issue
   [#108](https://github.com/5hyuns/maya-workflow-kit-for-blender/issues/108).
 - Blender versions after 5.3 are not offered the extension until they are tested.
 
@@ -268,7 +271,7 @@ Maya Workflow Kit is not on extensions.blender.org yet. Once it is, install it f
 
 ### Option 2 — Install the zip from disk
 
-1. Get `maya-workflow-kit-<version>.zip` (current version: 0.21.0) from
+1. Get `maya-workflow-kit-<version>.zip` (current version: 0.22.0) from
    [GitHub Releases](https://github.com/5hyuns/maya-workflow-kit-for-blender/releases) — or build it as in option 3.
 2. In Blender: *Edit > Preferences > Get Extensions > ▾ (top-right menu) > Install from Disk…* and pick the zip — or
    drag the zip onto the Blender window.

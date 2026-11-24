@@ -8,7 +8,7 @@ import bpy
 
 from . import cmds_shim as _shim
 from .cmds_shim import _Flags, _flatten
-from .cmds_nodes import FILE_NAME_PROP, TEXTURE_PROP, _all_names, _node, select_nodes, unique_node_name
+from .cmds_nodes import FILE_NAME_PROP, TEXTURE_PROP, _all_names, _node, select_nodes, split_plug, unique_node_name
 from .cmds_attributes import _COLOR_ATTRS
 
 # --- sets ------------------------------------------------------------------------------------------------------------
@@ -23,7 +23,30 @@ def _set_members(found):
         mat = found.data
         return [_shim.shape_of(o) or o.name for o in bpy.context.scene.objects
                 if any(s.material is mat for s in getattr(o, "material_slots", ()))]
+    if found.name == _NO_MATERIAL:
+        return [_shim.shape_of(o) or o.name for o in _unshaded()]
     return []
+
+
+# initialShadingGroup: the shapes without a material (Blender has no default material)
+_NO_MATERIAL = "initialShadingGroup"
+
+
+def _unshaded():
+    from ..operators import material
+    return [o for o in bpy.context.scene.objects if o.type in material.SHADED_TYPES
+            and not any(s.material is not None for s in o.material_slots)]
+
+
+def _drop_materials(obs):
+    """``sets -e -forceElement initialShadingGroup``: the shapes lose their materials (whole shapes)."""
+    for ob in obs:
+        if ob.type in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'} and ob.data is not None:
+            if ob.type == 'MESH':
+                ob.data.polygons.foreach_set("material_index", [0] * len(ob.data.polygons))
+            ob.data.materials.clear()
+            for slot in ob.material_slots:
+                slot.material = None
 
 
 def _set_node(name):
@@ -61,6 +84,9 @@ def sets(*args, **kwargs):
     for target, op in ((add, kit_sets.add), (remove, kit_sets.remove)):
         if target is not None:
             found = _set_node(target)
+            if found.name == _NO_MATERIAL and op is kit_sets.add:
+                _drop_materials([_shim._object(n) for n in names] if names else _shim._selection())
+                return found.name
             if found.kind != 'SET':
                 raise RuntimeError(f"sets: the kit can't edit the members of {target}")
             obs = [_shim._object(n) for n in names] if names else _shim._selection()
@@ -90,11 +116,6 @@ def sets(*args, **kwargs):
 
 # --- shading nodes ---------------------------------------------------------------------------------------------------
 
-def _material_kind(maya_type):
-    from ..operators import material
-    return next((k for k, v in material.MATERIALS.items() if v[0] == maya_type), None)
-
-
 def new_file_texture(name=None):
     """Maya's ``file`` texture node: a Shader node group with an Image Texture node and Maya's outputs."""
     from ..operators import naming
@@ -116,9 +137,9 @@ def new_file_texture(name=None):
 
 
 def shadingNode(*args, **kwargs):
-    """``shadingNode lambert -asShader`` = a kit material (``material.new_material``: lambert2 while lambert1
-    exists, blinn1, phong1 …, default values like Maya); ``file -asTexture`` = ``new_file_texture``. No shading group
-    is made; the new node becomes the selection."""
+    """``shadingNode lambert -asShader`` (any Maya surface shader type of ``material.SURFACE_TYPES``) = Blender's new
+    material (``material.new_material``: Material, Material.001 …, Blender's values), returned by its name;
+    ``file -asTexture`` = ``new_file_texture``. No shading group is made; the new node becomes the selection."""
     from ..operators import material
     f = _Flags("shadingNode", kwargs)
     f.get("asShader", "asShader", False)
@@ -138,12 +159,14 @@ def shadingNode(*args, **kwargs):
     if maya_type == "file":
         node_name = new_file_texture(name).name
     else:
-        kind = _material_kind(maya_type)
-        if kind is None:
+        if maya_type not in material.SURFACE_TYPES:
+            from ..ui import notices
+            path = notices.NODE_SETUPS.get(maya_type)
+            if path is not None:
+                raise RuntimeError(f"shadingNode: {notices.NOTICES[path][1]}")
             raise RuntimeError(f"shadingNode: Maya Workflow Kit can't make a '{maya_type}' node"
                                + (" (texture nodes: file)" if as_texture else ""))
-        material.default_material()      # Maya's scene always has lambert1: the first new lambert is lambert2
-        mat = material.new_material(kind)
+        mat = material.new_material()
         if name:
             mat.name = unique_node_name(str(name), _all_names() - {mat.name})
         node_name = mat.name
@@ -157,10 +180,9 @@ def connect_texture(src_plug, dst_plug):
     Maya colour input. Returns Maya's message, or None when the plugs aren't a texture -> material connection
     (for cmds_connections.connectAttr)."""
     from ..operators import material
-    try:
-        src_node, src_attr = str(src_plug).split(".", 1)
-        dst_node, dst_attr = str(dst_plug).split(".", 1)
-    except ValueError:
+    src_node, src_attr = split_plug(src_plug)
+    dst_node, dst_attr = split_plug(dst_plug)
+    if not src_attr or not dst_attr:
         return None
     src, dst = _node(src_node), _node(dst_node)
     if src is None or dst is None or src.kind != 'TEXTURE' or dst.kind != 'MATERIAL':
@@ -186,9 +208,8 @@ def shading_sources(plug):
     """Maya plugs feeding a material plug (``listConnections lambert2.color -s 1 -p 1``), or None when ``plug`` isn't
     a kit material's (for cmds_connections.listConnections)."""
     from ..operators import material
-    try:
-        node, attr = str(plug).split(".", 1)
-    except ValueError:
+    node, attr = split_plug(plug)
+    if not attr:
         return None
     found = _node(node)
     if found is None or found.kind != 'MATERIAL' or attr not in _COLOR_ATTRS:

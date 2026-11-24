@@ -133,7 +133,7 @@ def s_scene():
     C["cube"] = cube.name
     C["cube_mat0"] = cube.active_material.name if cube.active_material else None
     for kind in ('BLINN', 'PHONG'):
-        mat = m.new_material(kind)
+        mat = m.new_material()
         mat.use_fake_user = True
         C[kind] = mat.name
     bpy.context.window_manager.allset_hs_swatch = 'SMALL'   # the swatch names fit the Browser of a small window
@@ -187,7 +187,7 @@ def find_swatch(name, key):
             s = bpy.context.preferences.system.ui_scale
             size = next(z for z in mod(".ui.hypershade").SWATCHES if z[0] == wm.allset_hs_swatch)
             cell = size[3] * 20 * s + 12
-            names = sorted(m.name for m in bpy.data.materials)
+            names = sorted((m.name for m in bpy.data.materials), key=str.lower)   # the Browser sorts so
             cols = min(len(names), max(1, min(24, int(region.width // cell))))   # grid_flow: no empty columns
             index = names.index(name)
             state["x"] = region.x + int(region.width / cols * (index % cols + 0.5))
@@ -330,7 +330,7 @@ def s_undo():
     cube = bpy.data.objects[C["cube"]]
     redone = [s.material.name if s.material else None for s in cube.material_slots]
     check(f"the drop is one undo step (undo {C['undone']}, redo {redone})",
-          C["undone"] == [C["cube_mat0"]] and redone == [C["BLINN"]])
+          C["undone"] == ([C["cube_mat0"]] if C["cube_mat0"] else []) and redone == [C["BLINN"]])
 
 
 @step

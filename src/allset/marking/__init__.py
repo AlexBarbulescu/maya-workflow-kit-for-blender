@@ -21,7 +21,7 @@ from bpy.props import EnumProperty, IntProperty, StringProperty
 
 from ..operators import taphold
 from ..ui import menu_map, menu_sets
-from . import draw, menu_editor, modal, rmb_items, rmb_nodes, user_menus
+from . import draw, icons, menu_editor, modal, rmb_items, rmb_nodes, user_menus
 from . import menus as mm
 
 # Blender fills a pie in this order (UILayout.menu_pie).
@@ -53,7 +53,16 @@ def _entry_spec(action):
     return menu_map.normalize(action)
 
 
+def live_label(label, action):
+    """``label`` as it reads now: the UV brush menu's Last Tool names the tool it goes back to."""
+    if action == mm.UV_BRUSH_LAST:
+        from ..operators import uv_brush
+        return uv_brush.last_tool_label(bpy.context)
+    return label
+
+
 def draw_entry(layout, label, action, path):
+    label = live_label(label, action)
     if label == mm.OBJECT_TITLE:   # the RMB list's first row is the object's name
         ob = bpy.context.active_object
         label = f"{getattr(bpy.context.window_manager, 'allset_mm_target', '') or (ob.name if ob else 'Object')}..."
@@ -261,24 +270,41 @@ def resolve(trigger, context, picked=None):
     """("pie" | "menu", Menu idname) for a trigger in this context, or None."""
     mode = context.mode
     ob = picked or context.active_object
+    space = getattr(context, "space_data", None)
+    if trigger == "TOOL_OPTIONS" and space is not None and space.type == 'IMAGE_EDITOR':
+        # the UV Editor's own tools have their own option menus (UV Editor in edit mode only)
+        if mode != 'EDIT_MESH' or space.mode != 'UV':
+            return None
+        try:
+            tool = context.workspace.tools.from_space_image_mode('UV', create=False)
+        except (AttributeError, TypeError):
+            tool = None
+        tid = tool.idname if tool else ""
+        name = mm.UV_SELECT_OPTIONS if tid.startswith("builtin.select") else mm.UV_TOOL_OPTIONS.get(tid)
+        return ("pie", idname(name)) if name else None
     if trigger == "TOOL_OPTIONS":
         tool = context.workspace.tools.from_space_view3d_mode(mode, create=False)
         tid = tool.idname if tool else ""
         name = mm.SELECT_OPTIONS if tid.startswith("builtin.select") else mm.TOOL_OPTIONS.get(tid)
         return ("pie", idname(name)) if name else None
-    space = getattr(context, "space_data", None)
     if space is not None and space.type == 'IMAGE_EDITOR':
         # UV Editor: Maya 2026's UV Editor RMB marking menu; Shift+RMB = its UV editing menu for the component
-        # (UVs, edges and vertices share the UV one)
+        # (UVs, edges and vertices share the UV one); Ctrl+RMB = its selection conversion menu; Ctrl+Shift+RMB (above) =
+        # the option menu of its active tool
         if mode != 'EDIT_MESH' or space.mode != 'UV':
             return None
         if trigger == "RMB":
+            from ..operators import uv_brush
+            if uv_brush.active_mode(context) is not None:       # a UV brush tool: Maya's brush menu
+                return ("pie", idname("UV_BRUSH"))
             return ("pie", idname("UV_EDITOR_RMB"))
         if trigger == "SHIFT_RMB":
             from ..ui import uv_toolkit
             comp = uv_toolkit.current_component(context)
             name = {'SHELL': "SHIFT_UV_SHELL", 'FACE': "SHIFT_UV_FACE", 'UV_FACE': "SHIFT_UV_FACE"}.get(comp, "SHIFT_UV")
             return ("pie", idname(name))
+        if trigger == "CTRL_RMB":       # its selection conversion menu
+            return ("pie", idname("UV_CONVERT"))
         return None
     if trigger == "CTRL_RMB":
         # Maya's Ctrl+RMB convert menu picks by the lead's shape type, not the mode: a mesh lead gets CTRL_CONVERT in
@@ -515,6 +541,9 @@ class ToolOptionsBinding(taphold.TapHoldBinding):
         # Maya: a tool key ends the Channel Box middle-drag on the picked channels (they stay highlighted)
         from ..ui import channel_box
         channel_box.disarm_slider()
+        # Maya: a tool key ends Skin > Move Skinned Joints, also the Move tool's key while it is active
+        from ..operators import joint_selection
+        joint_selection.tool_picked(bpy.context, self.tool, again=True)
         try:
             bpy.ops.wm.tool_set_by_id(name=self.tool, space_type='VIEW_3D')
         except RuntimeError:  # e.g. the tool doesn't exist in this mode
@@ -626,6 +655,7 @@ def register():
     for cls in (*TOOL_BINDINGS, *SELECT_BINDINGS):
         taphold.register_binding(cls())
     draw.register()
+    icons.register()
     modal.register_clock()
     user_menus.load()
     apply_user_menus()
@@ -636,6 +666,7 @@ def unregister():
     menu_editor.unregister()
     _clear_user_menus()
     modal.unregister_clock()
+    icons.unregister()
     draw.unregister()
     for cls in (*TOOL_BINDINGS, *SELECT_BINDINGS):
         taphold.unregister_binding(cls.name)
