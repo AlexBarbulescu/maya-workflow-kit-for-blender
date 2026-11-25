@@ -3,6 +3,56 @@
 All notable changes to Maya Workflow Kit (earlier versions were called Allset for Maya Users and, before that, Maya Kit). Format: [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.23.0] — 2026-11-25
+
+**The Hotkey Editor lists Maya's commands, not only the ones with a key.** Menu items, editor commands and UV Toolkit
+buttons can each take a key of your own.
+
+### Added
+- **Hotkey Editor: menu item commands** (#530): like Maya's Hotkey Editor, the list has every main-menu item's command
+  (Merge, Merge (Option), Merge to Center, Combine, Target Weld ...) with Maya's names and categories, found by command
+  or menu label. A key given to one of them runs that menu item, or its option box for an "(Option)" command.
+- **Hotkey Editor: editor commands** (#537, #538, #539): the UV Editor commands (Unfold U / V, Align, the Cut/Sew and
+  Modify commands ...), the UV Toolkit buttons (Custom Scripts > UV Toolkit), X-Ray (Toggle) and X-Ray Joints
+  (Toggle), and the Graph Editor (tangents, infinity, key tools, views, buffer curves), Hypershade (delete by type,
+  browser views and sorting, graph connections, windows), Dope Sheet (inbetweens, channels, frame views) and Trax
+  Editor (Create Clip) commands, each running the kit's menu item that does the same.
+- **Hotkey Editor: Custom Scripts > Windows** (#541): UV Editor, Outliner, Hypershade, Graph Editor, Dope Sheet, Trax
+  Editor, Node Editor and Attribute Spread Sheet toggles open the editor's window, or close it when it is open.
+- **Edit Mesh > Duplicate** copies faces like Maya's Duplicate Face (#542): each selected face is copied in place as a
+  piece of its own. Separate duplicated faces (on) makes every piece an object and selects the copies with the Move
+  Tool; off, the copies stay in the mesh with the node's manipulator, In-View Editor and Channel Box inputs. Offset
+  moves each copy's edges inward. The Shift face marking menu's Duplicate Face runs it.
+- **Viewport toolbar Multisample Anti-aliasing** (PR #536): the toolbar button (off) smooths the selection wires,
+  the Edit Mode component wires and the manipulator handles in that viewport only; Blender's preferences are not
+  touched. Thanks to cnzim for this contribution.
+- **UV Toolkit buttons where Maya has them** (#535): raised buttons two to a row in Maya's pairs and names, area
+  titles at the left, one button with U / V choices beside it for Unfold Along, Layout Along, Flip and the like.
+- Unfold UVs Options: Prevent self border intersections, Map size and Room space can be set (#504).
+
+### Changed
+- UV Toolkit: the arrow buttons of Pivot, Move, Snap and Distribute are all one size, with pictures.
+- UV Toolkit Measure shows its pixel text in the Command Line result field instead of a report banner.
+
+### Fixed
+- Marking menus: a quick flick past a radial submenu item runs that submenu's item in the same direction, like
+  Maya's compound marks; Ctrl+right-click flicked left, up, right or down converts the selection to vertices, edges,
+  UVs or faces (#543).
+- Maya mode keys stay clear of keymap edits made in Blender mode: a Blender key switched off or changed in Blender
+  mode (the mouse wheel zoom, for one) no longer switches off the same Maya key; those edits come back when Blender
+  mode returns (#544).
+- UV Toolkit Move / Rotate / Scale with UV Sync Selection move only the selected faces' UVs; shells of unselected
+  faces sharing those vertices no longer turn along (#540).
+- Mesh Display > Apply Color and Prelight show the colours at once in the Solid 3D Views (#531).
+- Edit Mesh > Wedge turns the selected faces up around the picked edge, like Maya (before, they turned into the mesh),
+  and in edge mode Shift+click on an edge of the selected faces picks it while the faces stay selected (#546).
+- Bevel on an object selection bevels every edge of the selected meshes and stays in object mode, and World Space
+  bevels non-uniformly scaled meshes evenly, like Maya (#532).
+- Edit Mesh > Circularize on an edge loop puts the circle in the same plane as Maya, and on a block of faces the
+  inner vertices spread out like Maya's (#465).
+- UV > Automatic with 8 and 12 planes puts every face on the same plane as Maya and makes the same shells, also with
+  Layout on (#488).
+
 ## [0.22.0] — 2026-11-23
 
 **Materials, lights and render start values are Blender's own.** The kit keeps Maya's menus, hotkeys and Attribute

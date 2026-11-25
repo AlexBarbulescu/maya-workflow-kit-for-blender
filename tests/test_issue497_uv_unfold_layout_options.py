@@ -81,7 +81,11 @@ def test_windows_open_from_the_option_boxes():
     assert box.option_kind(UNFOLD) == box.option_kind(LAYOUT) == "window"
     assert hasattr(bpy.ops.allset, "opt_uv_unfold") and hasattr(bpy.ops.allset, "opt_uv_layout")
     d = unfold.defaults()
-    assert d == {"iterations": 1, "layout_uvs": False, "prevent_flips": True}, d
+    assert d == {"iterations": 1, "layout_uvs": False, "prevent_border": True, "prevent_flips": True,
+                 "map_size": "1024", "room_space": 0}, d
+    names = [f.name for f in unfold.fields]
+    assert names.index("prevent_border") < names.index("prevent_flips") < names.index("map_size"), names
+    assert not any("border" in m or "Map size" in m for m in unfold.missing), unfold.missing
     d = layout.defaults()
     assert d["pre_scale"] == "Preserve 3D Ratios" and d["pre_rotate"] == "Off" and d["rotate"] is False
     assert d["shell_padding"] == 0.0 and d["tile_padding"] == 0.0 and d["map_size"] == "1024"
@@ -250,7 +254,7 @@ def test_hotkeys_and_toolkit_buttons():
     assert ("allset.uv_unfold", 'U', True) in ids and ("allset.uv_layout", 'L', True) in ids
     import inspect
     src = inspect.getsource(import_module(kit.MODULE + ".ui.uv_toolkit"))
-    assert '_item(row, f"{UVE}/Modify/Unfold"' in src and '_item(body, f"{UVE}/Modify/Layout"' in src, \
+    assert '_item(left, f"Modify/{name}"' in src and '_item(left, "Modify/Layout"' in src, \
         "the toolkit buttons are the menu items (Shift+click opens the same window)"
 
 

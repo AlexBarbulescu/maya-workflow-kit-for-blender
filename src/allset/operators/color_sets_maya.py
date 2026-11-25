@@ -189,6 +189,27 @@ class _Picked:
             bpy.ops.object.mode_set(mode='EDIT')
 
 
+def show_colors(context):
+    """Maya shows a mesh's colours as soon as a colour command writes them (the mesh's Display Colors turns on), so
+    the result is seen at once: every Solid 3D View shows the colour attribute (shading colour type Attribute).
+    Material Preview / Rendered keep Blender's shading. Returns how many views changed."""
+    from .mesh_display_tnt import show_colors as show_view_colors
+
+    wm = context.window_manager
+    n = 0
+    for win in (wm.windows if wm is not None else ()):
+        screen = win.screen
+        for area in (screen.areas if screen is not None else ()):
+            if area.type != 'VIEW_3D':
+                continue
+            for space in area.spaces:
+                if space.type == 'VIEW_3D' and space.shading.type == 'SOLID' and space.shading.color_type != 'VERTEX':
+                    show_view_colors(space)  # tnt: retain the previous shading for the viewport toggle
+                    area.tag_redraw()
+                    n += 1
+    return n
+
+
 def _read(attr, me, corners):
     if attr.domain == 'POINT':
         return {c: tuple(attr.data[me.loops[c].vertex_index].color) for c in corners}
@@ -571,6 +592,7 @@ class ALLSET_OT_prelight(bpy.types.Operator):
                 a = blend(old[3], baked[3] * s["scaleRgba"], int(s["alphaBlending"])) if s["bakeAlpha"] else old[3]
                 d.color = (*rgb, a)
             ob.data.update()
+        show_colors(context)
         results.result(self, "polyGeoSampler")
         return {'FINISHED'}
 

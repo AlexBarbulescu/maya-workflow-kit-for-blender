@@ -29,7 +29,7 @@ PX_TOL = 4.0                    # drawn line positions are whole pixels; the gat
 
 
 def maya_gates(hfa, vfa, fit, aspect):
-    """Maya: (resolution gate w, h), film gate (w, h) in mm on the film back."""
+    """Gates by Maya's fit rule: (resolution gate w, h), film gate (w, h) in mm on the film back."""
     film = hfa / vfa
     if fit == 'FILL':
         fit = 'HORIZONTAL' if aspect >= film else 'VERTICAL'
@@ -198,6 +198,9 @@ def s_case_set():
                   False)
     cam.data.show_sensor = False
     cam.data.allset_overscan = 2.2          # the "off" shot with the same room around the frame as the "on" one
+    # the marker goes to its place before the on / off shots: made at the origin, the camera would look at the film
+    # gate from inside it in the first case
+    place_mark(maya_gates(36.0, vfa, fit or 'FILL', rx / ry)[0])
     bpy.context.view_layer.update()
     for a in win().screen.areas:
         a.tag_redraw()

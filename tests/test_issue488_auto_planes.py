@@ -1,9 +1,11 @@
-"""Issue #488: UV > Automatic with 3, 4, 5 and 12 planes groups the faces like Maya.
+"""Issue #488: UV > Automatic with 3, 4, 5, 8 and 12 planes groups the faces like Maya.
 
 3 planes project along the three axes and take faces on both sides of each, 4 planes are the faces of a
 tetrahedron with one face to the front, and 5 planes face the front and the back plus three around the
-front-back axis, 12 planes are the faces of a dodecahedron; each plane count has its own candidate angle
-for Fewer pieces, and every projection frame is the X / Y axes turned onto the plane."""
+front-back axis, 8 the faces of an octahedron and 12 the faces of a dodecahedron; each plane count has its own
+candidate angle for Fewer pieces. Every plane is a square of side 0.5 with float32 corners; its frame comes from
+three corners in float32, which decides faces lying exactly between two planes. Opposite planes pair up for 6, 8
+and 12 planes."""
 
 import math
 from importlib import import_module
@@ -16,20 +18,40 @@ al = import_module(kit.MODULE + ".operators.autoproj_layout")
 create = import_module(kit.MODULE + ".operators.create")
 
 
-def _close(a, b):
-    return all(abs(x - y) < 1e-9 for x, y in zip(a, b))
+def _close(a, b, tol=1e-9):
+    return all(abs(x - y) < tol for x, y in zip(a, b))
 
 
-def test_frames_are_the_axes_turned_onto_each_plane():
-    for f in al.PLANES6:
-        got = al.plane_frame(f[0])
-        assert all(_close(g, w) for g, w in zip(got, f)), (f, got)
+SIX = (((-1, 0, 0), (0, 0, 1), (0, 1, 0)), ((1, 0, 0), (0, 0, -1), (0, 1, 0)), ((0, -1, 0), (1, 0, 0), (0, 0, 1)),
+       ((0, 1, 0), (1, 0, 0), (0, 0, -1)), ((0, 0, -1), (1, 0, 0), (0, -1, 0)), ((0, 0, 1), (1, 0, 0), (0, 1, 0)))
+
+
+def test_frames_are_unit_and_right_handed():
+    for f, want in zip(al.PLANE_SETS[6].frames, SIX):
+        assert all(_close(g, w) for g, w in zip(f, want)), (f, want)
     for count, pset in al.PLANE_SETS.items():
-        assert len(pset.frames) == count or (count == 3 and pset.both_sides), count
+        assert len(pset.frames) == count, count
+        assert pset.both_sides == (count == 3)
+        assert pset.pairs == (tuple((i, i + 1) for i in range(0, count, 2)) if count in (6, 8, 12) else ())
         for n, u, v in pset.frames:
             cross = (u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0])
-            assert _close(cross, n), (count, n, u, v)
-            assert abs(math.hypot(*u) - 1) < 1e-9 and abs(math.hypot(*v) - 1) < 1e-9
+            assert _close(cross, n, 1e-5), (count, n, u, v)
+            assert abs(math.hypot(*u) - 1) < 2e-6 and abs(math.hypot(*v) - 1) < 2e-6, (count, u, v)
+            assert abs(sum(a * b for a, b in zip(u, v))) < 1e-5
+
+
+def test_12_planes_take_the_later_of_two_tied_planes():
+    """A cube side lies exactly between two of the 12 planes: with Fewer pieces off it takes the later one."""
+    pts, faces = _cube_faces()
+    got = sorted(al.assign_planes(pts, faces, planes=12, optimize=False))
+    assert got == [(2, [1]), (3, [3]), (6, [0]), (7, [2]), (10, [4]), (11, [5])], got
+
+
+def test_12_planes_fewer_pieces_pairs_opposite_planes():
+    """With Fewer pieces each cube side starts its own shell on the first of its two planes."""
+    pts, faces = _cube_faces()
+    got = sorted(al.assign_planes(pts, faces, planes=12))
+    assert got == [(0, [3]), (1, [1]), (4, [2]), (5, [0]), (8, [5]), (9, [4])], got
 
 
 def _cube_faces():
@@ -52,6 +74,16 @@ def test_cube_shells_per_plane_count():
     assert _groups(al.assign_planes(pts, faces, planes=4)) == [[0], [1], [2, 3, 5], [4]]
     # 5 planes: front, top, back and +X alone; bottom and -X share the plane between them
     assert _groups(al.assign_planes(pts, faces, planes=5)) == [[0], [1], [2], [3, 5], [4]]
+
+
+def test_cube_shells_with_8_planes():
+    """Every cube side lies exactly between four planes of the 8: Maya's frames decide."""
+    pts, faces = _cube_faces()
+    # Fewer pieces: front, bottom, +X and -X on the (-1, -1, 1) plane; top and back on (1, 1, -1)
+    assert al.assign_planes(pts, faces, planes=8) == [(0, [0, 3, 4, 5]), (1, [1, 2])]
+    # Less distortion: each side on its own best plane, top and +X share (1, 1, 1)
+    got = sorted(al.assign_planes(pts, faces, planes=8, optimize=False))
+    assert got == [(0, [0]), (1, [2]), (3, [1, 4]), (6, [5]), (7, [3])], got
 
 
 def _shell_count(ob):

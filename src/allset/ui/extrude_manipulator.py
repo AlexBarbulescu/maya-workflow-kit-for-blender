@@ -23,11 +23,11 @@ from .in_view_target import _redraw, _scale, _state, arrow_visible, cap_frame, r
 
 YELLOW = (1.0, 1.0, 0.0)
 
-# Maya polyExtrudeFace manipulator (top face of a cube,
+# Extrusion manipulator (top face of a cube,
 # local mode): lengths in "arrow units" (centre -> scale cube = 1): cone 0.64 -> 0.86 (radius 0.05), cube half 0.07,
 # plane handles centred 0.5 / 0.5 between two axes (half 0.08, translucent with a full-colour rim), hollow centre square
-# half 0.12 (20 px at an 83 px Z arrow) in #64dcff, screen facing. Axis colours = the kit Move manipulator's Maya
-# colours (manipulator.MAYA_AXIS). Not drawn on the extrusion manipulator: Maya's cyan rotate ring and its world /
+# half 0.12 (20 px at an 83 px Z arrow) in #64dcff, screen facing. Axis colours = the kit Move manipulator's
+# colours (manipulator.AXIS_HEX). Not drawn on the extrusion manipulator: Maya's cyan rotate ring and its world /
 # local switch (the Transform Component manipulator has both, ``TURN`` below).
 CONE_BASE, CONE_TIP, CONE_R = 0.64, 0.86, 0.05
 CUBE_AT, CUBE_HALF = 1.0, 0.07
@@ -256,15 +256,19 @@ class ALLSET_GT_extrude_handle(bpy.types.Gizmo):
     def build(self, handle):
         self.handle = handle
         draw, pick = handle_shapes(HANDLES[handle][0])
-        self.draw_shapes = [(self.new_custom_shape(t, v), fill) for t, v, fill in draw]
+        self.draw_shapes = [(t, self.new_custom_shape(t, v), fill) for t, v, fill in draw]
         self.pick_shape = self.new_custom_shape(*pick)
 
     def draw(self, context):
         colour = self.color_highlight if self.is_highlight else self.color
         alpha = self.alpha_highlight if self.is_highlight else self.alpha
+        smooth = manipulator.antialiasing(context)
         gpu.state.blend_set('ALPHA')
         gpu.state.line_width_set(self.line_width)
-        for (batch, shader), fill in getattr(self, "draw_shapes", ()):
+        for kind, (batch, shader), fill in getattr(self, "draw_shapes", ()):
+            if smooth and kind == 'LINES':
+                manipulator.draw_handle_line(self, batch, (*colour, alpha))
+                continue
             shader.bind()
             shader.uniform_float("color", (*colour, alpha * PLANE_FILL if fill else alpha))
             with gpu.matrix.push_pop():
@@ -326,12 +330,9 @@ class ALLSET_GT_tc_space(bpy.types.Gizmo):
                 sh = gpu.shader.from_builtin('UNIFORM_COLOR')
                 sh.uniform_float("color", (*colour[:3], 0.35))
                 batch_for_shader(sh, 'TRI_FAN', {"pos": fan}).draw(sh)
-            sh = gpu.shader.from_builtin('POLYLINE_UNIFORM_COLOR')
-            sh.bind()
-            sh.uniform_float("viewportSize", (region.width, region.height))
-            sh.uniform_float("lineWidth", 1.5 * (_scale() or 1.0))
-            sh.uniform_float("color", (*colour[:3], 1.0))
-            batch_for_shader(sh, 'LINES', {"pos": globe_lines(x, y, r)}).draw(sh)
+            width = 1.5 * (_scale() or 1.0)
+            with manipulator.handle_polyline(width, (*colour[:3], 1.0), manipulator.antialiasing(context)) as sh:
+                batch_for_shader(sh, 'LINES', {"pos": globe_lines(x, y, r)}).draw(sh)
             gpu.state.blend_set('NONE')
 
     def test_select(self, context, location):

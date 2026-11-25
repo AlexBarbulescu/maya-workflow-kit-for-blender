@@ -393,7 +393,7 @@ MAP = {
     "Edit Mesh/Flip Triangle Edge": "mesh.edge_rotate",
     "Edit Mesh/Spin Edge Backward": ("mesh.edge_rotate", {"use_ccw": True}),
     "Edit Mesh/Spin Edge Forward": ("mesh.edge_rotate", {"use_ccw": False}),
-    "Edit Mesh/Duplicate": ("v3d", "mesh.duplicate_move", {}),
+    "Edit Mesh/Duplicate": ("v3d", "allset.duplicate_face", {}),     # polyChipOff, Duplicate on
     "Edit Mesh/Extract": ("mesh.separate", {"type": 'SELECTED'}),
     "Edit Mesh/Poke": "mesh.poke",
     # --- Mesh Tools ---
@@ -1059,7 +1059,7 @@ OBJECT_MODE = {
     "Edit Mesh/Poke": ('ALL', 'FACE'),
     "Edit Mesh/Circularize": ('ALL', 'VERT'),
     "Edit Mesh/Edit Edge Flow": ('ALL', 'EDGE'),
-    "Edit Mesh/Bevel": ('ALL', 'EDGE'),
+    # Edit Mesh/Bevel: allset.bevel bevels an object selection itself (its In-View Editor stays in object mode)
     "Edit Mesh/Smart Bevel": ('ALL', 'EDGE'),
     "Edit Mesh/Chamfer Vertices": ('ALL', 'VERT'),
     "Edit Mesh/Bridge": "Invalid selection : polyBridgeEdge requires equal number of border edges to be selected "
