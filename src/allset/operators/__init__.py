@@ -8,7 +8,7 @@ Operator ids use the ``allset.`` prefix. Each module lists its classes in
 
 import bpy
 
-from . import (auto_key, undo_pairs, bookmarks, ik_fk, component, create, curve_tools, curves_maya, cut_sew, display, driven_key, duplicate, extrude, file_io, freeze, option_windows, fx, global_keys4, graph_keys, graph_key_menu, deformer_weights, joint_labels, group, history, hold, joints, pivot_menu, key_batch, key_batch3, key_insert, loop_pick, manip, marquee,
+from . import (auto_key, undo_pairs, bookmarks, ik_fk, component, create, curve_tools, curves_maya, cut_sew, display, driven_key, duplicate, extrude, file_io, freeze, option_windows, fx, global_keys4, graph_keys, graph_key_menu, deformer_weights, joint_labels, wedge_hinge, group, history, hold, joints, pivot_menu, key_batch, key_batch3, key_insert, loop_pick, manip, marquee,
                anim_layers, lights, material, menu_extras, menu_items, mesh_maya, multi_cut, poly_maya, rig_maya, mesh_tools, outliner_drag, parenting, pickwalk, pivot, playblast, preselect, project, rig_tools, select_convert, select_priority, sets, shading_maps, skin, snap_align, soft_select, symmetry, symmetry_select, taphold,
                time_keys, tool_keys, units, uv_shells, uv_tools, uv_modify, uv_select_178, view, view_keys3, visibility)
 from . import poly_draw, quad_draw  # Create Polygon / Append to Polygon / Quad Draw (#30)
@@ -35,8 +35,10 @@ from . import point_keys  # S on selected points keys their positions
 from . import lattice_pick  # lattice points picked where a deformer draws them
 from . import camera_overscan  # Maya camera Overscan (#313)
 from . import film_fit  # Maya camera Fit Resolution Gate (#345)
+from . import shape_attrs  # Maya camera / light / locator shape attributes kept by the kit (#481)
 from . import pick_order  # the order the selected objects were picked in (Match Transformations)
 from . import universal_manip  # Universal Manipulator drags (#318)
+from . import transfer_attributes  # Mesh > Transfer Attributes (#554)
 
 classes = (*display.classes, *group.classes, *hold.classes, *taphold.classes,
            *pivot_pick.classes,
@@ -55,7 +57,7 @@ classes = (*display.classes, *group.classes, *hold.classes, *taphold.classes,
            *poly_maya.classes, *rig_maya.classes, *loop_pick.classes,
            *select_convert.classes, *poly_draw.classes, *quad_draw.classes,
            *edge_loops.classes, *connect_tool.classes, *move_component.classes, *duplicate_face.classes, *window_toggle.classes,
-           *extrude_curve.classes)
+           *extrude_curve.classes, *transfer_attributes.classes)
 
 from . import deformers  # noqa: E402  Maya Deform menu deformers + Paint Weights (#34)
 
@@ -303,6 +305,7 @@ def register():
     material.register_props()
     camera_overscan.register_props()
     film_fit.register_props()
+    shape_attrs.register_props()
     universal_manip.register_props()
     anim_layers.register_props()
     driven_key.register_props()
@@ -322,6 +325,7 @@ def register():
     graph_key_menu.register_bindings()
     deformer_weights.register_bindings()
     joint_labels.register_bindings()
+    wedge_hinge.register_bindings()
     pivot_menu.register_props()
     sets.register_props()
     view.register_timer()
@@ -457,6 +461,7 @@ def unregister():
     view.unregister_timer()
     hold.unregister_cleanup()
     joint_labels.unregister_bindings()
+    wedge_hinge.unregister_bindings()
     deformer_weights.unregister_bindings()
     graph_key_menu.unregister_bindings()
     graph_keys.unregister_bindings()
@@ -465,6 +470,7 @@ def unregister():
     taphold.unregister_bindings()
     anim_layers.unregister_props()
     universal_manip.unregister_props()
+    shape_attrs.unregister_props()
     film_fit.unregister_props()
     camera_overscan.unregister_props()
     material.unregister_props()

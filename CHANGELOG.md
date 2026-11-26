@@ -3,6 +3,69 @@
 All notable changes to Maya Workflow Kit (earlier versions were called Allset for Maya Users and, before that, Maya Kit). Format: [Keep a Changelog](https://keepachangelog.com/), versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.24.0] — 2026-11-25
+
+**UV Editor commands work on the selection the way Maya does, and Transfer Attributes transfers normals.** UV shell
+commands, projections and the UV Toolkit follow the picked shells; soft select, Multi-Cut and Wedge fixes from your
+reports.
+
+### Added
+- **UV Editor > Image > Measure Pixel Distance**: opens a Pixel Distance window with the width (U Distance), height
+  (V Distance) and diagonal (Distance) of the selected UVs' bounding box in pixels for map sizes 4096 down to 128,
+  like Maya; also from the Shift+right-click UV marking menu. Measure Again re-reads the selection.
+- **UV Editor > Image > Dim**: draws the image darker under the UVs (off by default, like Maya); the UVs keep their
+  colours. Its option box (Image Dim Options) sets Dimming (default 0.5) and changes the image while the slider is
+  dragged; the toolbar's Dim button toggles it too. Image > Unfiltered stays greyed: Blender always draws the image
+  unfiltered.
+- **3D Cut and Sew UV Tool: double-click** (#555): double-clicking an edge cuts the UVs along its whole edge loop,
+  Ctrl+double-click sews the loop, like Maya.
+- **Select > Convert Selection > To Contained Edges / To Contained Faces**: select only what the selection fully
+  holds, like Maya. Edges from faces are the edges inside the face selection (not its outline); from vertices both
+  ends must be selected. Faces need every vertex (from edges: every edge) selected. When nothing is contained the
+  selection stays as it was.
+- **Channel Box SHAPES rows of cameras, lights and locators** (#481): cameras show Lens Squeeze Ratio, Shutter Angle
+  and Center Of Interest in Maya's order; point, directional, spot and area lights show Shad Color, Use Depth Map
+  Shadows and Dmap Bias (spot lights also Dropoff), kept as values without changing Blender's shadows (Dmap Bias also
+  takes a negative value; Lens Squeeze Ratio and Center Of Interest stay above 0); a locator shows its
+  shape with Local Position (moves the locator's drawing) and Local Scale.
+- **Hotkey Editor: more UV commands** (#551): the UV Toolkit's Pivot, Edit Pivot, Reset, Snap and Measure buttons,
+  Unfold (Option) and Layout (Option), and Select Overlapping / Non-Overlapping / Back-Facing / Front-Facing UVs.
+
+### Fixed
+- **Mesh > Transfer Attributes** (#554): select the source mesh, then the target: the target takes the source's
+  vertex normals, vertex positions, UV sets and color sets, live, like Maya (it used to add an empty Data Transfer
+  modifier that transferred nothing). With Vertex normal On a hard-edged low-poly mesh takes the smooth normals of the
+  mesh around it, one normal per vertex. The option box opens Transfer Attributes Options (Vertex position, Vertex
+  normal, UV Sets, Color Sets, Sample space, Search method); Mirroring, Flip UVs and Color borders stay greyed, and
+  only one source is used when several are selected.
+- **Soft Select with the Scale Tool** (#548): dragging a Scale handle in component mode moves the points around the
+  selection by the soft-select falloff, like Move and Rotate.
+- **New objects moved together with others** (#547): with soft select on, moving an object in object mode no longer
+  drags the objects next to it; soft select acts on components, like Maya's Volume and Surface falloff.
+- **Multi-Cut across faces** (#545): a point on an edge that shares no face with the last point cuts straight across
+  the faces in between, like Maya, instead of being refused; the preview line follows the cut.
+- **UV commands with UV Sync Selection** (#549): Flip, Normalize, Snap and Stack, Optimize and Orient Shells to Edges
+  change only the selection's shells; shells that only share a vertex with the selection stay where they are.
+  With an edge or vertex selected, Unfold, Layout, Layout Along, Unfold Along U/V, Orient Shells, Stack Shells, Stack
+  Similar Shells, Snap, Randomize, Unitize and Texel Density Set work on the shells beside it (they used to take every
+  shell, or did nothing), like Maya; Map Border still needs faces.
+- **UV projections in UV component mode** (#553): with UV Sync Selection off, Planar, Cylindrical, Spherical,
+  Automatic, Contour Stretch, Normal-Based and Best Plane project only the picked UV faces; with only UVs or UV edges
+  picked nothing is projected and a warning asks for faces (they used to re-project every face of every mesh), like
+  Maya.
+- **Unfold keeps a shell's direction** (#521): a shell whose UVs were laid out facing the right way keeps its
+  direction after Unfold, like Maya; it used to take whatever direction the unwrap gave it. A mirrored or collapsed
+  layout still takes the unfold's direction.
+- **Optimize with one pinned UV** (#521): a fully selected shell with a single pinned UV relaxes as a free shell and
+  keeps the mean of its UVs in place (the pin moves with it), like Maya; two or more pinned UVs still stay.
+- **Wedge hinge edge** (#546): an edge picked in edge mode and then the faces added in face mode (F11, the marking
+  menu or the header's mode buttons, then Shift+click) now gives Wedge its hinge, like Maya, which keeps the edge picked across the switch; Wedge used to turn about the
+  same edge of the face every time. The hinge edge (the edge picked on the selected faces, either order) is drawn
+  as a thick line, since a selected face's edges all look selected in edge mode.
+- **Cut UV Edges and Create UV Shell** (#550): shells that are already separate are left where they are.
+- **Bevel with an absolute Offset next to a twisted face** (#213, part): the new edge across each end comes out like
+  Maya's.
+
 ## [0.23.0] — 2026-11-25
 
 **The Hotkey Editor lists Maya's commands, not only the ones with a key.** Menu items, editor commands and UV Toolkit

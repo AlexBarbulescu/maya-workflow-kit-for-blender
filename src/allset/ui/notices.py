@@ -242,6 +242,9 @@ NOTICES = {
     "Hypershade/Create/Materials/Use Background": (
         "Shader Editor: Holdout", "Blender shows the background through a surface with a Holdout shader in the Shader "
         "Editor (Cycles: Object > Visibility > Shadow Catcher catches shadows)."),
+    "UV Editor/Image/Unfiltered": (
+        "Image display", "Blender's UV Editor always draws the image unfiltered: zoomed in, each pixel is a sharp "
+        "square. It has no smoothed (filtered) display."),
 }
 # Maya node type -> its greyed Hypershade Create item (the notice the command line's shadingNode gives)
 NODE_SETUPS = {"rampShader": "Hypershade/Create/Materials/Ramp Shader",
@@ -800,8 +803,7 @@ CATEGORIES.update({
         "UV > Mirror / Snap", "Blender has no UV symmetrize brush: mirror the UVs (Modify > Flip) and weld them "
         "(Match UVs), or unwrap with the mesh's symmetry (Mirror modifier with Mirror U)."),
     "UV Editor/Image": (
-        "Image field", "Blender shows one image (header image field): no dimming, PSD networks, bake preview or pixel "
-        "ruler."),
+        "Image field", "Blender shows one image (header image field): no PSD networks or bake preview."),
     "UV Editor/Textures": (
         "Image field", "Blender lists the images in the header image field."),
     "UV Editor/UV Sets": (
@@ -1316,9 +1318,6 @@ _UV_CONSTRAINTS = ("Select menu / Snapping", "Blender has no UV selection or tra
                    "Linked / Select Split and move along edges with snapping.")
 MARKING.update({
     **{f"{m}/Symmetrize": CATEGORIES["UV Editor/Modify/Symmetrize"] for m in ("SHIFT_UV", "SHIFT_UV_FACE")},
-    "SHIFT_UV/Measure Pixel Distance": (
-        "Sidebar UV Vertex", "Blender has no pixel ruler: the sidebar (N) Image tab shows the selected UVs' position, "
-        "so two readings give the distance."),
     **{f"{m}/Tools/Symmetrize Tool": CATEGORIES["UV Editor/Tools/Symmetrize"] for m in _UV_MENUS},
     **{f"{m}/Pinning/Reset Settings": CATEGORIES["UV Editor/Edit/Reset UV Editor UI"] for m in _UV_MENUS},
     **{f"{m}/{label}": _UV_CONSTRAINTS for m in (*(f"{n}/Pinning" for n in _UV_MENUS), "UV_CONVERT")

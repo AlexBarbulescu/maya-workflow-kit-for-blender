@@ -373,7 +373,7 @@ MAP = {
     "Mesh/Triangulate": _mod('TRIANGULATE'),
     "Mesh/Quadrangulate": "mesh.tris_convert_to_quads",
     "Mesh/Mirror": "allset.mirror",                       # applied, world plane; □ = Mirror Options
-    "Mesh/Transfer Attributes": _mod('DATA_TRANSFER'),
+    "Mesh/Transfer Attributes": "allset.transfer_attributes",   # live, source = other selected (#554)
     "Mesh/Smooth Proxy/Subdiv Proxy": ("allset.smooth_proxy", {"action": 'CREATE'}),   # same as Ctrl+Shift+~
     # --- Edit Mesh ---
     "Edit Mesh/Add Divisions": "allset.subdivide",
@@ -719,8 +719,8 @@ MAP.update({
     "Create/Universal Scene Description (USD)": "wm.usd_import",
     # Select
     "Select/Shortest Edge Path Tool": "mesh.shortest_path_select",
-    "Select/Convert Selection/To Contained Edges": ("mesh.select_mode", {"type": 'EDGE'}),
-    "Select/Convert Selection/To Contained Faces": ("mesh.select_mode", {"type": 'FACE'}),
+    "Select/Convert Selection/To Contained Edges": ("allset.select_convert", {"kind": 'CONTAINED_EDGES'}),
+    "Select/Convert Selection/To Contained Faces": ("allset.select_convert", {"kind": 'CONTAINED_FACES'}),
     "Select/Convert Selection/To UV Shell": ("mesh.select_linked", {"delimit": {'UV'}}),
     "Select/All CVs": ("curve.select_all", {"action": 'SELECT'}),
     "Select/First CV": "curve.de_select_first",
