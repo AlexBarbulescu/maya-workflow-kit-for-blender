@@ -1069,7 +1069,13 @@ class ALLSET_PT_hotkey_editor(bpy.types.Panel):
         layout.label(text=PERSIST_NOTE, icon='INFO')
         bottom = layout.row(align=True)
         bottom.operator(ALLSET_OT_hotkey_restore.bl_idname, text="Restore All Maya Hotkeys").all = True
+        bottom.operator(SAVE_PREFS, text="Save")
         bottom.operator("allset.marked_window_close", text="Close")
+
+
+# Save = Blender's own Save Preferences operator drawn as a button: the hotkeys are saved only when the user clicks
+# it (the kit itself never saves the preferences).
+SAVE_PREFS = "wm.save_userpref"
 
 
 class ALLSET_OT_hotkey_command(bpy.types.Operator):

@@ -182,6 +182,13 @@ def patch_undo_visibility(kd):
     for key, mods, action in VISIBILITY_KEYS:
         if action != "HIDE_UNSELECTED":  # tnt: Alt+H is shared by every viewport mode
             _add(kd, "Object Mode", "allset.visibility", make_event(key, **mods), {"action": action})
+    # Joints (Pose / skeleton Edit mode): IC Ctrl+H and Shift+H hide bones. The shared Alt+H still targets objects.
+    for km, hide in (("Pose", "pose.hide"), ("Armature", "armature.hide")):
+        kd.remove(km, hide, type="H", ctrl=True)
+        kd.remove(km, hide, type="H", shift=True)
+        for key, mods, action in VISIBILITY_KEYS:
+            if action != "HIDE_UNSELECTED":
+                _add(kd, km, "allset.visibility", make_event(key, **mods), {"action": action})
     # Outliner: the same keys (Maya hides from the Outliner with them). IC Ctrl+H = outliner.hide (the view-layer
     # flag, which Shift+H / Ctrl+Shift+H can't bring back), Alt+H = outliner.unhide_all.
     kd.remove("Outliner", "outliner.hide", type="H", ctrl=True)
@@ -195,7 +202,8 @@ def patch_undo_visibility(kd):
                "Grease Pencil Weight Paint"):
         if km in kd.keymap_names():
             kd.remove(km, type="H", alt=True, optional=True)
-    _add(kd, "3D View", "allset.visibility", make_event("H", alt=True), {"action": "HIDE_UNSELECTED"})
+    _add(kd, "3D View", "allset.visibility", make_event("H", alt=True),
+         {"action": "HIDE_UNSELECTED", "objects_only": True})
     # Hidden mesh components can't be selected in Blender, so the "show" keys reveal everything.
     kd.remove("Mesh", "mesh.hide", type="H", shift=True)
     for mods in ({"shift": True}, {"ctrl": True, "shift": True}, {"ctrl": True, "alt": True}):

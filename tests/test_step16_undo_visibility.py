@@ -47,6 +47,7 @@ def test_visibility_keys():
             assert [(k.idname, k.properties.action) for k in got] == expected, (km, shift, ctrl, alt)
     alt_h = _kmis("3D View", "H", alt=True)
     assert [(k.idname, k.properties.action) for k in alt_h] == [("allset.visibility", "HIDE_UNSELECTED")]
+    assert alt_h[0].properties.objects_only
     for km in ("Mesh", "Pose", "Sculpt", "Paint Face Mask (Weight, Vertex, Texture)"):
         assert not _kmis(km, "H", alt=True), km
     for mods in ({"shift": True}, {"ctrl": True, "shift": True}, {"ctrl": True, "alt": True}):

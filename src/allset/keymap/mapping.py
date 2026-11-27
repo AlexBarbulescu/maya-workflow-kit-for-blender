@@ -200,8 +200,8 @@ ENTRIES = {
                        note="정점 모드 = 정점 베벨, 그 외 엣지; 드래그로 폭"),
     # --- component Delete; plain Delete/Backspace is
     # Maya's Edit > Delete (not a default hotkey row): Mesh "allset.delete_components" ---
-    "DeletePolyElements": _e("IC", ("Mesh", "mesh.dissolve_mode", {}),
-                             note="엣지·정점 dissolve (Delete Edge/Vertex); Delete/Backspace = 바로 삭제"),
+    "DeletePolyElements": _e("KIT", ("Mesh", "allset.delete_edge_vertex", {}),
+                             note="엣지: 지우고 엣지 2 개 남은 끝점 정리 (Delete Edge/Vertex); 정점·면 = dissolve; Delete/Backspace = 바로 삭제"),
     # --- undo / visibility / isolate ---
     "Undo": _e("KIT", ("Screen", "ed.undo", {}),
                note="Screen 키맵: 모든 에디터. z 를 가리던 zoom/viewer border 제거 (Shift+B 로 남음)"),
@@ -210,7 +210,8 @@ ENTRIES = {
         note="숨긴 객체를 '선택 유지' 표시로 기억, 다시 h = 보이고 선택 (오브젝트 모드)"),
     "HideSelectedObjects": _e("KIT", (OBJ, "allset.visibility", {"action": "HIDE"}),
                               note="컴포넌트: Mesh mesh.hide (IC)"),
-    "HideUnselectedObjects": _e("KIT", (V3D, "allset.visibility", {"action": "HIDE_UNSELECTED"})),  # tnt
+    "HideUnselectedObjects": _e("KIT", (V3D, "allset.visibility",
+                                      {"action": "HIDE_UNSELECTED", "objects_only": True})),  # tnt
     "ShowSelectedObjects": _e("KIT", (OBJ, "allset.visibility", {"action": "SHOW_SELECTED"}),
                               note="h 로 숨긴 선택 + 숨겨진 활성 객체; 컴포넌트: mesh.reveal"),
     "ShowLastHidden": _e("KIT", (OBJ, "allset.visibility", {"action": "SHOW_LAST"}),

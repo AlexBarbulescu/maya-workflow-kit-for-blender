@@ -5601,6 +5601,7 @@
    "Convert Selection": "Convert Selection",
    "Cut the edge off (off: keep the old corner, the new points run along the two faces)": "Cut the edge off (off: keep the old corner, the new points run along the two faces)",
    "Delete Components": "Delete Components",
+   "Delete Edge/Vertex": "Delete Edge/Vertex",
    "Depth": "Depth",
    "Edge rings instead of edge loops": "Edge rings instead of edge loops",
    "Edges": "Edges",
@@ -6848,6 +6849,7 @@
    "Insert with edge flow": "Insert with edge flow",
    "Only scale specified keys": "Only scale specified keys",
    "Preserve position": "Preserve position",
+   "Separate duplicated faces": "Separate duplicated faces",
    "Smart transform": "Smart transform"
   },
   "Labels/operators/option_windows_match": {
@@ -7822,7 +7824,9 @@
   },
   "Labels/operators/uv_brush": {
    "A move handle on the lattice point last picked (U, V or free)": "A move handle on the lattice point last picked (U, V or free)",
+   "A shell the brush touches is symmetrized on that whole side": "A shell the brush touches is symmetrized on that whole side",
    "Brush radius in UV space (b + drag left / right)": "Brush radius in UV space (b + drag left / right)",
+   "Brush size": "Brush size",
    "Columns": "Columns",
    "Constant": "Constant",
    "Ctrl+drag turns the UVs under the brush clockwise or counterclockwise": "Ctrl+drag turns the UVs under the brush clockwise or counterclockwise",
@@ -7840,6 +7844,7 @@
    "Falloff type": "Falloff type",
    "Fit the lattice around the UVs; off: drag on empty space to draw the lattice": "Fit the lattice around the UVs; off: drag on empty space to draw the lattice",
    "Fixed": "Fixed",
+   "Flood Shells": "Flood Shells",
    "How a Pin stroke changes the pins": "How a Pin stroke changes the pins",
    "How far the UVs follow the lattice (1 = all the way)": "How far the UVs follow the lattice (1 = all the way)",
    "How far the UVs move each dab (m + drag up / down)": "How far the UVs move each dab (m + drag up / down)",
@@ -7857,6 +7862,8 @@
    "Linear": "Linear",
    "Middle Mouse": "Middle Mouse",
    "Middle mouse initiates": "Middle mouse initiates",
+   "Mirror Axis": "Mirror Axis",
+   "Mirror Axis Position": "Mirror Axis Position",
    "Mode": "Mode",
    "Optimize: keeping the surface area (1) against keeping only the angles (0)": "Optimize: keeping the surface area (1) against keeping only the angles (0)",
    "Paint": "Paint",
@@ -7891,7 +7898,8 @@
    "UV Brush Size / Strength": "UV Brush Size / Strength",
    "UV Brush Stroke": "UV Brush Stroke",
    "Use bounding rectangle": "Use bounding rectangle",
-   "Volume": "Volume"
+   "Volume": "Volume",
+   "Where the mirror line is, in UV space": "Where the mirror line is, in UV space"
   },
   "Labels/operators/uv_checker": {
    "Assign Checker Shader": "Assign Checker Shader",
@@ -9116,6 +9124,7 @@
    "Remove From Others": "Remove From Others",
    "Restore": "Restore",
    "Restore All Maya Hotkeys": "Restore All Maya Hotkeys",
+   "Save": "Save",
    "Search": "Search",
    "Search by": "Search by",
    "Search by Hotkey": "Search by Hotkey",
@@ -10071,6 +10080,7 @@
    "View": "View"
   },
   "Labels/ui/time_slider_menu": {
+   "Delete": "Delete",
    "Keys": "Keys",
    "Not Available": "Not Available",
    "Paste": "Paste",
@@ -10948,6 +10958,8 @@
    "Delete Non Deformer History Options": "Delete Non Deformer History Options",
    "Delete edge (maintain 4-sided polygons)": "Delete edge (maintain 4-sided polygons)",
    "Driven channels": "Driven channels",
+   "Duplicate": "Duplicate",
+   "Duplicate Face Options": "Duplicate Face Options",
    "Duplicate Special": "Duplicate Special",
    "Duplicate Special Options": "Duplicate Special Options",
    "Duplicate input connections": "Duplicate input connections",
@@ -10990,6 +11002,7 @@
    "Number of copies": "Number of copies",
    "Number of edge loops": "Number of edge loops",
    "Objects": "Objects",
+   "Offset": "Offset",
    "Offset Edge Loop Options": "Offset Edge Loop Options",
    "Only scale specified keys": "Only scale specified keys",
    "Parent": "Parent",
@@ -11018,6 +11031,7 @@
    "Segments": "Segments",
    "Selected": "Selected",
    "Selected keys override specified time range": "Selected keys override specified time range",
+   "Separate duplicated faces": "Separate duplicated faces",
    "Shapes": "Shapes",
    "Slide": "Slide",
    "Smart transform": "Smart transform",
@@ -12101,7 +12115,8 @@
    "Change the last bevel (Maya: edit the polyBevel node). Blender keeps no edit-mode history, so only the last\none can be changed": "Change the last bevel (Maya: edit the polyBevel node). Blender keeps no edit-mode history, so only the last\none can be changed",
    "Clear the selection and go back to object mode (Maya Alt+D)": "Clear the selection and go back to object mode (Maya Alt+D)",
    "Convert the selection to the vertices, edges or faces it touches (Maya Ctrl+F9-F11)": "Convert the selection to the vertices, edges or faces it touches (Maya Ctrl+F9-F11)",
-   "Delete the selected faces, edges (non-border, cleaning up their vertices) or vertices\nright away, by the select mode (Maya Delete on components)": "Delete the selected faces, edges (non-border, cleaning up their vertices) or vertices\nright away, by the select mode (Maya Delete on components)",
+   "Delete the selected edges and clean up the vertices they leave with two edges, or delete the selected\nvertices (Maya Edit Mesh > Delete Edge/Vertex)": "Delete the selected edges and clean up the vertices they leave with two edges, or delete the selected\nvertices (Maya Edit Mesh > Delete Edge/Vertex)",
+   "Delete the selected faces, edges (non-border; their vertices stay) or two-edge vertices right away, by the\nselect mode (Maya Delete on components)": "Delete the selected faces, edges (non-border; their vertices stay) or two-edge vertices right away, by the\nselect mode (Maya Delete on components)",
    "Grow the component selection by one step (Maya Select > Grow, >): vertices and faces take in every vertex\nor face that shares a face with the selection, edges every edge that shares a vertex with a selected edge": "Grow the component selection by one step (Maya Select > Grow, >): vertices and faces take in every vertex\nor face that shares a face with the selection, edges every edge that shares a vertex with a selected edge",
    "Select the edge loops (or rings) of the selected edges (Maya Select > Contiguous Edges, Convert\nSelection > To Edge Loop / Ring)": "Select the edge loops (or rings) of the selected edges (Maya Select > Contiguous Edges, Convert\nSelection > To Edge Loop / Ring)",
    "Shrink the component selection by one step (Maya Select > Shrink, <): the border of the selected region goes,\nand so do selected vertices and faces on an open border of the mesh": "Shrink the component selection by one step (Maya Select > Shrink, <): the border of the selected region goes,\nand so do selected vertices and faces on an open border of the mesh"
@@ -13026,7 +13041,7 @@
    "Move, turn and scale each selected UV shell by a random amount (Maya Randomize Shells)": "Move, turn and scale each selected UV shell by a random amount (Maya Randomize Shells)",
    "Show the settings of the UV Editor's active tool (the sidebar's Tool tab)": "Show the settings of the UV Editor's active tool (the sidebar's Tool tab)",
    "Straighten the selected UV edge loop along U or V and unfold the rest of its shell around it, so a ribbon\nshell becomes a straight strip (Maya Straighten Shell)": "Straighten the selected UV edge loop along U or V and unfold the rest of its shell around it, so a ribbon\nshell becomes a straight strip (Maya Straighten Shell)",
-   "Unfold the selected UV shells (all when none are selected) along U or V only: the other coordinate of every\nUV stays (Maya UV Toolkit Unfold Along U / V)": "Unfold the selected UV shells (all when none are selected) along U or V only: the other coordinate of every\nUV stays (Maya UV Toolkit Unfold Along U / V)"
+   "Unfold the selected UVs (all when none are selected) along U or V only: the other coordinate of every UV\nstays, the unselected UVs of a shell stay where they are (Maya UV Toolkit Unfold Along U / V)": "Unfold the selected UVs (all when none are selected) along U or V only: the other coordinate of every UV\nstays, the unselected UVs of a shell stay where they are (Maya UV Toolkit Unfold Along U / V)"
   },
   "Tooltips/operators/uv_tools": {
    "Cut the UVs along the selected edges (Maya Cut UV Edges): a seam, and the shells separate in place": "Cut the UVs along the selected edges (Maya Cut UV Edges): a seam, and the shells separate in place",
@@ -13034,7 +13049,7 @@
    "Measure the texel density of the selected UV shells (all when none are selected): pixels per Maya unit": "Measure the texel density of the selected UV shells (all when none are selected): pixels per Maya unit",
    "Scale the selected UV shells (all when none are selected) to the texel density (pixels per Maya unit)": "Scale the selected UV shells (all when none are selected) to the texel density (pixels per Maya unit)",
    "Sew the UVs along the selected edges (Maya Sew UV Edges): the UVs on each edge meet half-way": "Sew the UVs along the selected edges (Maya Sew UV Edges): the UVs on each edge meet half-way",
-   "Unfold the selected UV shells (all when none are selected), keeping their borders and places, with the Unfold\noptions (Maya Unfold; Blender Unwrap, Minimum Stretch)": "Unfold the selected UV shells (all when none are selected), keeping their borders and places, with the Unfold\noptions (Maya Unfold; Blender Unwrap, Minimum Stretch)"
+   "Unfold the selected UV shells (all when none are selected), keeping their borders and places, with the Unfold\noptions; in a shell selected in part only the selected UVs move (Maya Unfold; Blender Unwrap, Minimum Stretch)": "Unfold the selected UV shells (all when none are selected), keeping their borders and places, with the Unfold\noptions; in a shell selected in part only the selected UVs move (Maya Unfold; Blender Unwrap, Minimum Stretch)"
   },
   "Tooltips/operators/uv_transform": {
    "Distribute the selected UVs evenly along U or V (UV Toolkit Move); the options button sets a custom distance": "Distribute the selected UVs evenly along U or V (UV Toolkit Move); the options button sets a custom distance",
@@ -13612,6 +13627,7 @@
    "Current time field and transport buttons at the right of Maya's Time Slider.": "Current time field and transport buttons at the right of Maya's Time Slider."
   },
   "Tooltips/ui/time_slider_menu": {
+   "Delete over the Time Slider deletes what is selected, as in the viewport (Maya); the keys of a highlighted\nrange are deleted from the Time Slider menu": "Delete over the Time Slider deletes what is selected, as in the viewport (Maya); the keys of a highlighted\nrange are deleted from the Time Slider menu",
    "Maya Time Slider menu (RMB on the Time Slider)": "Maya Time Slider menu (RMB on the Time Slider)",
    "Maya Time Slider menu, in Maya's order": "Maya Time Slider menu, in Maya's order",
    "Time Slider item with no Blender equivalent (greyed)": "Time Slider item with no Blender equivalent (greyed)"
