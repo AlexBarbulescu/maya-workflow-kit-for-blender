@@ -104,6 +104,7 @@ class _Round:
 
 
 _rounds = []                    # the running rounds, innermost last (a handler can start a nested one)
+_after_undo = [False]           # tnt: the round after Undo/Redo walks fresh (kept entries crashed on freed data)
 _plan_cache = [None]            # (handlers, {id(handler): position}, declared-or-not prefix counts)
 
 
@@ -155,7 +156,7 @@ def _signature(entries):
 def shared(depsgraph, me):
     """The round's ``Summary`` as handler ``me`` (the function in ``depsgraph_update_post``) may use it, walked
     again when needed; None outside a round, when switched off or when ``me`` has no one place in the list."""
-    if not ENABLED or not _rounds or depsgraph is None:
+    if not ENABLED or not _rounds or depsgraph is None or _after_undo[0]:  # tnt: _after_undo
         return None
     rnd = _rounds[-1]
     if rnd.depsgraph is not depsgraph:
@@ -211,11 +212,18 @@ def _round_start(_scene, depsgraph=None):
 
 
 @persistent
+def _on_undo(*_args):  # tnt: see _after_undo
+    _after_undo[0] = True
+
+
+@persistent
 def _round_end(_scene, depsgraph=None):
     for i in range(len(_rounds) - 1, -1, -1):
         if _rounds[i].depsgraph is depsgraph:
             del _rounds[i:]
             break
+    if not _rounds:
+        _after_undo[0] = False  # tnt: the outermost round after Undo/Redo is over
     if _rounds:
         # this was a nested round (a handler evaluated the depsgraph again): the outer round's update was cleared
         _rounds[-1].summary = None
@@ -227,6 +235,9 @@ def register():
         lst.insert(0, _round_start)
     if _round_end not in lst:
         lst.append(_round_end)
+    for undo in (bpy.app.handlers.undo_post, bpy.app.handlers.redo_post):  # tnt: see _after_undo
+        if _on_undo not in undo:
+            undo.append(_on_undo)
 
 
 def unregister():
@@ -235,6 +246,10 @@ def unregister():
         lst.remove(_round_start)
     while _round_end in lst:
         lst.remove(_round_end)
+    for undo in (bpy.app.handlers.undo_post, bpy.app.handlers.redo_post):  # tnt: see _after_undo
+        while _on_undo in undo:
+            undo.remove(_on_undo)
+    _after_undo[0] = False
     _rounds.clear()
     _plan_cache[0] = None
     MISMATCHES.clear()
