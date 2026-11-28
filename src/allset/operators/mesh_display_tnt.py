@@ -208,7 +208,7 @@ class ALLSET_OT_reverse_mesh_normals(bpy.types.Operator):
     def execute(self, context):
         if context.mode == 'OBJECT':
             scope = 'FACES' if self.scope == 'EXTRACT' else self.scope
-            return _components(context, self.bl_idname, 'FACE', scope=scope)
+            return _components(context, "allset.reverse_mesh_normals", 'FACE', scope=scope)  # op id, not bl_idname's class name
         if context.mode != 'EDIT_MESH':
             return {'CANCELLED'}
         meshes = [o.data for o in context.objects_in_mode_unique_data if o.type == 'MESH']
