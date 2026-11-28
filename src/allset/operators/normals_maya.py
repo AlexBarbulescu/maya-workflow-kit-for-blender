@@ -278,29 +278,20 @@ class ALLSET_OT_set_to_face_normal(bpy.types.Operator):
                               description="Lock the face normals (Maya -setUserNormal); off = hard edges, unlocked")
 
     def execute(self, context):
+        from .normals_set_to_face_tnt import set_to_face, target_corners  # tnt: Maya vertex-faces
+        face_mode = context.mode != 'EDIT_MESH' or context.tool_settings.mesh_select_mode[2]
         sel = _Selection(context)
         done = 0
         try:
-            for ob, _verts, faces in sel.items():
-                me = ob.data
-                if not faces:
-                    continue
-                normals, locked = current(me)
-                for fi in faces:
-                    poly = me.polygons[fi]
-                    for li in poly.loop_indices:
-                        normals[li] = tuple(poly.normal)
-                        locked[li] = self.user_normal
-                edges = {ek for fi in faces for ek in me.polygons[fi].edge_keys}
-                for e in me.edges:
-                    if e.key in edges:
-                        e.use_edge_sharp = True     # Maya: the faces' edges become hard (cube case)
-                write(me, normals, locked)
-                done += 1
+            for ob, verts, faces in sel.items():
+                targets = target_corners(ob.data, verts, faces, face_mode)
+                if targets:
+                    set_to_face(ob.data, targets, self.user_normal)
+                    done += 1
         finally:
             sel.close()
         if not done:
-            return _empty_warning(self, "faces")
+            return _empty_warning(self, "faces or vertices")
         results.result(self, "polySetToFaceNormal -setUserNormal" if self.user_normal else "polySetToFaceNormal")
         return {'FINISHED'}
 
