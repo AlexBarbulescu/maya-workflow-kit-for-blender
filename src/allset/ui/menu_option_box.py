@@ -227,6 +227,8 @@ def option_kind(path):
         return "tool"
     if kind in ("menu", "pie"):
         return "menu"
+    if kind == "prop":
+        return "generic"          # tnt: a check item is a property ("view3d.overlay.x"), not an operator to split
     if target in ("render.render", "allset.render"):
         return "generic"          # Blender's render reads Render Settings; it has no options of its own to adjust
     mod, name = target.split(".")
