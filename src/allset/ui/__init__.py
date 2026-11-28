@@ -61,6 +61,8 @@ _modules = (window_places, status_icons, kit_icons, notices, input_line, cb_poin
             view_message, range_bar, tool_settings, maya_dock, soft_overlay, save_prompt, scene_carry, armature_mode_pulse, smart_extrude, trax_editor, shelf_editor,
             node_attributes, attribute_fields, option_editor, bridge_editor, history_rebind, viewport_settings,
             playback_redraw, bookmark_manager)
+from . import object_normals_tnt  # noqa: E402  tnt: normals drawn in object mode
+_modules += (object_normals_tnt,)  # tnt: normals drawn in object mode
 
 
 # Modules registered so far (#198 #199): a failed register takes these back and raises; unregister takes
