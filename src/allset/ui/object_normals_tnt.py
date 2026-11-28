@@ -15,6 +15,7 @@ KINDS = ("show_face_normals", "show_vertex_normals", "show_split_normals")
 
 _handle = []
 _cache = {}     # (object pointer, kind) -> (geometry stamp, matrix, length, batch)
+_reported = []  # the first draw error, printed once
 _stamp = [0]    # bumped on every geometry update: a cached batch with an older stamp is rebuilt
 
 
@@ -83,7 +84,7 @@ def _draw():
             return
         import gpu
         theme = context.preferences.themes[0].view_3d
-        colours = {"show_face_normals": theme.face_normal, "show_vertex_normals": theme.vertex_normal,
+        colours = {"show_face_normals": theme.normal,      # Blender's theme name for the face normal colour "show_vertex_normals": theme.vertex_normal,
                    "show_split_normals": theme.split_normal}
         depsgraph = context.evaluated_depsgraph_get()
         sh = gpu.shader.from_builtin('POLYLINE_UNIFORM_COLOR')
@@ -102,7 +103,10 @@ def _draw():
         finally:
             gpu.state.blend_set('NONE')
             gpu.state.depth_test_set('NONE')
-    except (ReferenceError, AttributeError, KeyError, ValueError, RuntimeError, TypeError):
+    except (ReferenceError, AttributeError, KeyError, ValueError, RuntimeError, TypeError) as ex:
+        if not _reported:       # once: a draw handler error must not spam the console every redraw
+            _reported.append(ex)
+            print(f"Maya Workflow Kit: object-mode normals not drawn: {ex!r}")
         return
 
 
