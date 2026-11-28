@@ -59,8 +59,38 @@ def _bake_world(ob):
     ob.rotation_euler = ob.delta_rotation_euler = (0, 0, 0)
     ob.scale = ob.delta_scale = (1, 1, 1)
     ob.data.transform(mw)
-    if mw.is_negative:
-        ob.data.flip_normals()
+
+
+def _combine_winding(context, active):
+    # Blender Join appends selected editable meshes in context order, with the active mesh first.
+    meshes = [active] + [o for o in context.selected_editable_objects if o.type == 'MESH' and o != active]
+    mirrored = {o for o in meshes if o.matrix_world.is_negative}
+    if not mirrored:
+        return [], None
+
+    reversed_faces = []
+    normals = [] if any(o.data.has_custom_normals for o in meshes) else None
+    face_start = 0
+    for o in meshes:
+        mesh = o.data
+        face_end = face_start + len(mesh.polygons)
+        reverse = o in mirrored
+        if reverse:
+            reversed_faces.append(range(face_start, face_end))
+        face_start = face_end
+        if normals is None:
+            continue
+        if not mesh.has_custom_normals:
+            normals.extend([(0.0, 0.0, 0.0)] * len(mesh.loops))
+            continue
+        normal_matrix = o.matrix_world.to_3x3().inverted_safe().transposed()
+        corners = [(normal_matrix @ n.vector).normalized() for n in mesh.corner_normals]
+        for face in mesh.polygons:
+            first, end = face.loop_start, face.loop_start + face.loop_total
+            normals.append(corners[first])
+            rest = corners[first + 1:end]
+            normals.extend(reversed(rest) if reverse else rest)
+    return reversed_faces, normals
 
 
 def combine(context, objects):
@@ -74,9 +104,17 @@ def combine(context, objects):
     for o in context.selected_objects:
         o.select_set(o in objects)
     context.view_layer.objects.active = active
-    bpy.ops.object.join()
+    reversed_faces, normals = _combine_winding(context, active)
+    if bpy.ops.object.join() != {'FINISHED'}:
+        return None
     ob = context.view_layer.objects.active
     _bake_world(ob)
+    # A world-space reflection reverses only the faces from that source.
+    for faces in reversed_faces:
+        for index in faces:
+            ob.data.polygons[index].flip()
+    if normals:
+        ob.data.normals_split_custom_set(normals)
     context.view_layer.update()
     freeze.center_pivot(context, [ob])
     _maya_rename(ob, base, sources)
@@ -286,6 +324,8 @@ class ALLSET_OT_combine(bpy.types.Operator):
 
     def execute(self, context):
         ob = combine(context, _mesh_selection(context))
+        if ob is None:
+            return {'CANCELLED'}
         results.result(self, f"Combine: {ob.name}")
         return {'FINISHED'}
 
