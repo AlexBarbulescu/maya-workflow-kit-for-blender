@@ -6735,6 +6735,7 @@
    "Name": "Name",
    "No bakesets defined": "No bakesets defined",
    "Paint Vertex Color Tool": "Paint Vertex Color Tool",
+   "Preserve User Normals Direction": "Preserve User Normals Direction",
    "Reverse Normals": "Reverse Normals",
    "Store On": "Store On",
    "Toggle Display Colors Attribute": "Toggle Display Colors Attribute",
@@ -6919,6 +6920,7 @@
    "Distance": "Distance",
    "Lock Normals": "Lock Normals",
    "Lock the face normals (Maya -setUserNormal); off = hard edges, unlocked": "Lock the face normals (Maya -setUserNormal); off = hard edges, unlocked",
+   "Replace Zero Normals By": "Replace Zero Normals By",
    "Set Vertex Normal": "Set Vertex Normal",
    "Set to Face Normals": "Set to Face Normals",
    "Set user normal": "Set user normal",
@@ -7029,6 +7031,9 @@
    "Set Green": "Set Green",
    "Set Red": "Set Red",
    "Set user normal": "Set user normal"
+  },
+  "Labels/operators/option_windows_mesh_display_tnt": {
+   "Preserve user normals direction": "Preserve user normals direction"
   },
   "Labels/operators/option_windows_misc196": {
    "Dynamic": "Dynamic",
@@ -11336,7 +11341,7 @@
   "Option windows/option_windows_mesh_display": {
    "Add": "Add",
    "All Channels": "All Channels",
-   "Allow zero normals / Replace zero normal with (1, 0, 0)": "Allow zero normals / Replace zero normal with (1, 0, 0)",
+   "Allow zero normals": "Allow zero normals",
    "Alpha blending": "Alpha blending",
    "Alpha value": "Alpha value",
    "Ambient occlusion rays / falloff": "Ambient occlusion rays / falloff",
@@ -11349,10 +11354,10 @@
    "Clamp min / max": "Clamp min / max",
    "Color blending": "Color blending",
    "Color value": "Color value",
-   "Distance": "Distance",
    "Divide": "Divide",
    "Effect": "Effect",
    "Filter size / sample": "Filter size / sample",
+   "Grouping threshold": "Grouping threshold",
    "Individual Channels": "Individual Channels",
    "Multiply": "Multiply",
    "Normalize: Before / After / Not (Before)": "Normalize: Before / After / Not (Before)",
@@ -11360,6 +11365,7 @@
    "Overwrite": "Overwrite",
    "Prelight": "Prelight",
    "Prelight (Maya) Options": "Prelight (Maya) Options",
+   "Replace zero normals by": "Replace zero normals by",
    "Sample by face / Shared vertices / Normal direction": "Sample by face / Shared vertices / Normal direction",
    "Scale RGBA": "Scale RGBA",
    "Set Alpha": "Set Alpha",

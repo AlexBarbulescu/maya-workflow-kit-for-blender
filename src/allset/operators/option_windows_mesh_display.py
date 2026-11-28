@@ -16,7 +16,7 @@ def _run_set_normal(context, v):
 
 
 def _run_average(context, v):
-    return bpy.ops.allset.average_normals('EXEC_DEFAULT', distance=v["distance"])
+    return bpy.ops.allset.average_normals('EXEC_DEFAULT', distance=v["distance"], replacement=v["replacement"])
 
 
 def _run_to_face(context, v):
@@ -57,9 +57,10 @@ WINDOWS = [
     ], _run_set_normal, paths=("Mesh Display/Set Vertex Normal",)),
     # Mesh Display > Average (default: prenormalize, no zero normals, distance 0.1)
     Window("average_normals", "Average Normals Options", "Average", ("allset.average_normals", {}), [
-        F("distance", "Distance:", "float", 0.1, lo=0.0, hi=10.0),
+        F("distance", "Grouping threshold:", "float", 0.1, lo=0.0, hi=10.0),
+        F("replacement", "Replace zero normals by:", "vec3", (1.0, 0.0, 0.0)),
     ], _run_average, paths=("Mesh Display/Average",),
-        missing=("Normalize: Before / After / Not (Before)", "Allow zero normals / Replace zero normal with (1, 0, 0)")),
+        missing=("Normalize: Before / After / Not (Before)", "Allow zero normals")),
     # Mesh Display > Set to Face (default: user normal off)
     Window("set_to_face", "Set to Face Normal Options", "Set to Face", ("allset.set_to_face_normal", {}), [
         F("user_normal", "", "bool", False, text="Set user normal"),

@@ -3,23 +3,18 @@
 
 Maya rules on explicit meshes.
 
-Maya keeps a normal per vertex-face (corner) with a "locked" (frozen, user) flag; Blender's custom split normals are
-the same thing: a corner with a custom normal keeps it, a corner without one (custom value (0, 0) in its normal
-space) follows the computed normal. So locked = custom, unlocked = auto, and every command rewrites the mesh's
-custom normals with ``Mesh.normals_split_custom_set`` (an unlocked corner gets the computed normal). Blender can't tell a locked corner whose
-normal equals the computed one from an unlocked one (such a lock is lost; it looks the same).
-
-Which corners: Object Mode = every corner of the selected meshes; Edit Mode = the corners of the selected vertices
-(Maya's conversion of a vertex selection); Set to Face = the selected faces' corners.
+Object selections affect all corners. Vertex and edge selections use their vertices, and face selections use
+only their own corners. Blender's split normals store directions relative to the local smooth fan.
 """
 
 import bmesh
 import bpy
-from bpy.props import BoolProperty, FloatProperty
+from bpy.props import BoolProperty, FloatProperty, FloatVectorProperty
 from mathutils import Vector
 from mathutils.kdtree import KDTree
 
 from .. import results, undo_steps
+from . import units
 
 AVERAGE_DISTANCE = 0.1      # Average Normals Options default distance
 SET_NORMAL = (1.0, 0.0, 0.0)  # Maya Set Vertex Normal Options default value (X / Y / Z)
@@ -40,25 +35,14 @@ def set_vertex_normal(normals, locked, corners, xyz):
         locked[c] = True
 
 
-def average(normals, locked, groups):
-    """Maya Average (polyAverageNormal, prenormalize): every corner of a group of vertices (a selected vertex and the
-    selected vertices within the distance) gets the normalised sum of the group's unit corner normals, locked."""
-    for corners in groups:
-        n = unit(sum((Vector(unit(normals[c])) for c in corners), Vector()))
-        for c in corners:
-            normals[c] = n
-            locked[c] = True
-
-
-def distance_groups(positions, chosen, corners_of, distance):
-    """Group selected corners by their vertices' distance. Loose vertices have no corner normals."""
-    chosen = sorted(chosen.intersection(corners_of))
-    if not chosen:
+def distance_groups(positions, distance):
+    """Group vertices within the world-space distance, including vertices from different meshes."""
+    if not positions:
         return []
-    parent = {v: v for v in chosen}
-    tree = KDTree(len(chosen))  # tnt: avoid comparing every pair in a large selected mesh
-    for v in chosen:
-        tree.insert(positions[v], v)
+    parent = list(range(len(positions)))
+    tree = KDTree(len(positions))
+    for v, position in enumerate(positions):
+        tree.insert(position, v)
     tree.balance()
 
     def find(v):
@@ -67,14 +51,14 @@ def distance_groups(positions, chosen, corners_of, distance):
             v = parent[v]
         return v
 
-    for a in chosen:
-        for _co, b, _distance in tree.find_range(positions[a], distance + 1e-9):
+    for a, position in enumerate(positions):
+        for _co, b, _distance in tree.find_range(position, distance + 1e-9):
             if a < b:
                 parent[find(a)] = find(b)
     groups = {}
-    for v in chosen:
-        groups.setdefault(find(v), []).extend(corners_of[v])
-    return [sorted(g) for _r, g in sorted(groups.items())]
+    for v in range(len(positions)):
+        groups.setdefault(find(v), []).append(v)
+    return groups.values()
 
 
 # --- Blender mesh access ----------------------------------------------------------------------------------------
@@ -86,7 +70,12 @@ def locked_corners(me):
         return [False] * len(me.loops)
     if attr.data_type == 'INT16_2D':
         return [tuple(d.value) != (0, 0) for d in attr.data]
-    return [Vector(d.vector).length > 1e-9 for d in attr.data]   # free normals: a stored vector
+    flags = [d.vector.length_squared > 0.0 for d in attr.data]
+    if attr.domain == 'POINT':
+        return [flags[loop.vertex_index] for loop in me.loops]
+    if attr.domain == 'FACE':
+        return [flags[p.index] for p in me.polygons for _ in p.loop_indices]
+    return flags
 
 
 def current(me):
@@ -106,21 +95,38 @@ def computed(me):
 
 
 def write(me, normals, locked):
-    """Custom normals = the locked corners' normals; the others get the computed normal (stored as "no custom
-    normal": a zero vector isn't reliably taken as auto on hard edges). No locked corner = none at all."""
+    """Write the locked directions and restore automatic calculation on the other corners."""
     attr = me.attributes.get("custom_normal")
     if not any(locked):
         if attr is not None:
             me.attributes.remove(attr)
         return
+    if attr is not None and attr.data_type == 'FLOAT_VECTOR':
+        if all(locked):
+            if attr.domain != 'CORNER':
+                me.attributes.remove(attr)
+                attr = me.attributes.new("custom_normal", 'FLOAT_VECTOR', 'CORNER')
+            attr.data.foreach_set("vector", [axis for normal in normals for axis in normal])
+            me.update()
+            return
+        me.attributes.remove(attr)
     auto = computed(me)
     me.normals_split_custom_set([normals[i] if locked[i] else auto[i] for i in range(len(me.loops))])
+    for entry, lock in zip(me.attributes["custom_normal"].data, locked):
+        if not lock:
+            entry.value = (0, 0)
+        elif tuple(entry.value) == (0, 0):
+            # Blender ignores the second angle when the first is zero, so this preserves the lock without tilting it.
+            entry.value = (0, 1)
+    me.update()
 
 
 def _targets(context):
     if context.mode == 'EDIT_MESH':
-        return [o for o in context.objects_in_mode_unique_data if o.type == 'MESH']
-    return list({o.data: o for o in context.selected_objects if o.type == 'MESH'}.values())  # tnt
+        return [o for o in context.objects_in_mode_unique_data if o.type == 'MESH' and o.data.is_editable]
+    if context.mode == 'OBJECT':
+        return list({o.data: o for o in context.selected_objects if o.type == 'MESH' and o.data.is_editable}.values())
+    return []
 
 
 class _Selection:
@@ -128,6 +134,7 @@ class _Selection:
 
     def __init__(self, context):
         self.edit = context.mode == 'EDIT_MESH'
+        self.face_mode = self.edit and context.tool_settings.mesh_select_mode[2]
         self.obs = _targets(context)
         self.sel = {}
         for ob in self.obs:
@@ -135,8 +142,8 @@ class _Selection:
                 bm = bmesh.from_edit_mesh(ob.data)
                 bm.verts.index_update()  # tnt: indices may be dirty after editing topology
                 bm.faces.index_update()
-                self.sel[ob.name] = ({v.index for v in bm.verts if v.select},
-                                     {f.index for f in bm.faces if f.select})
+                self.sel[ob.name] = ({v.index for v in bm.verts if v.select and not v.hide},
+                                     {f.index for f in bm.faces if f.select and not f.hide})
             else:
                 me = ob.data
                 self.sel[ob.name] = (set(range(len(me.vertices))), set(range(len(me.polygons))))
@@ -153,10 +160,16 @@ class _Selection:
             yield ob, verts, faces
 
 
-def corners_of_verts(me):
+def corners_of_verts(me, verts, faces=None):
     out = {}
-    for li, loop in enumerate(me.loops):
-        out.setdefault(loop.vertex_index, []).append(li)
+    if faces is None:
+        for li, loop in enumerate(me.loops):
+            if loop.vertex_index in verts:
+                out.setdefault(loop.vertex_index, []).append(li)
+    else:
+        for fi in faces:
+            for li in me.polygons[fi].loop_indices:
+                out.setdefault(me.loops[li].vertex_index, []).append(li)
     return out
 
 
@@ -183,10 +196,10 @@ class ALLSET_OT_set_vertex_normal(bpy.types.Operator):
         sel = _Selection(context)
         done = 0
         try:
-            for ob, verts, _faces in sel.items():
+            for ob, verts, faces in sel.items():
                 me = ob.data
-                of = corners_of_verts(me)
-                corners = [c for v in verts for c in of.get(v, ())]
+                chosen = corners_of_verts(me, verts, faces if sel.face_mode else None)
+                corners = [c for group in chosen.values() for c in group]
                 if not corners:
                     continue
                 normals, locked = current(me)
@@ -214,10 +227,10 @@ class ALLSET_OT_lock_normals(bpy.types.Operator):
         sel = _Selection(context)
         done = 0
         try:
-            for ob, verts, _faces in sel.items():
+            for ob, verts, faces in sel.items():
                 me = ob.data
-                of = corners_of_verts(me)
-                corners = [c for v in verts for c in of.get(v, ())]
+                chosen = corners_of_verts(me, verts, faces if sel.face_mode else None)
+                corners = [c for group in chosen.values() for c in group]
                 if not corners:
                     continue
                 normals, locked = current(me)
@@ -242,23 +255,15 @@ class ALLSET_OT_average_normals(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     distance: FloatProperty(name="Distance", default=AVERAGE_DISTANCE, min=0.0, options={'SKIP_SAVE'})
+    replacement: FloatVectorProperty(name="Replace Zero Normals By", size=3, default=SET_NORMAL,
+                                      options={'SKIP_SAVE'})
 
     def execute(self, context):
         sel = _Selection(context)
-        done = 0
         try:
-            for ob, verts, _faces in sel.items():
-                me = ob.data
-                if not verts:
-                    continue
-                normals, locked = current(me)
-                positions = [tuple(v.co) for v in me.vertices]
-                groups = distance_groups(positions, verts, corners_of_verts(me), self.distance)
-                if not groups:
-                    continue
-                average(normals, locked, groups)
-                write(me, normals, locked)
-                done += 1
+            from .normals_average_tnt import average_selection
+            distance = self.distance * units.maya_unit(context.scene)
+            done = average_selection(sel, distance, self.replacement)
         finally:
             sel.close()
         if not done:

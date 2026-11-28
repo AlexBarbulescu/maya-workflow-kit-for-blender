@@ -204,11 +204,13 @@ class ALLSET_OT_reverse_mesh_normals(bpy.types.Operator):
     bl_options = {'UNDO'}
 
     scope: EnumProperty(items=(*REVERSE_SCOPES, ('CONFORM', "Conform", "")), default='FACES', options={'SKIP_SAVE'})
+    preserve_user_normals: BoolProperty(name="Preserve User Normals Direction", options={'SKIP_SAVE'})
 
     def execute(self, context):
         if context.mode == 'OBJECT':
             scope = 'FACES' if self.scope == 'EXTRACT' else self.scope
-            return _components(context, "allset.reverse_mesh_normals", 'FACE', scope=scope)  # op id, not bl_idname's class name
+            return _components(context, "allset.reverse_mesh_normals", 'FACE', scope=scope,
+                               preserve_user_normals=self.preserve_user_normals)
         if context.mode != 'EDIT_MESH':
             return {'CANCELLED'}
         meshes = [o.data for o in context.objects_in_mode_unique_data if o.type == 'MESH']
@@ -216,21 +218,45 @@ class ALLSET_OT_reverse_mesh_normals(bpy.types.Operator):
         if not any(selected.values()):
             self.report({'WARNING'}, "Select faces first.")
             return {'CANCELLED'}
-        if self.scope == 'FACES':
-            return bpy.ops.mesh.flip_normals()
-        if self.scope == 'EXTRACT':
-            if not context.tool_settings.mesh_select_mode[2]:
-                self.report({'WARNING'}, "Switch to face selection to reverse and extract faces.")
-                return {'CANCELLED'}
-            result = bpy.ops.mesh.flip_normals()
-            if 'FINISHED' in result:
-                bpy.ops.mesh.split()
-            return result
+        if self.scope == 'EXTRACT' and not context.tool_settings.mesh_select_mode[2]:
+            self.report({'WARNING'}, "Switch to face selection to reverse and extract faces.")
+            return {'CANCELLED'}
 
-        command = _conform_faces if self.scope == 'CONFORM' else _shell_faces
-        targets = {mesh: command(faces) for mesh, faces in selected.items()}
+        command = {'CONFORM': _conform_faces, 'SHELL': _shell_faces}.get(self.scope)
+        targets = {mesh: command(faces) for mesh, faces in selected.items()} if command else selected
         if not any(targets.values()):
             return {'CANCELLED'}
+        custom = [me for me, faces in targets.items() if faces and self._has_user_normals(me)]
+        saved_normals = {}
+        face_ids = {}
+        if custom:
+            from . import normals_reverse_tnt
+
+            for me in targets:
+                bmesh.from_edit_mesh(me).faces.index_update()
+            face_ids = {me: {face.index for face in faces} for me, faces in targets.items()}
+            saved_normals = normals_reverse_tnt.snapshot(custom)
+            targets = {me: [f for f in bmesh.from_edit_mesh(me).faces if f.index in indices]
+                       for me, indices in face_ids.items()}
+
+        result = self._flip_targets(targets) if command else bpy.ops.mesh.flip_normals()
+        if 'FINISHED' in result:
+            if saved_normals:
+                normals_reverse_tnt.restore(saved_normals, face_ids, self.preserve_user_normals)
+            if self.scope == 'EXTRACT':
+                bpy.ops.mesh.split()
+        return result
+
+    @staticmethod
+    def _has_user_normals(mesh):
+        if mesh.has_custom_normals:
+            return True
+        bm = bmesh.from_edit_mesh(mesh)
+        return any(seq.layers.float_vector.get("custom_normal") is not None
+                   for seq in (bm.verts, bm.faces, bm.loops))
+
+    @staticmethod
+    def _flip_targets(targets):
         saved = {}
         try:
             for mesh, faces in targets.items():

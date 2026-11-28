@@ -21,8 +21,10 @@ def _create_set(context, v):
 WINDOWS = [
     Window("reverse_normals", "Reverse Normals Options", "Reverse Normals", None, [
         F("scope", "Reverse normals on:", "enum", "Selected faces", items=tuple(_SCOPES)),
-    ], lambda c, v: bpy.ops.allset.reverse_mesh_normals(scope=_SCOPES[v["scope"]]),
-        paths=("Mesh Display/Reverse",), missing=("Preserve user normals direction",)),
+        F("preserve", "", "bool", False, text="Preserve user normals direction"),
+    ], lambda c, v: bpy.ops.allset.reverse_mesh_normals(scope=_SCOPES[v["scope"]],
+                                                       preserve_user_normals=v["preserve"]),
+        paths=("Mesh Display/Reverse",)),
     Window("soften_harden_edges", "Soften/Harden Edges Options", "Apply Smoothing", None, [
         F("method", "Harden by:", "enum", "Angle", items=("Angle", "Texture Borders")),
         F("angle", "Angle:", "float", 30.0, lo=0.0, hi=180.0),
