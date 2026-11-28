@@ -180,22 +180,36 @@ class ALLSET_OT_menu_option_box(bpy.types.Operator):
         if self.from_hold and not bpy.app.background:
             _close_menu_then_open(context, self.item)
             return {'FINISHED'}
-        from ..operators.option_windows_menu_tnt import TOOL_OPTIONS, open_tool_options
+        from ..operators.option_windows_menu_tnt import INTERFACE_ACTIONS, TOOL_OPTIONS, open_tool_options
         target = menu_map.spec(self.item)[1]
         if target in TOOL_OPTIONS:  # tnt: Move Normal options pick its tool, without transforming the mesh
             return open_tool_options(context, target)
         if option_kind(self.item) == "generic":
             return bpy.ops.allset.option_generic('INVOKE_DEFAULT', item=self.item)
         from ..marking.modal import run_action
+        whole = _whole_mesh_option(context, self.item)
+        if whole is not None:
+            action, path = whole, None      # object mode: the command on the whole mesh, with its settings
+        else:
+            path = self.item
         try:
-            from ..operators.option_windows_menu_tnt import INTERFACE_ACTIONS
-            interface = menu_map.spec(self.item)[1] in INTERFACE_ACTIONS  # tnt: open editors without running redo
-            run_action(context, action, option=not interface, path=self.item)
+            run_action(context, action, option=target not in INTERFACE_ACTIONS, path=path)  # tnt: open editors directly
         except RuntimeError as ex:
             from ..operators import maya_errors
             maya_errors.report_nested(self, ex)
             return {'CANCELLED'}
         return {'FINISHED'}
+
+
+def _whole_mesh_option(context, path):
+    """(bl_idname, props) of the whole-mesh option operator of ``path`` in object mode (``menu_map.OBJECT_MODE``:
+    Maya runs the command on every component of the selected meshes), else None."""
+    from .menu_item_ops import WHOLE_MESH_OPTIONS, WHOLE_MESH_PROPS
+    idname = WHOLE_MESH_OPTIONS.get(path)
+    if idname is None or context.mode != 'OBJECT' or option_kind(path) != "redo":
+        return None
+    s = menu_map.spec(path)
+    return idname, {**s[2], **WHOLE_MESH_PROPS.get(path, {})}
 
 
 def option_kind(path):

@@ -41,6 +41,16 @@ def _uv(nodes, links, x, y):
     return coord.outputs["UV"]
 
 
+def _placement(nodes, links, x, y):
+    """Maya's place2dTexture in front of a file / checker texture: UV coordinates through a Mapping node, whose
+    Scale repeats the texture (Maya Repeat UV) and Location moves it (Offset)."""
+    mapping = nodes.new("ShaderNodeMapping")
+    mapping.label = "place2dTexture"
+    mapping.location = (x, y)
+    links.new(_uv(nodes, links, x - 200, y), mapping.inputs["Vector"])
+    return mapping.outputs["Vector"]
+
+
 def build(mat, socket_name, kind):
     """Add the ``kind`` texture network and link it to the Principled input ``socket_name``; the texture node."""
     inp = _material.maya_input(mat, socket_name)
@@ -51,6 +61,7 @@ def build(mat, socket_name, kind):
     x, y = owner.location.x - 360, owner.location.y - 40 * index
     if kind == 'FILE':
         tex = nodes.new("ShaderNodeTexImage")
+        links.new(_placement(nodes, links, x - 200, y), tex.inputs["Vector"])
         out = tex.outputs["Color"]
     elif kind == 'RAMP':
         sep = nodes.new("ShaderNodeSeparateXYZ")
@@ -72,7 +83,7 @@ def build(mat, socket_name, kind):
     else:
         tex = nodes.new("ShaderNodeTexChecker")
         tex.inputs["Scale"].default_value = CHECKER_SCALE
-        links.new(_uv(nodes, links, x - 200, y), tex.inputs["Vector"])
+        links.new(_placement(nodes, links, x - 200, y), tex.inputs["Vector"])
         out = tex.outputs["Color"]
     tex.location = (x, y)
     tex.label = MAPS[kind][0]
@@ -122,7 +133,9 @@ class ALLSET_OT_ae_map(bpy.types.Operator):
         def draw(menu, _context):
             layout = menu.layout
             if inp.is_linked:
-                layout.label(text=f"Connected: {inp.links[0].from_node.name}")
+                # Maya: the button of a connected attribute goes to the connected node
+                op = layout.operator("allset.ae_map_goto", text=inp.links[0].from_node.name, icon='NODE')
+                op.material, op.socket = material, socket
                 op = layout.operator("allset.ae_map_break", text="Break Connection", icon='UNLINKED')
                 op.material, op.socket = material, socket
                 layout.separator()
@@ -169,4 +182,32 @@ class ALLSET_OT_ae_map_break(bpy.types.Operator):
         return {'FINISHED'}
 
 
-classes = (ALLSET_OT_ae_map, ALLSET_OT_ae_map_connect, ALLSET_OT_ae_map_break)
+class ALLSET_OT_ae_map_goto(bpy.types.Operator):
+    """Go to the node connected to this attribute: it becomes the graph's selected node, which the Hypershade
+    Property Editor shows (Maya's map button of a connected attribute)"""
+    bl_idname = "allset.ae_map_goto"
+    bl_label = "Go to Connected Node"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    material: _MAT
+    socket: _SOCKET
+
+    def execute(self, context):
+        mat = bpy.data.materials.get(self.material)
+        inp = _material.maya_input(mat, self.socket)
+        if inp is None or not inp.is_linked:
+            return {'CANCELLED'}
+        node = inp.links[0].from_node
+        tree = mat.node_tree
+        for n in tree.nodes:
+            n.select = n == node
+        tree.nodes.active = node
+        from ..ui.hypershade_materials import show
+        show(context, mat)
+        for window in context.window_manager.windows:
+            for area in window.screen.areas:
+                area.tag_redraw()
+        return {'FINISHED'}
+
+
+classes = (ALLSET_OT_ae_map, ALLSET_OT_ae_map_connect, ALLSET_OT_ae_map_break, ALLSET_OT_ae_map_goto)

@@ -32,6 +32,7 @@ CENTER = 0.1            # half size of the centre square / box
 
 OPS = {'TRANSLATE': "transform.translate", 'ROTATE': "transform.rotate", 'RESIZE': "transform.resize"}
 AXES = {'U': (True, False, False), 'V': (False, True, False), 'UV': (False, False, False)}
+LAST = {}               # region pointer -> (x, y) region pixels of the centre last drawn (tests read it)
 
 
 # --- selection --------------------------------------------------------------------------------------------------
@@ -39,7 +40,10 @@ AXES = {'U': (True, False, False), 'V': (False, True, False), 'UV': (False, Fals
 def _picked_loops(a, bm, uv, shown, sync, ts):
     """Per loop: its UV is selected (the UVs a UV transform moves)."""
     if not sync or getattr(bm, "uv_select_sync_valid", False):
-        return a.uv_sel(bm, uv, shown)      # UV Sync on keeps its own UV selection while that is valid
+        # UV Sync on keeps its own UV selection while that is valid. A UV pick changes no mesh data, so the shared
+        # arrays outlive it: read again when the UV Editor says the selection changed (#579)
+        from ..operators import uv_arrays
+        return a.uv_sel(bm, uv, shown, epoch=uv_arrays.selection_epoch())
     vert, _edge, face = ts.mesh_select_mode
     if face and not vert:
         return a.face_sel[a.corner_face]    # face mode: the selected faces' UVs
@@ -205,6 +209,11 @@ class ALLSET_GGT_uv_xform(GizmoGroup):
         self.kit_built = None
         self.kit_handles = []
 
+    def refresh(self, context):
+        # the UV Editor refreshes its gizmos on a selection change: this group may come before the watcher below
+        from ..operators import uv_arrays
+        uv_arrays.selection_changed()
+
     def _build(self, kind):
         from . import manipulator
         for gz in self.kit_handles:
@@ -243,8 +252,11 @@ class ALLSET_GGT_uv_xform(GizmoGroup):
         # so they hide while it runs and come back at the new centre.
         bounds = None if uv_arrays.editing_now(context.window_manager) else selected_uv_bounds(context)
         hide = bounds is None
-        if not hide:
+        if hide:
+            LAST.pop(context.region.as_pointer(), None)
+        else:
             cx, cy = center_px(context, bounds)
+            LAST[context.region.as_pointer()] = (cx, cy)
             length = length_px(context)
             m = Matrix.Translation((cx, cy, 0.0)) @ Matrix.Scale(length, 4)
         for gz in self.kit_handles:
@@ -256,7 +268,37 @@ class ALLSET_GGT_uv_xform(GizmoGroup):
             gz.matrix_basis = m
 
 
-classes = (ALLSET_GT_uv_handle, ALLSET_GGT_uv_xform)
+def _uv_editor_edit(context):
+    space = context.space_data
+    return (space is not None and space.type == 'IMAGE_EDITOR' and space.mode == 'UV'
+            and context.mode == 'EDIT_MESH')
+
+
+# No gizmos: Blender refreshes the UV Editor's gizmo groups when it is told the UV selection changed (and on a few
+# other changes), so ``refresh`` is the kit's "the UV selection may have changed" signal (#579): the manipulator and
+# the soft select colours read the UV selection again only then.
+class ALLSET_GGT_uv_select_watch(GizmoGroup):
+    bl_idname = "ALLSET_GGT_uv_select_watch"
+    bl_label = "UV Selection Watch"
+    bl_space_type = 'IMAGE_EDITOR'
+    bl_region_type = 'WINDOW'
+    bl_options = {'PERSISTENT'}
+
+    @classmethod
+    def poll(cls, context):
+        return _uv_editor_edit(context)
+
+    def setup(self, context):
+        pass
+
+    def refresh(self, context):
+        from ..operators import uv_arrays
+        uv_arrays.selection_changed()
+        from . import uv_soft_overlay
+        uv_soft_overlay.selection_changed()
+
+
+classes = (ALLSET_GT_uv_handle, ALLSET_GGT_uv_xform, ALLSET_GGT_uv_select_watch)
 
 
 # --- tool widget swap ---------------------------------------------------------------------------------------------
