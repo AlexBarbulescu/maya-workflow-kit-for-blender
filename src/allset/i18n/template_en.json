@@ -5078,7 +5078,6 @@
    "Blender X-rays the whole view (X-Ray), not only the components being edited.": "Blender X-rays the whole view (X-Ray), not only the components being edited.",
    "Blender always draws anti-aliased wires (a preference: Viewport > Quality > Anti-Aliasing).": "Blender always draws anti-aliased wires (a preference: Viewport > Quality > Anti-Aliasing).",
    "Blender always keeps vertex, edge or face picking on: switch with F9 / F10 / F11.": "Blender always keeps vertex, edge or face picking on: switch with F9 / F10 / F11.",
-   "Blender always lights both sides of a face in the viewport (Backface Culling hides back faces).": "Blender always lights both sides of a face in the viewport (Backface Culling hides back faces).",
    "Blender always plays a baked cache: Delete Cache to simulate again.": "Blender always plays a baked cache: Delete Cache to simulate again.",
    "Blender assets are data-blocks marked as assets (Asset Browser), not containers.": "Blender assets are data-blocks marked as assets (Asset Browser), not containers.",
    "Blender bakes the Displace modifiers into a new mesh; material displacement only shows in renders and is not baked.": "Blender bakes the Displace modifiers into a new mesh; material displacement only shows in renders and is not baked.",
@@ -9832,6 +9831,7 @@
    "This view has no camera: Select Camera works in a perspective view, the top / front / side views and a view that looks through a camera": "This view has no camera: Select Camera works in a perspective view, the top / front / side views and a view that looks through a camera",
    "Tumble around the center of interest: Orbit Around Selection off (opens Preferences > Navigation; the kit doesn't change preferences)": "Tumble around the center of interest: Orbit Around Selection off (opens Preferences > Navigation; the kit doesn't change preferences)",
    "Tumble around the selection: Blender's Orbit Around Selection preference (opens Preferences > Navigation; the kit doesn't change preferences)": "Tumble around the selection: Blender's Orbit Around Selection preference (opens Preferences > Navigation; the kit doesn't change preferences)",
+   "Two Sided Lighting: off marks the faces whose normals point away from the camera (Blender's Face Orientation overlay, red by default; Preferences > Themes > 3D Viewport > Face Orientation Back sets the colour)": "Two Sided Lighting: off marks the faces whose normals point away from the camera (Blender's Face Orientation overlay, red by default; Preferences > Themes > 3D Viewport > Face Orientation Back sets the colour)",
    "Use all lights": "Use all lights",
    "Use default material": "Use default material",
    "Wireframe": "Wireframe"

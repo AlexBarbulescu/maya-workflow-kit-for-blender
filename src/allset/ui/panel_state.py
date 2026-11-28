@@ -83,6 +83,9 @@ TIPS = {
                    "locators are hidden too (Blender hides those shapes together); with cameras or locators shown "
                    "they stop lighting it",
     "SHOW_CAMERAS": "Cameras in this view",
+    "TWO_SIDED": "Two Sided Lighting: off marks the faces whose normals point away from the camera "  # tnt
+                 "(Blender's Face Orientation overlay, red by default; Preferences > Themes > 3D Viewport > Face "
+                 "Orientation Back sets the colour)",
     "SHOW_LOCATORS": "Locators (empties) in this view",
     "SHADE_WIRE": "Wireframe",
     "SHADE_SMOOTH": "Smooth shade all",
@@ -163,6 +166,8 @@ def state(context, key):
         return camera_bookmarks.pan_zoom_on(context.region_data or space.region_3d)
     if key == "CM_ENABLE":
         return context.scene.view_settings.view_transform != RAW
+    if key == "TWO_SIDED":  # tnt: Maya Two Sided Lighting off = back faces marked (Face Orientation overlay)
+        return not space.overlay.show_face_orientation
     sh = space.shading
     if key == "SHADE_WIRE":
         return sh.type == 'WIREFRAME'
@@ -358,6 +363,8 @@ def apply(context, key):
         curve_controls.show_joints(space, context.scene, not curve_controls.joints_shown(space, context.scene))
     elif key == "SHOW_LIGHTS":
         set_lights(space, not lights_shown(space))
+    elif key == "TWO_SIDED":  # tnt
+        space.overlay.show_face_orientation = not space.overlay.show_face_orientation
     elif key in _TYPE_KEYS:
         lights = lights_shown(space)
         name = f"show_object_viewport_{_TYPE_KEYS[key]}"

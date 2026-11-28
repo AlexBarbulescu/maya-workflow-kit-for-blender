@@ -181,7 +181,7 @@ classes = (ALLSET_OT_normals_size, ALLSET_PT_normals_size, ALLSET_OT_poly_displa
 def register_props():
     bpy.types.WindowManager.allset_normals_size = FloatProperty(
         name="Normals Size", description="Length of the normals drawn in the 3D View (Blender units)",
-        min=0.00001, max=100000.0, soft_min=SIZE_SOFT_MIN, soft_max=2.0, precision=SIZE_PRECISION, step=1,
+        min=0.00001, max=100000.0, soft_min=SIZE_SOFT_MIN, soft_max=2.0, precision=SIZE_PRECISION, step=1, unit='LENGTH',  # tnt: shown in scene units (cm)
         get=_get_size, set=_set_size)
 
 

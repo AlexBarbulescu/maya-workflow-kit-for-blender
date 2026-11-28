@@ -876,8 +876,6 @@ PANEL_MENU = {
     _PM + "Lighting/Use No Lights": (
         "Use Flat Lighting", "Blender's views always light the scene (studio, flat or scene lights): Use Flat Lighting "
         "shows the plain colours."),
-    _PM + "Lighting/Two Sided Lighting": (
-        "none", "Blender always lights both sides of a face in the viewport (Backface Culling hides back faces)."),
     **{_PM + f"Show/{t}": _NO_FILTER for t in (
         "Controllers", "Subdiv Surfaces", "Planes", "Dynamics", "Particle Instancers",
         "Follicles", "nCloths", "nParticles", "nRigids", "Dynamic Constraints", "Dimensions", "Handles",

@@ -143,7 +143,7 @@ LIGHTING = [
     ("set", "LIGHT_FLAT", "Use Flat Lighting"),
     _grey("Use No Lights"),
     _sep(),
-    _grey("Two Sided Lighting"),
+    ("set", "TWO_SIDED", "Two Sided Lighting"),  # tnt: off = Face Orientation overlay (back faces shown)
     ("prop", "shading", "show_shadows", "Shadows"),
 ]
 
